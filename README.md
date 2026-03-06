@@ -9,7 +9,7 @@ A visual canvas-based dashboard builder for [Home Assistant](https://www.home-as
 ## Features
 
 - **Free-form canvas** — drag, resize and layer widgets anywhere
-- **19 built-in widgets** — buttons, gauges, sliders, clocks, weather, charts, and more
+- **27 built-in widgets** — buttons, gauges, sliders, clocks, weather, charts, camera, calendar, and more
 - **Entity binding** — all widgets connect to live HA state via WebSocket
 - **AI assistant** — describe what you want and let the AI place widgets (requires local Ollama)
 - **Kiosk mode** — full-screen view for wall-mounted tablets (`/canvas-kiosk#view-name`)
@@ -60,7 +60,7 @@ The AI feature proxies requests to a local [Ollama](https://ollama.com/) instanc
 
 ## Included Widgets
 
-ButtonWidget · TextWidget · GaugeWidget · SliderWidget · SwitchWidget · ImageWidget · IconWidget · ProgressBarWidget · ProgressCircleWidget · InputTextWidget · FlipClockWidget · DigitalClockWidget · KnobWidget · IFrameWidget · BorderWidget · ValueWidget · RadioButtonWidget · ColorPickerWidget · WeatherWidget
+ButtonWidget · TextWidget · ValueWidget · GaugeWidget · SliderWidget · SwitchWidget · ImageWidget · IconWidget · ProgressBarWidget · ProgressCircleWidget · InputTextWidget · KeyboardWidget · FlipClockWidget · DigitalClockWidget · KnobWidget · IFrameWidget · BorderWidget · RadioButtonWidget · ColorPickerWidget · WeatherWidget · CameraWidget · GraphWidget · CalendarWidget · ScrollingTextWidget · HtmlWidget · LovelaceCardWidget · ResolutionWidget
 
 ---
 
