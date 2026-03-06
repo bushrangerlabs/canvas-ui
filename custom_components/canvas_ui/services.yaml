@@ -1,0 +1,51 @@
+# Canvas UI Services
+# File operations for dashboard persistence
+
+write_file:
+  name: Write File
+  description: Write JSON data to a file in the Canvas UI directory.
+  fields:
+    path:
+      name: File Path
+      description: Relative path to the file (e.g., "dashboards/main.json")
+      required: true
+      example: "dashboards/main.json"
+      selector:
+        text:
+    data:
+      name: Data
+      description: JSON string to write to the file
+      required: true
+      example: '{"views": [], "activeViewId": null}'
+      selector:
+        text:
+          multiline: true
+
+read_file:
+  name: Read File
+  description: Read JSON data from a file in the Canvas UI directory.
+  fields:
+    path:
+      name: File Path
+      description: Relative path to the file (e.g., "dashboards/main.json")
+      required: true
+      example: "dashboards/main.json"
+      selector:
+        text:
+
+delete_file:
+  name: Delete File
+  description: Delete a file from the Canvas UI directory.
+  fields:
+    path:
+      name: File Path
+      description: Relative path to the file (e.g., "dashboards/main.json")
+      required: true
+      example: "dashboards/main.json"
+      selector:
+        text:
+
+list_files:
+  name: List Files
+  description: List all files in the Canvas UI directory.
+  fields: {}

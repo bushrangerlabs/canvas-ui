@@ -1,0 +1,514 @@
+"""Canvas UI Services - File operations for dashboard storage."""
+
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+import voluptuous as vol
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.helpers import config_validation as cv
+from homeassistant.util import file as file_util
+
+from .const import DOMAIN
+from .file_operations import create_folder
+from .file_operations import delete_file as delete_file_op
+from .file_operations import download_file, get_file_info
+from .file_operations import list_files as list_files_op
+from .file_operations import rename_file, upload_file
+
+_LOGGER = logging.getLogger(__name__)
+
+# Service schemas
+WRITE_FILE_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+        vol.Required("data"): cv.string,
+    }
+)
+
+READ_FILE_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+    }
+)
+
+DELETE_FILE_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+    }
+)
+
+LIST_FILES_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+    }
+)
+
+# New file operation schemas
+GET_FILE_INFO_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+    }
+)
+
+CREATE_FOLDER_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+    }
+)
+
+UPLOAD_FILE_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+        vol.Required("data"): cv.string,
+        vol.Optional("overwrite", default=False): cv.boolean,
+    }
+)
+
+DOWNLOAD_FILE_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+    }
+)
+
+RENAME_FILE_SCHEMA = vol.Schema(
+    {
+        vol.Required("old_path"): cv.string,
+        vol.Required("new_path"): cv.string,
+    }
+)
+
+DELETE_FILE_OP_SCHEMA = vol.Schema(
+    {
+        vol.Required("path"): cv.string,
+        vol.Required("confirm"): cv.boolean,
+    }
+)
+
+LIST_FILES_OP_SCHEMA = vol.Schema(
+    {
+        vol.Optional("path", default="/config/www"): cv.string,
+        vol.Optional("recursive", default=False): cv.boolean,
+        vol.Optional("file_filter"): cv.string,
+    }
+)
+
+CACHE_ICON_SCHEMA = vol.Schema(
+    {
+        vol.Required("icon_name"): cv.string,
+        vol.Required("icon_data"): dict,
+    }
+)
+
+
+def setup_services(hass: HomeAssistant) -> None:
+    """Register Canvas UI services."""
+
+    async def handle_write_file(call: ServiceCall) -> None:
+        """Handle write_file service call."""
+        filepath = call.data["path"]
+        data = call.data["data"]
+
+        try:
+            # Validate path (security check)
+            if not _is_safe_path(hass, filepath):
+                _LOGGER.error(f"Unsafe file path: {filepath}")
+                raise ValueError("Invalid file path")
+
+            # Ensure directory exists
+            full_path = Path(hass.config.path(filepath))
+            await hass.async_add_executor_job(
+                lambda: full_path.parent.mkdir(parents=True, exist_ok=True)
+            )
+
+            # Write file asynchronously
+            await hass.async_add_executor_job(full_path.write_text, data, "utf-8")
+
+            _LOGGER.info(f"[Canvas UI] Wrote file: {filepath}")
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to write file {filepath}: {error}")
+            raise
+
+    async def handle_read_file(call: ServiceCall) -> dict[str, Any]:
+        """Handle read_file service call."""
+        filepath = call.data["path"]
+
+        try:
+            # Validate path (security check)
+            if not _is_safe_path(hass, filepath):
+                _LOGGER.error(f"Unsafe file path: {filepath}")
+                raise ValueError("Invalid file path")
+
+            full_path = Path(hass.config.path(filepath))
+
+            # Check if file exists (async)
+            exists = await hass.async_add_executor_job(full_path.exists)
+            if not exists:
+                _LOGGER.debug(f"File not found: {filepath}")
+                return {"data": None, "exists": False}
+
+            # Read file asynchronously
+            data = await hass.async_add_executor_job(full_path.read_text, "utf-8")
+
+            _LOGGER.debug(f"[Canvas UI] Read file: {filepath}")
+
+            return {"data": data, "exists": True}
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to read file {filepath}: {error}")
+            raise
+
+    async def handle_delete_file(call: ServiceCall) -> None:
+        """Handle delete_file service call."""
+        filepath = call.data["path"]
+
+        try:
+            # Validate path (security check)
+            if not _is_safe_path(hass, filepath):
+                _LOGGER.error(f"Unsafe file path: {filepath}")
+                raise ValueError("Invalid file path")
+
+            full_path = Path(hass.config.path(filepath))
+
+            # Check if file exists (async)
+            exists = await hass.async_add_executor_job(full_path.exists)
+
+            # Delete file if exists
+            if exists:
+                await hass.async_add_executor_job(full_path.unlink)
+                _LOGGER.info(f"[Canvas UI] Deleted file: {filepath}")
+            else:
+                _LOGGER.warning(f"File not found (cannot delete): {filepath}")
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to delete file {filepath}: {error}")
+            raise
+
+    async def handle_list_files(call: ServiceCall) -> dict[str, Any]:
+        """Handle list_files service call."""
+        dirpath = call.data["path"]
+
+        try:
+            # Validate path (security check)
+            if not _is_safe_path(hass, dirpath):
+                _LOGGER.error(f"Unsafe directory path: {dirpath}")
+                raise ValueError("Invalid directory path")
+
+            full_path = Path(hass.config.path(dirpath))
+
+            # Check if directory exists (async)
+            exists = await hass.async_add_executor_job(full_path.exists)
+            if not exists:
+                return {"files": [], "exists": False}
+
+            is_dir = await hass.async_add_executor_job(full_path.is_dir)
+            if not is_dir:
+                _LOGGER.error(f"Path is not a directory: {dirpath}")
+                raise ValueError("Path is not a directory")
+
+            # List files asynchronously
+            def _list_files():
+                files = []
+                for item in full_path.iterdir():
+                    if item.is_file():
+                        files.append(
+                            {
+                                "name": item.name,
+                                "size": item.stat().st_size,
+                                "modified": item.stat().st_mtime,
+                            }
+                        )
+                return files
+
+            files = await hass.async_add_executor_job(_list_files)
+
+            _LOGGER.info(f"[Canvas UI] Listed {len(files)} files in: {dirpath}")
+
+            return {"files": files, "exists": True}
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to list files in {dirpath}: {error}")
+            raise
+
+    # New file operation handlers
+    async def handle_list_files_op(call: ServiceCall) -> dict[str, Any]:
+        """Handle advanced list_files operation."""
+        path = call.data.get("path", "/config/www")
+        recursive = call.data.get("recursive", False)
+        file_filter = call.data.get("file_filter")
+
+        _LOGGER.info(
+            f"[Canvas UI] list_files_op called with path={path}, recursive={recursive}, file_filter={file_filter}"
+        )
+
+        try:
+            result = await hass.async_add_executor_job(
+                list_files_op, path, recursive, file_filter
+            )
+
+            # list_files_op now returns a dict with {files, path, parent, count}
+            files = result.get("files", [])
+
+            _LOGGER.info(
+                f"[Canvas UI] list_files_op returned {len(files)} files from: {path}"
+            )
+            return result  # Return the full dict with files, path, parent, count
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to list files: {error}", exc_info=True)
+            return {"files": [], "error": str(error)}
+
+    async def handle_get_file_info(call: ServiceCall) -> dict[str, Any]:
+        """Handle get_file_info operation."""
+        path = call.data["path"]
+
+        try:
+            result = await hass.async_add_executor_job(get_file_info, path)
+            return result
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to get file info: {error}")
+            return {"error": str(error)}
+
+    async def handle_create_folder(call: ServiceCall) -> dict[str, Any]:
+        """Handle create_folder operation."""
+        path = call.data["path"]
+
+        try:
+            result = await hass.async_add_executor_job(create_folder, path)
+            if result["success"]:
+                _LOGGER.info(f"[Canvas UI] {result['message']}")
+            else:
+                _LOGGER.warning(f"[Canvas UI] {result['message']}")
+            return result
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to create folder: {error}")
+            return {"success": False, "message": str(error)}
+
+    async def handle_upload_file(call: ServiceCall) -> dict[str, Any]:
+        """Handle upload_file operation."""
+        path = call.data["path"]
+        data = call.data["data"]
+        overwrite = call.data.get("overwrite", False)
+
+        try:
+            result = await hass.async_add_executor_job(
+                upload_file, path, data, overwrite
+            )
+            if result["success"]:
+                _LOGGER.info(f"[Canvas UI] {result['message']}")
+            else:
+                _LOGGER.warning(f"[Canvas UI] {result['message']}")
+            return result
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to upload file: {error}")
+            return {"success": False, "message": str(error)}
+
+    async def handle_download_file(call: ServiceCall) -> dict[str, Any]:
+        """Handle download_file operation."""
+        path = call.data["path"]
+
+        try:
+            result = await hass.async_add_executor_job(download_file, path)
+            return result
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to download file: {error}")
+            return {"success": False, "message": str(error)}
+
+    async def handle_rename_file(call: ServiceCall) -> dict[str, Any]:
+        """Handle rename_file operation."""
+        old_path = call.data["old_path"]
+        new_path = call.data["new_path"]
+
+        try:
+            result = await hass.async_add_executor_job(rename_file, old_path, new_path)
+            if result["success"]:
+                _LOGGER.info(f"[Canvas UI] {result['message']}")
+            else:
+                _LOGGER.warning(f"[Canvas UI] {result['message']}")
+            return result
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to rename file: {error}")
+            return {"success": False, "message": str(error)}
+
+    async def handle_delete_file_op(call: ServiceCall) -> dict[str, Any]:
+        """Handle advanced delete_file operation."""
+        path = call.data["path"]
+        confirm = call.data["confirm"]
+
+        try:
+            result = await hass.async_add_executor_job(delete_file_op, path, confirm)
+            if result["success"]:
+                _LOGGER.info(f"[Canvas UI] {result['message']}")
+            else:
+                _LOGGER.warning(f"[Canvas UI] {result['message']}")
+            return result
+
+        except Exception as error:
+            _LOGGER.error(f"Failed to delete file: {error}")
+            return {"success": False, "message": str(error)}
+
+    async def handle_cache_icon(call: ServiceCall) -> dict[str, Any]:
+        """Handle cache_icon service call - cache icon to icon-cache.json."""
+        icon_name = call.data["icon_name"]
+        icon_data = call.data["icon_data"]
+
+        try:
+            # Path to icon cache file
+            cache_path = hass.config.path("www/canvas-ui/icon-cache.json")
+
+            # Ensure directory exists
+            cache_dir = os.path.dirname(cache_path)
+            os.makedirs(cache_dir, exist_ok=True)
+
+            # Load existing cache
+            cache = {}
+            if os.path.exists(cache_path):
+                try:
+                    with open(cache_path, "r") as f:
+                        cache = json.load(f)
+                except Exception as e:
+                    _LOGGER.warning(f"Could not load icon cache, creating new: {e}")
+                    cache = {}
+
+            # Add/update icon
+            cache[icon_name] = icon_data
+
+            # Save cache
+            with open(cache_path, "w") as f:
+                json.dump(cache, f, indent=2)
+
+            _LOGGER.debug(f"Icon cached: {icon_name}")
+            return {
+                "success": True,
+                "icon_name": icon_name,
+                "cache_size": len(cache),
+            }
+
+        except Exception as e:
+            _LOGGER.error(f"Failed to cache icon {icon_name}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    # Register services
+    hass.services.async_register(
+        DOMAIN,
+        "write_file",
+        handle_write_file,
+        schema=WRITE_FILE_SCHEMA,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "read_file",
+        handle_read_file,
+        schema=READ_FILE_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "delete_file",
+        handle_delete_file,
+        schema=DELETE_FILE_SCHEMA,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "list_files",
+        handle_list_files,
+        schema=LIST_FILES_SCHEMA,
+    )
+
+    # Register new file operation services
+    hass.services.async_register(
+        DOMAIN,
+        "list_files_op",
+        handle_list_files_op,
+        schema=LIST_FILES_OP_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "get_file_info",
+        handle_get_file_info,
+        schema=GET_FILE_INFO_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "create_folder",
+        handle_create_folder,
+        schema=CREATE_FOLDER_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "upload_file",
+        handle_upload_file,
+        schema=UPLOAD_FILE_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "download_file",
+        handle_download_file,
+        schema=DOWNLOAD_FILE_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "rename_file",
+        handle_rename_file,
+        schema=RENAME_FILE_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "delete_file_op",
+        handle_delete_file_op,
+        schema=DELETE_FILE_OP_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "cache_icon",
+        handle_cache_icon,
+        schema=CACHE_ICON_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    _LOGGER.info(
+        "[Canvas UI] Services registered: write_file, read_file, delete_file, list_files, "
+        "list_files_op, get_file_info, create_folder, upload_file, download_file, rename_file, delete_file_op, cache_icon"
+    )
+
+
+def _is_safe_path(hass: HomeAssistant, filepath: str) -> bool:
+    """Check if path is safe (within config directory)."""
+    try:
+        # Resolve full path
+        full_path = Path(hass.config.path(filepath)).resolve()
+        config_path = Path(hass.config.path()).resolve()
+
+        # Check if path is within config directory
+        return str(full_path).startswith(str(config_path))
+
+    except Exception:
+        return False
