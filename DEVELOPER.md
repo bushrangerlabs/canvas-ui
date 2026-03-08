@@ -109,7 +109,7 @@ npm run build:hacs
 
 ## 📤 Deployment Targets
 
-### Local HA Server (192.168.1.103)
+### Local HA Server (your HA IP)
 
 ```bash
 ./deploy.sh
@@ -195,14 +195,14 @@ npm run build:hacs 2>&1 | tee build.log
 
 ```bash
 # Check files on HA server
-sshpass -p 'AWpoP6Rx@wQ7jK' ssh root@192.168.1.103 "ls -lh /config/www/canvas-ui/*.js"
+sshpass -p '<YOUR_HA_PASSWORD>' ssh root@<YOUR_HA_IP> "ls -lh /config/www/canvas-ui/*.js"
 ```
 
 ### Clear Browser Cache
 
 ```bash
 # On HA server
-sshpass -p 'AWpoP6Rx@wQ7jK' ssh root@192.168.1.103 "rm /config/www/canvas-ui/assets/*.gz"
+sshpass -p '<YOUR_HA_PASSWORD>' ssh root@<YOUR_HA_IP> "rm /config/www/canvas-ui/assets/*.gz"
 ```
 
 ---
@@ -243,4 +243,4 @@ sshpass -p 'AWpoP6Rx@wQ7jK' ssh root@192.168.1.103 "rm /config/www/canvas-ui/ass
 ---
 
 **Current Workspace:** `/home/spetchal/Code/canvas-ui-hacs/`  
-**HA Server:** `192.168.1.103`
+**HA Server:** `<your-ha-ip>`
