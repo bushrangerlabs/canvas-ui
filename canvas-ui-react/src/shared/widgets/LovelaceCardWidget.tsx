@@ -73,8 +73,14 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
     const cfg = config.config;
     const styles: string[] = [];
     
-    // Ensure border-box model
-    styles.push(`box-sizing: border-box !important;`);
+    // Skip card-mod entirely for layout cards (they have no ha-card of their own)
+    const layoutCards = ['vertical-stack', 'horizontal-stack', 'grid', 'masonry'];
+    const resolvedCardType = cfg.cardType === 'other'
+      ? (cfg.cardConfig || '').match(/^\s*type:\s*(\S+)/m)?.[1] || ''
+      : cfg.cardType || '';
+    if (layoutCards.includes(resolvedCardType)) {
+      return '';
+    }
 
     // Gradient takes precedence (uses background shorthand)
     if (cfg.gradientEnabled === 'yes' && cfg.gradientColor) {
@@ -167,6 +173,9 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
     if (styles.length === 0) {
       return '';
     }
+
+    // Only add box-sizing when there are real style overrides
+    styles.unshift(`box-sizing: border-box !important;`);
 
     return `ha-card {\n  ${styles.join('\n  ')}\n}`;
   };
