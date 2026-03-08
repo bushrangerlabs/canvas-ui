@@ -54,21 +54,17 @@ cd /home/spetchal/Code/canvas-ui-hacs
 ### **Deploy to HA:**
 
 ```bash
-# Full deploy (build + deploy)
+# Build, commit and push - then user reloads via HACS
 cd /home/spetchal/Code/canvas-ui-hacs
-./build.sh && sshpass -p 'AWpoP6Rx@wQ7jK' scp -r custom_components/canvas_ui/* root@192.168.1.103:/config/custom_components/canvas_ui/
-
-# Quick deploy (single JS file - rarely needed)
-sshpass -p 'AWpoP6Rx@wQ7jK' scp custom_components/canvas_ui/frontend/assets/FILE.js root@192.168.1.103:/config/custom_components/canvas_ui/frontend/assets/
+./build.sh
+git add -A && git commit -m "..." && git push
+# User then: HACS → Canvas UI → Redownload → Restart HA
 ```
 
 ### **Clear Browser Cache:**
 
 ```bash
-# Restart HA to force JS reload (integration serves with cache_headers=False)
-sshpass -p 'AWpoP6Rx@wQ7jK' ssh root@192.168.1.103 "ha core restart"
-
-# Or just hard refresh browser (Ctrl+Shift+F5)
+# Hard refresh browser (Ctrl+Shift+F5)
 ```
 
 ---

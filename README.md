@@ -15,7 +15,10 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 - 🤖 **AI View Generator** - Create entire dashboards from natural language prompts
 - 📱 **Kiosk Mode** - Full-screen display mode for wall panels and tablets
 - 🎯 **Precision Tools** - Alignment, grouping, grid snapping, and guides
-- 🔗 **Entity Binding** - Real-time entity data integration
+- 🔗 **Entity Binding** - Real-time entity data integration with live state updates
+- ⚡ **Visual Flow System** - Node-based automation flows with triggers, conditions, and actions
+- 📦 **Variable System** - Canvas-scoped variables shared across widgets and flows
+- 📁 **File Manager** - Upload and manage static assets (images, fonts) directly from the UI
 - 🎭 **Custom Icons** - 17,000+ icons from MDI, Font Awesome, and more
 - 💾 **View Management** - Export/import views as JSON for backup and sharing
 - 🎛️ **Inspector Panel** - Comprehensive property editing with live preview
@@ -101,16 +104,7 @@ That's it! The integration will automatically:
 
 - Register the Canvas UI panel in your sidebar
 - Set up WebSocket services for widget communication
-- Enable AI view generation (if Ollama is configured)
-
-**Optional AI Configuration:**
-The AI View Generator supports multiple backends — configure your preferred option in the AI Settings dialog within Canvas UI:
-
-- **GitHub Copilot Proxy** - Use a self-hosted [copilot-proxy](https://github.com/nicholasgasior/copilot-proxy) with your GitHub Copilot token
-- **Open WebUI** - Connect to a running [Open WebUI](https://github.com/open-webui/open-webui) instance
-- **Ollama** - Connect to a local [Ollama](https://ollama.com/) instance accessible from Home Assistant
-
-Then restart Home Assistant for the changes to take effect.
+- Enable AI view generation (configure your preferred AI backend inside Canvas UI)
 
 ## 🚀 Quick Start
 
@@ -120,13 +114,6 @@ Then restart Home Assistant for the changes to take effect.
 4. **Configure**: Click any widget to edit properties in the Inspector panel
 5. **Bind Entities**: Use the entity picker to connect widgets to your HA entities
 6. **Preview**: Click the "View" mode to see your dashboard in action
-
-### Using AI View Generator
-
-1. Click the **AI** button in the toolbar
-2. Describe your desired dashboard (e.g., "Create a living room control panel with temperature, lights, and media controls")
-3. The AI will generate a complete view with configured widgets
-4. Customize as needed using the visual editor
 
 ## 📊 Available Widgets
 
@@ -181,6 +168,63 @@ Each widget has a comprehensive property inspector with:
 - **Behavior** - Entity bindings, actions, animations
 - **Advanced** - Conditional visibility, custom CSS
 
+## 🔗 Entity Binding System
+
+Widgets connect to Home Assistant entities in real time. Wherever you see an entity picker in the Inspector panel, simply search for and select any entity from your HA instance.
+
+- **Live updates** - Widget values refresh instantly as entity states change via WebSocket
+- **Two-way control** - Control widgets (buttons, sliders, switches, knobs) write back to HA via service calls, automatically detected from the entity's domain
+- **Unit conversion** - Value and gauge widgets can convert between units (e.g. °C → °F)
+- **State-based styling** - Icons, colors, and visibility can be driven by entity state (on/off, numeric thresholds, string values)
+- **Multiple entities** - Some widgets (e.g. graphs, weather) can bind to several entities simultaneously
+
+## ⚡ Flow System
+
+Canvas UI includes a built-in visual automation engine that runs entirely in the frontend — no HA automations required.
+
+Flows are built from three building blocks:
+
+- **Triggers** - What starts the flow: entity state changes, time schedules, widget events, or manual execution
+- **Conditions** - Optional logic gates (entity states, variable comparisons, time windows)
+- **Actions** - What happens: call HA services, set widget properties, update variables, or chain to another flow
+
+Flows are created and managed in the **Flow Editor** (toolbar → ⚡ icon). They run live in the browser and are stored as part of your Canvas UI configuration. Typical use-cases include:
+
+- Show a warning banner on the canvas when a door is left open
+- Automatically switch views on a kiosk display on a schedule
+- Update a text widget's content based on multiple entity states
+- Trigger a sequence of service calls from a single button press
+
+## 📦 Variable System
+
+Variables are canvas-scoped named values shared across all widgets and flows in a view session.
+
+- Set variables from flows (Set Variable action) or from widget bindings
+- Read variables in widget property fields using the variable picker
+- Useful for storing intermediate values, counters, selected items, or UI state that multiple widgets need to react to
+- Variables are in-memory per session — they reset on page reload (persistent variables can be stored via HA entities)
+
+## 🤖 AI View Generator
+
+Canvas UI includes a built-in AI assistant that can generate complete views from a natural language description.
+
+**How it works:**
+
+1. Click the **AI** button in the toolbar
+2. Describe your desired dashboard — include entities, layout preferences, and style (e.g. *"Create a bathroom control panel with lights, fan, and humidity sensor in a dark blue theme"*)
+3. The AI generates a full JSON view definition with placed and configured widgets
+4. Review and accept the result — the view appears on your canvas ready to fine-tune
+
+**Supported AI backends** (configured in AI Settings within Canvas UI):
+
+- **GitHub Copilot Proxy** - Use a self-hosted [copilot-proxy](https://github.com/nicholasgasior/copilot-proxy) with your GitHub Copilot subscription
+- **Open WebUI** - Connect to a running [Open WebUI](https://github.com/open-webui/open-webui) instance
+- **Ollama** - Connect to a local [Ollama](https://ollama.com/) instance
+- **Groq** - Use Groq's cloud API for fast inference
+- **OpenAI** - Use the OpenAI API directly
+
+All AI configuration is done inside Canvas UI — no changes to `configuration.yaml` needed.
+
 ## 🖥️ Kiosk Mode
 
 Access any view in fullscreen kiosk mode:
@@ -203,13 +247,7 @@ npm run build:hacs
 
 Output is in `canvas-ui-react/dist-hacs/` and automatically copied to `custom_components/canvas_ui/frontend/` by `./build.sh`.
 
-### Deploy to Home Assistant
-
-After building, copy the component to your HA server:
-
-```bash
-scp -r custom_components/canvas_ui/* user@ha-server:/config/custom_components/canvas_ui/
-```
+Then commit and push to GitHub, and reload via HACS.
 
 ## 📝 Configuration Storage
 
