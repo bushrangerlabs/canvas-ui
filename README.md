@@ -1,5 +1,7 @@
 # Canvas UI for Home Assistant
 
+****** THE REPO IS NOT CURRENTLY IN FULL WORKING STATE SO PLEASE DO NOT USE ******
+
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
 Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powerful React-based interface featuring 20+ widgets, AI-assisted view generation, and professional dashboard creation tools.
