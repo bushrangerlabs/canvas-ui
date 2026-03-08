@@ -35,8 +35,7 @@ Ask AI "Create a view with a calculator with a Jarvis from Ironman theme" and th
 
 Emded you favourite Lovalace cards but freely drag and locate them anywhere on the canvas (No Grid)
 
-
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2a8fd310-13d2-4262-bc36-cf74f145dd2d" />
 
 
 ## 📦 Installation
