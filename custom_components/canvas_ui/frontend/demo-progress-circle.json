@@ -1,0 +1,740 @@
+{
+  "version": "2.0.0",
+  "exportedAt": "2026-02-22T00:00:00.000Z",
+  "view": {
+    "id": "progress-circle-demo",
+    "name": "Progress Circle Demo",
+    "icon": "DonutLargeOutlined",
+    "backgroundColor": "#1a1a2e",
+    "widgets": [
+      {
+        "id": "title",
+        "type": "text",
+        "x": 20,
+        "y": 20,
+        "width": 760,
+        "height": 60,
+        "config": {
+          "text": "Progress Circle Widget - Complete Feature Demo",
+          "fontSize": 32,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "test-slider",
+        "type": "slider",
+        "x": 20,
+        "y": 100,
+        "width": 760,
+        "height": 80,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "label": "Test Value Control (0-100%)",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "showValue": true,
+          "color": "#4CAF50"
+        }
+      },
+      {
+        "id": "section1-title",
+        "type": "text",
+        "x": 20,
+        "y": 200,
+        "width": 760,
+        "height": 40,
+        "config": {
+          "text": "Basic Modes",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "color": "#4CAF50"
+        }
+      },
+      {
+        "id": "smooth-circle-label",
+        "type": "text",
+        "x": 20,
+        "y": 250,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Smooth Circle",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "smooth-circle",
+        "type": "progresscircle",
+        "x": 35,
+        "y": 285,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#2196F3",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 12,
+          "showValue": true,
+          "showLabel": false
+        }
+      },
+      {
+        "id": "segmented-label",
+        "type": "text",
+        "x": 220,
+        "y": 250,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Segmented (10 segments)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "segmented-circle",
+        "type": "progresscircle",
+        "x": 235,
+        "y": 285,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "segmented",
+          "segments": 10,
+          "color": "#FF9800",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 12,
+          "showValue": true,
+          "showLabel": false
+        }
+      },
+      {
+        "id": "segmented-20-label",
+        "type": "text",
+        "x": 420,
+        "y": 250,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Segmented (20 segments)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "segmented-20-circle",
+        "type": "progresscircle",
+        "x": 435,
+        "y": 285,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "segmented",
+          "segments": 20,
+          "color": "#9C27B0",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 10,
+          "showValue": true,
+          "showLabel": false
+        }
+      },
+      {
+        "id": "no-value-label",
+        "type": "text",
+        "x": 620,
+        "y": 250,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "No Center Value",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "no-value-circle",
+        "type": "progresscircle",
+        "x": 635,
+        "y": 285,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#E91E63",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 12,
+          "showValue": false,
+          "showLabel": false
+        }
+      },
+      {
+        "id": "section2-title",
+        "type": "text",
+        "x": 20,
+        "y": 460,
+        "width": 760,
+        "height": 40,
+        "config": {
+          "text": "Stroke Width Variations",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "color": "#4CAF50"
+        }
+      },
+      {
+        "id": "thin-label",
+        "type": "text",
+        "x": 20,
+        "y": 510,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Thin (6px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "thin-circle",
+        "type": "progresscircle",
+        "x": 35,
+        "y": 545,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#00BCD4",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 6,
+          "showValue": true
+        }
+      },
+      {
+        "id": "medium-label",
+        "type": "text",
+        "x": 220,
+        "y": 510,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Medium (12px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "medium-circle",
+        "type": "progresscircle",
+        "x": 235,
+        "y": 545,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#00BCD4",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+      {
+        "id": "thick-label",
+        "type": "text",
+        "x": 420,
+        "y": 510,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Thick (20px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "thick-circle",
+        "type": "progresscircle",
+        "x": 435,
+        "y": 545,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#00BCD4",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 20,
+          "showValue": true
+        }
+      },
+      {
+        "id": "extra-thick-label",
+        "type": "text",
+        "x": 620,
+        "y": 510,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Extra Thick (30px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "extra-thick-circle",
+        "type": "progresscircle",
+        "x": 635,
+        "y": 545,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#00BCD4",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 30,
+          "showValue": true
+        }
+      },
+      {
+        "id": "section3-title",
+        "type": "text",
+        "x": 20,
+        "y": 720,
+        "width": 760,
+        "height": 40,
+        "config": {
+          "text": "Color Combinations",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "color": "#4CAF50"
+        }
+      },
+      {
+        "id": "blue-label",
+        "type": "text",
+        "x": 20,
+        "y": 770,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Blue on Dark",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "blue-circle",
+        "type": "progresscircle",
+        "x": 35,
+        "y": 805,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#2196F3",
+          "backgroundColor": "rgba(33, 150, 243, 0.2)",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+      {
+        "id": "green-label",
+        "type": "text",
+        "x": 220,
+        "y": 770,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Green Gradient",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "green-circle",
+        "type": "progresscircle",
+        "x": 235,
+        "y": 805,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#4CAF50",
+          "backgroundColor": "rgba(76, 175, 80, 0.2)",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+      {
+        "id": "red-label",
+        "type": "text",
+        "x": 420,
+        "y": 770,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Red Warning",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "red-circle",
+        "type": "progresscircle",
+        "x": 435,
+        "y": 805,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#F44336",
+          "backgroundColor": "rgba(244, 67, 54, 0.2)",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+      {
+        "id": "rainbow-label",
+        "type": "text",
+        "x": 620,
+        "y": 770,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Purple Accent",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "rainbow-circle",
+        "type": "progresscircle",
+        "x": 635,
+        "y": 805,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#9C27B0",
+          "backgroundColor": "rgba(156, 39, 176, 0.2)",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+      {
+        "id": "section4-title",
+        "type": "text",
+        "x": 20,
+        "y": 980,
+        "width": 760,
+        "height": 40,
+        "config": {
+          "text": "Size Variations",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "color": "#4CAF50"
+        }
+      },
+      {
+        "id": "tiny-label",
+        "type": "text",
+        "x": 20,
+        "y": 1030,
+        "width": 100,
+        "height": 30,
+        "config": {
+          "text": "Tiny (80px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "tiny-circle",
+        "type": "progresscircle",
+        "x": 30,
+        "y": 1065,
+        "width": 80,
+        "height": 80,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#FF5722",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 8,
+          "showValue": true
+        }
+      },
+      {
+        "id": "small-label",
+        "type": "text",
+        "x": 140,
+        "y": 1030,
+        "width": 120,
+        "height": 30,
+        "config": {
+          "text": "Small (120px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "small-circle",
+        "type": "progresscircle",
+        "x": 150,
+        "y": 1065,
+        "width": 100,
+        "height": 100,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#FF5722",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 10,
+          "showValue": true
+        }
+      },
+      {
+        "id": "large-label",
+        "type": "text",
+        "x": 320,
+        "y": 1030,
+        "width": 160,
+        "height": 30,
+        "config": {
+          "text": "Large (180px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "large-circle",
+        "type": "progresscircle",
+        "x": 330,
+        "y": 1065,
+        "width": 140,
+        "height": 140,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#FF5722",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+      {
+        "id": "xlarge-label",
+        "type": "text",
+        "x": 520,
+        "y": 1030,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Extra Large (220px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "xlarge-circle",
+        "type": "progresscircle",
+        "x": 540,
+        "y": 1065,
+        "width": 160,
+        "height": 160,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#FF5722",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "strokeWidth": 14,
+          "showValue": true
+        }
+      },
+      {
+        "id": "section5-title",
+        "type": "text",
+        "x": 20,
+        "y": 1250,
+        "width": 760,
+        "height": 40,
+        "config": {
+          "text": "Advanced Combinations",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "color": "#4CAF50"
+        }
+      },
+      {
+        "id": "combo1-label",
+        "type": "text",
+        "x": 20,
+        "y": 1300,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Segmented + Thick",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "combo1-circle",
+        "type": "progresscircle",
+        "x": 35,
+        "y": 1335,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "segmented",
+          "segments": 12,
+          "color": "#FFC107",
+          "backgroundColor": "rgba(255, 193, 7, 0.15)",
+          "strokeWidth": 25,
+          "showValue": true
+        }
+      },
+      {
+        "id": "combo2-label",
+        "type": "text",
+        "x": 220,
+        "y": 1300,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Smooth + Thin + No BG",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "combo2-circle",
+        "type": "progresscircle",
+        "x": 235,
+        "y": 1335,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#00E676",
+          "backgroundColor": "transparent",
+          "strokeWidth": 4,
+          "showValue": true
+        }
+      },
+      {
+        "id": "combo3-label",
+        "type": "text",
+        "x": 420,
+        "y": 1300,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Many Segments",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "combo3-circle",
+        "type": "progresscircle",
+        "x": 435,
+        "y": 1335,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "segmented",
+          "segments": 50,
+          "color": "#FF1744",
+          "backgroundColor": "rgba(255, 23, 68, 0.1)",
+          "strokeWidth": 8,
+          "showValue": true
+        }
+      },
+      {
+        "id": "combo4-label",
+        "type": "text",
+        "x": 620,
+        "y": 1300,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Minimal Style",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "combo4-circle",
+        "type": "progresscircle",
+        "x": 635,
+        "y": 1335,
+        "width": 150,
+        "height": 150,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "mode": "circle",
+          "color": "#ffffff",
+          "backgroundColor": "rgba(255, 255, 255, 0.05)",
+          "strokeWidth": 3,
+          "showValue": true
+        }
+      },
+      {
+        "id": "instructions",
+        "type": "text",
+        "x": 20,
+        "y": 1510,
+        "width": 760,
+        "height": 80,
+        "config": {
+          "text": "💡 Use the slider at the top to change all circles simultaneously\n📊 Each circle demonstrates different configuration options\n🎨 Test different colors, modes, and stroke widths",
+          "fontSize": 14,
+          "color": "#888888",
+          "textAlign": "center"
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "widgetCount": 48,
+    "exportedFrom": "canvas-ui-demo"
+  }
+}
