@@ -1,5 +1,3 @@
-
-
 **\*\*** THE REPO IS NOT CURRENTLY IN FULL WORKING STATE SO PLEASE DO NOT USE **\*\***
 
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
@@ -9,7 +7,7 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 ## ✨ Features
 
 - 🎨 **Visual Drag-and-Drop Editor** - Intuitive canvas-based layout system
-- 🧩 **20+ Professional Widgets** - Buttons, gauges, sliders, charts, weather, and more
+- 🧩 **25+ Professional Widgets** - Buttons, gauges, sliders, charts, weather, and more
 - 🤖 **AI View Generator** - Create entire dashboards from natural language prompts
 - 📱 **Kiosk Mode** - Full-screen display mode for wall panels and tablets
 - 🎯 **Precision Tools** - Alignment, grouping, grid snapping, and guides
@@ -17,9 +15,6 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 - 🎭 **Custom Icons** - 17,000+ icons from MDI, Font Awesome, and more
 - 💾 **View Management** - Export/import views as JSON for backup and sharing
 - 🎛️ **Inspector Panel** - Comprehensive property editing with live preview
-
-
-
 
 ## 📦 Installation
 
@@ -46,7 +41,7 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 1. **Download the repository**:
 
    ```bash
-   git clone https://github.com/spetchal/canvas-ui.git
+   git clone https://github.com/bushrangerlabs/canvas-ui.git
    cd canvas-ui
    ```
 
@@ -60,15 +55,9 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
    cp -r www/canvas-ui /path/to/ha/config/www/
    ```
 
-3. **Or use the installation script**:
+3. **Restart Home Assistant**
 
-   ```bash
-   ./install.sh /path/to/ha/config
-   ```
-
-4. **Restart Home Assistant**
-
-5. Canvas UI will appear in your sidebar
+4. Canvas UI will appear in your sidebar
 
 ### Building from Source
 
@@ -100,7 +89,11 @@ That's it! The integration will automatically:
 - Enable AI view generation (if Ollama is configured)
 
 **Optional AI Configuration:**
-If you want to use the AI View Generator, ensure you have Ollama running and accessible from Home Assistant.
+The AI View Generator supports multiple backends — configure your preferred option in the AI Settings dialog within Canvas UI:
+
+- **GitHub Copilot Proxy** - Use a self-hosted [copilot-proxy](https://github.com/nicholasgasior/copilot-proxy) with your GitHub Copilot token
+- **Open WebUI** - Connect to a running [Open WebUI](https://github.com/open-webui/open-webui) instance
+- **Ollama** - Connect to a local [Ollama](https://ollama.com/) instance accessible from Home Assistant
 
 Then restart Home Assistant for the changes to take effect.
 
@@ -239,7 +232,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/spetchal/canvas-ui/issues)
+- **Issues**: [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/spetchal/canvas-ui/discussions)
 
 ---
