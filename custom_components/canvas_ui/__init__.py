@@ -28,27 +28,14 @@ _STATIC_REGISTERED = False
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Canvas UI integration from YAML config."""
-    import sys
-
-    print(
-        "*** CANVAS UI DEBUG: __init__.py async_setup() called",
-        file=sys.stderr,
-        flush=True,
-    )
-    _LOGGER.info("🎨 Canvas UI v2.0.0 YAML setup")
+    _LOGGER.info("🎨 Canvas UI v0.5.0b1 YAML setup")
 
     # Store domain data
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
 
     # Register services (ALWAYS register services in async_setup)
-    print(
-        "*** CANVAS UI DEBUG: About to call setup_services()",
-        file=sys.stderr,
-        flush=True,
-    )
     setup_services(hass)
-    print("*** CANVAS UI DEBUG: setup_services() returned", file=sys.stderr, flush=True)
 
     # Register Ollama API proxy
     setup_ollama_proxy(hass)
@@ -60,18 +47,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     await _register_panel(hass)
 
     # Auto-create config entry if none exists (for config_flow integrations)
-    print(
-        "*** CANVAS UI DEBUG: Checking for existing config entries",
-        file=sys.stderr,
-        flush=True,
-    )
     existing_entries = hass.config_entries.async_entries(DOMAIN)
     if not existing_entries:
-        print(
-            "*** CANVAS UI DEBUG: No config entry found, creating default entry",
-            file=sys.stderr,
-            flush=True,
-        )
+        _LOGGER.debug("No config entry found, creating default entry")
         hass.async_create_task(
             hass.config_entries.flow.async_init(
                 DOMAIN,
@@ -79,32 +57,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 data={},
             )
         )
-    else:
-        print(
-            f"*** CANVAS UI DEBUG: Found {len(existing_entries)} existing entries",
-            file=sys.stderr,
-            flush=True,
-        )
 
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Canvas UI from a config entry."""
-    import sys
+    _LOGGER.info(f"🎨 Canvas UI v0.5.0b1 Setting up: {entry.title}")
 
-    print(
-        "*** CANVAS UI DEBUG: async_setup_entry() called", file=sys.stderr, flush=True
-    )
-
-    _LOGGER.info(f"🎨 Canvas UI v2.0.0 Setting up: {entry.title}")
-
-    # Register services (CRITICAL - was missing!)
-    print("*** CANVAS UI DEBUG: Calling setup_services()", file=sys.stderr, flush=True)
+    # Register services
     setup_services(hass)
-    print(
-        "*** CANVAS UI DEBUG: setup_services() completed", file=sys.stderr, flush=True
-    )
 
     # Register Ollama API proxy
     setup_ollama_proxy(hass)
