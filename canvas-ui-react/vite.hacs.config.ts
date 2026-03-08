@@ -2,8 +2,8 @@
  * Vite build config for HACS distribution.
  *
  * Differences from the default vite.config.ts:
- *  - base: '/canvas-ui/'  → served via hass.http.register_static_path()
- *  - publicDir: 'public-hacs'  → panel JS files that fetch /canvas-ui/ paths
+ *  - base: '/canvas-ui-static/'  → served via hass.http.register_static_path()
+ *  - publicDir: 'public-hacs'  → panel JS files that fetch /canvas-ui-static/ paths
  *  - outDir: 'dist-hacs'  → separate output so personal-HA build stays in dist/
  *
  * Usage:
@@ -15,7 +15,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/local/canvas-ui/',
+  base: '/canvas-ui-static/',
   publicDir: 'public-hacs',
 
   build: {
