@@ -336,13 +336,23 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
         // Direct card creation (now that we're in same document context as HA)
         let cardElement: any;
         
-        // Wait for window.hass to be available with states
+        // Wait for hass to be available with states
+        // Prefer window.parent.hass (full HA object with localize, themes, callService, etc.)
+        // Fall back to window.hass (Canvas UI's partial object - only has states)
+        const getFullHass = () => {
+          const parentHass = (window.parent !== window.self) ? (window.parent as any).hass : null;
+          const windowHass = (window as any).hass;
+          return (parentHass?.states && Object.keys(parentHass.states).length > 0)
+            ? parentHass
+            : windowHass;
+        };
+
         const waitForHass = () => {
           return new Promise<any>((resolve) => {
             const checkHass = () => {
-              const windowHass = (window as any).hass;
-              if (windowHass && windowHass.states && Object.keys(windowHass.states).length > 0) {
-                resolve(windowHass);
+              const hass = getFullHass();
+              if (hass && hass.states && Object.keys(hass.states).length > 0) {
+                resolve(hass);
               } else {
                 setTimeout(checkHass, 100);
               }
@@ -351,7 +361,7 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
           });
         };
 
-        const windowHass = await waitForHass();
+        const initialHass = await waitForHass();
         
         console.log('[LovelaceCardWidget] Creating card:', {
           cardType: resolvedType,
@@ -385,12 +395,12 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
           }
         }
 
-        // Set initial hass from window (not WebSocketProvider - needs full HA object)
+        // Set initial hass - use full HA hass (has localize, themes, callService, etc.)
         // IMPORTANT: Only set hass if states object exists to prevent undefined errors
-        if (windowHass.states && typeof windowHass.states === 'object') {
-          cardElement.hass = windowHass;
+        if (initialHass.states && typeof initialHass.states === 'object') {
+          cardElement.hass = initialHass;
         } else {
-          console.warn('[LovelaceCardWidget] windowHass.states is undefined, waiting...');
+          console.warn('[LovelaceCardWidget] initialHass.states is undefined, waiting...');
         }
         
         // Wait for element to be ready, then set config
@@ -446,7 +456,8 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
       cardElementRef.current = null;
     };
   }, [
-    hass, 
+    // NOTE: 'hass' intentionally excluded - the 1s interval keeps card hass current.
+    // Including hass here would recreate the card on every entity state change.
     config.config.cardType, 
     config.config.cardConfig, 
     config.config.cardModYaml,
@@ -469,10 +480,16 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
   // Continuously update hass object (like old Canvas UI updateHass method)
   useEffect(() => {
     const updateInterval = setInterval(() => {
+      // Prefer window.parent.hass (full HA object with localize, themes, etc.)
+      // Fall back to window.hass (Canvas UI's partial object)
+      const parentHass = (window.parent !== window.self) ? (window.parent as any).hass : null;
       const windowHass = (window as any).hass;
-      // Only update if cardElement exists, windowHass exists, and states is a valid object
-      if (cardElementRef.current && windowHass && windowHass.states && typeof windowHass.states === 'object') {
-        (cardElementRef.current as any).hass = windowHass;
+      const hass = (parentHass?.states && typeof parentHass.states === 'object')
+        ? parentHass
+        : windowHass;
+      // Only update if cardElement exists and hass has a valid states object
+      if (cardElementRef.current && hass && hass.states && typeof hass.states === 'object') {
+        (cardElementRef.current as any).hass = hass;
       }
     }, 1000); // Update every second
 

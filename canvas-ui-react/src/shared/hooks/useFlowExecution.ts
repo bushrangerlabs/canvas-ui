@@ -139,7 +139,6 @@ export function useFlowExecution() {
     
     console.log('[useFlowExecution] Updating widgets, total:', Object.keys(widgetRecord).length);
     // console.log('[useFlowExecution] Widget IDs:', Object.keys(widgetRecord).filter(k => k.startsWith('widget-')));
-    console.log('[useFlowExecution] Looking for widget-1771250855275:', widgetRecord['widget-1771250855275'] ? 'FOUND' : 'NOT FOUND');
     
     manager.updateWidgets(widgetRecord);
   }, [config?.views]);
