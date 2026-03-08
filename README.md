@@ -1,3 +1,9 @@
+> [!CAUTION]
+> **This repository is under active development and not yet ready for general use.** Features may be incomplete or change without notice. Please check back soon for the first stable release.
+
+> [!WARNING]
+> **Canvas UI v0.5.0b1 is a public beta.** While it is designed to be non-destructive and will not modify your existing Home Assistant configuration or dashboards, you should exercise caution. Install on a test instance first if possible. Please report any issues on [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues).
+
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
 Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powerful React-based interface featuring 27 widgets, AI-assisted view generation, and professional dashboard creation tools.
