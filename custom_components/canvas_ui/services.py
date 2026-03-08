@@ -106,6 +106,14 @@ CACHE_ICON_SCHEMA = vol.Schema(
 def setup_services(hass: HomeAssistant) -> None:
     """Register Canvas UI services."""
 
+    import sys
+
+    print(
+        "*** CANVAS UI DEBUG: setup_services() called - registering all services",
+        file=sys.stderr,
+        flush=True,
+    )
+
     async def handle_write_file(call: ServiceCall) -> None:
         """Handle write_file service call."""
         filepath = call.data["path"]
@@ -240,6 +248,15 @@ def setup_services(hass: HomeAssistant) -> None:
         recursive = call.data.get("recursive", False)
         file_filter = call.data.get("file_filter")
 
+        # Force output to stderr
+        import sys
+
+        print(
+            f"*** CANVAS UI DEBUG: list_files_op called with path={path}, recursive={recursive}, file_filter={file_filter}",
+            file=sys.stderr,
+            flush=True,
+        )
+
         _LOGGER.info(
             f"[Canvas UI] list_files_op called with path={path}, recursive={recursive}, file_filter={file_filter}"
         )
@@ -252,12 +269,28 @@ def setup_services(hass: HomeAssistant) -> None:
             # list_files_op now returns a dict with {files, path, parent, count}
             files = result.get("files", [])
 
+            print(
+                f"*** CANVAS UI DEBUG: list_files_op got {len(files)} files, returning them",
+                file=sys.stderr,
+                flush=True,
+            )
+            print(
+                f"*** CANVAS UI DEBUG: First 3 files: {files[:3]}",
+                file=sys.stderr,
+                flush=True,
+            )
+
             _LOGGER.info(
                 f"[Canvas UI] list_files_op returned {len(files)} files from: {path}"
             )
             return result  # Return the full dict with files, path, parent, count
 
         except Exception as error:
+            print(
+                f"*** CANVAS UI DEBUG: Exception in list_files_op: {error}",
+                file=sys.stderr,
+                flush=True,
+            )
             _LOGGER.error(f"Failed to list files: {error}", exc_info=True)
             return {"files": [], "error": str(error)}
 
@@ -430,12 +463,26 @@ def setup_services(hass: HomeAssistant) -> None:
     )
 
     # Register new file operation services
+    import sys
+
+    print(
+        "*** CANVAS UI DEBUG: About to register list_files_op service",
+        file=sys.stderr,
+        flush=True,
+    )
+
     hass.services.async_register(
         DOMAIN,
         "list_files_op",
         handle_list_files_op,
         schema=LIST_FILES_OP_SCHEMA,
         supports_response=SupportsResponse.ONLY,
+    )
+
+    print(
+        "*** CANVAS UI DEBUG: list_files_op service registered successfully",
+        file=sys.stderr,
+        flush=True,
     )
 
     hass.services.async_register(

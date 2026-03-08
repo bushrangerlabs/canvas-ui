@@ -1,0 +1,771 @@
+/**
+ * ConversationService - HA AI Integration
+ * Phase 1B: Widget generation with Canvas API
+ * Phase 4.5: Multi-model optimization routing
+ * 
+ * Provides AI chat with widget creation capabilities
+ * Routes tasks to specialized models (planning/code/refinement)
+ */
+
+import type { OllamaConfig } from '../../edit/components/OllamaConfigDialog';
+import type { HassConnection } from '../../shared/types';
+import { CodeExecutor } from './CodeExecutor';
+
+/**
+ * AI Agent from HA
+ */
+export interface ConversationAgent {
+  id: string;
+  name: string;
+  supported_languages?: string[];
+}
+
+/**
+ * Chat message
+ */
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  isCode?: boolean; // Whether message contains executable code
+}
+
+/**
+ * AI Response with metadata
+ */
+export interface AIResponse {
+  text: string;
+  conversationId?: string;
+  hasCode: boolean;
+  code?: string;
+}
+
+/**
+ * Helper: Format widget list for AI context
+ */
+function formatWidgetList(canvasState: any): string {
+  if (!canvasState?.widgets || canvasState.widgets.length === 0) {
+    return 'No widgets';
+  }
+  
+  return canvasState.widgets
+    .slice(0, 20) // Show first 20 widgets
+    .map((w: any) => `- ${w.type || 'unknown'} (ID: ${w.id || 'unknown'})`)
+    .join('\n') + (canvasState.widgets.length > 20 ? `\n... and ${canvasState.widgets.length - 20} more` : '');
+}
+
+/**
+ * Conversation Service
+ */
+export class ConversationService {
+  private hass: HassConnection;
+  private conversationHistory: ChatMessage[] = [];
+  private lastCanvasState: any = null;
+  private selectedEntities: string[] = []; // Phase 4.0: User-curated entity selection
+  private config: OllamaConfig | null = null; // Phase 4.5: Multi-model config
+
+  constructor(hass: HassConnection) {
+    this.hass = hass;
+    this.loadConfig(); // Load saved config on init
+  }
+
+  /**
+   * Load OllamaConfig from localStorage (Phase 4.5)
+   */
+  private loadConfig(): void {
+    try {
+      const saved = localStorage.getItem('canvasui_ollama_config');
+      if (saved) {
+        this.config = JSON.parse(saved);
+        console.log('[ConversationService] Loaded multi-model config:', this.config?.strategy);
+      }
+    } catch (error) {
+      console.error('[ConversationService] Failed to load config:', error);
+    }
+  }
+
+  /**
+   * Save OllamaConfig to localStorage (Phase 4.5)
+   */
+  setConfig(config: OllamaConfig): void {
+    this.config = config;
+    try {
+      localStorage.setItem('canvasui_ollama_config', JSON.stringify(config));
+      console.log('[ConversationService] Saved multi-model config:', config.strategy);
+    } catch (error) {
+      console.error('[ConversationService] Failed to save config:', error);
+    }
+  }
+
+  /**
+   * Get current OllamaConfig (Phase 4.5)
+   */
+  getConfig(): OllamaConfig | null {
+    return this.config;
+  }
+
+  /**
+   * Update canvas state (call after each execution)
+   */
+  updateCanvasState(state: any): void {
+    this.lastCanvasState = state;
+  }
+
+  /**
+   * Check if conversation has history
+   */
+  hasHistory(): boolean {
+    return this.conversationHistory.length > 0;
+  }
+
+  /**
+   * Get conversation history messages
+   */
+  getMessages(): ChatMessage[] {
+    return [...this.conversationHistory]; // Return copy to prevent external mutation
+  }
+
+  /**
+   * Get selected entities (Phase 4.0)
+   */
+  getSelectedEntities(): string[] {
+    return [...this.selectedEntities]; // Return copy to prevent external mutation
+  }
+
+  /**
+   * Set selected entities (Phase 4.0)
+   */
+  setSelectedEntities(entityIds: string[]): void {
+    this.selectedEntities = [...entityIds]; // Store copy
+    console.log(`[ConversationService] Selected entities updated: ${entityIds.length} entities`);
+  }
+
+  /**
+   * Clear conversation history (start fresh)
+   * Note: Also clears selected entities - use clearHistoryOnly() to preserve entities
+   */
+  clearHistory(): void {
+    this.conversationHistory = [];
+    this.lastCanvasState = null;
+    this.selectedEntities = []; // Phase 4.0: Clear entity selection with conversation
+    console.log('[ConversationService] Conversation history cleared (including selected entities)');
+  }
+
+  /**
+   * Clear only conversation history, preserve selected entities (Phase 4.0)
+   * Used by auto-clear on blank canvas - user explicitly selected entities, keep them
+   */
+  clearHistoryOnly(): void {
+    this.conversationHistory = [];
+    this.lastCanvasState = null;
+    // DO NOT clear selectedEntities - user explicitly selected them
+    console.log('[ConversationService] Conversation history cleared (entities preserved)');
+  }
+
+  /**
+   * Send WebSocket message with custom timeout
+   * Default HA timeout is 5 seconds, but AI can take much longer
+   */
+  private async sendMessageWithTimeout(message: any, timeoutMs: number): Promise<any> {
+    if (!this.hass.sendMessage) {
+      throw new Error('WebSocket sendMessage not available');
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`AI request timed out after ${timeoutMs / 1000}s. Try a simpler prompt or check if your AI service is running.`));
+      }, timeoutMs);
+
+      this.hass.sendMessage!(message)
+        .then((response) => {
+          clearTimeout(timeoutId);
+          resolve(response);
+        })
+        .catch((error) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        });
+    });
+  }
+
+  /**
+   * Get all available AI agents from Home Assistant
+   * Uses conversation/agent/list WebSocket command
+   */
+  async getAvailableAgents(): Promise<ConversationAgent[]> {
+    try {
+      // Use sendMessage if available, otherwise fallback to callService
+      if (this.hass.sendMessage) {
+        console.log('Fetching AI agents via WebSocket...');
+        const response = await this.hass.sendMessage({
+          type: 'conversation/agent/list',
+        }) as any;
+        
+        console.log('Agent list response:', response);
+        console.log('Response keys:', response ? Object.keys(response) : 'null');
+        
+        // Parse nested result structure
+        const agents = response?.result?.agents || response?.agents;
+        
+        if (agents && Array.isArray(agents) && agents.length > 0) {
+          console.log('Found agents:', agents);
+          return agents;
+        }
+        
+        // Log full result to debug
+        console.log('Full response.result:', response?.result);
+        
+        // If no agents found, return empty array - don't use fake default
+        console.warn('No AI agents configured in Home Assistant');
+        return [];
+      } else {
+        // Fallback: Not ideal but will work
+        console.warn('sendMessage not available, AI features may not work correctly');
+        return [];
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI agents:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Stage 1: Interpret user intent with canvas context
+   * Uses fast refinement model (Phi3) to understand what user wants
+   * Fallback to planning model (Llama3) if refinement model fails
+   * 
+   * Phase 4.6: Three-stage universal pipeline
+   * 
+   * @param text - Raw user message
+   * @param canvasState - Current canvas state (widgets, layout, etc.)
+   * @param conversationId - Optional conversation ID for context
+   * @returns Plain text interpretation of user intent
+   */
+  private async interpretIntent(
+    text: string,
+    canvasState: any,
+    conversationId?: string
+  ): Promise<string> {
+    const contextPrompt = canvasState?.isEmpty 
+      ? 'The canvas is currently blank (no widgets).'
+      : `The canvas currently has ${canvasState?.widgetCount || 0} widgets:\n${formatWidgetList(canvasState)}`;
+    
+    const prompt = `
+Analyze this user request and describe what they want to accomplish.
+
+${contextPrompt}
+
+User request: "${text}"
+
+Respond with a clear description of the user's intent. Consider:
+- Does the user want to create new content (replacing existing)?
+- Does the user want to modify existing content (update properties)?
+- Does the user want to add to existing content (keep and extend)?
+
+Describe in plain text what the user wants to accomplish.
+    `;
+    
+    const refinementAgent = this.selectModelForTask('refinement');
+    console.log(`[AI] Stage 1 - Intent understanding with ${refinementAgent || 'default agent'}`);
+    
+    try {
+      const response = await this.callAI(prompt, refinementAgent, conversationId, 30000);
+      return response.text;
+    } catch (error) {
+      // Fallback to planning model if refinement model fails
+      console.warn('[AI] Stage 1 failed with refinement model, retrying with planning model');
+      const planningAgent = this.selectModelForTask('planning');
+      const retryResponse = await this.callAI(prompt, planningAgent, conversationId, 60000);
+      return retryResponse.text;
+    }
+  }
+
+  /**
+   * Stage 2: Create detailed action plan
+   * Uses smart planning model (Llama3) to decide HOW to accomplish intent
+   * 
+   * Phase 4.6: Three-stage universal pipeline
+   * 
+   * @param interpretation - Plain text interpretation from Stage 1
+   * @param canvasState - Current canvas state
+   * @param conversationId - Optional conversation ID for context
+   * @returns Detailed plan (what to delete, create, arrange)
+   */
+  private async createPlan(
+    interpretation: string,
+    canvasState: any,
+    conversationId?: string
+  ): Promise<string> {
+    const widgetTypesDoc = this.getAvailableWidgetTypes();
+    
+    const entitiesDoc = this.selectedEntities.length > 0
+      ? `\n\nAvailable entities:\n${this.selectedEntities.join('\n')}`
+      : '\n\nNo entities selected (layout-only generation).';
+    
+    const canvasDoc = canvasState?.isEmpty
+      ? 'Canvas is blank - you can create a fresh design.'
+      : `Current canvas widgets:\n${formatWidgetList(canvasState)}`;
+    
+    const prompt = `
+${CodeExecutor.getAPIDocumentation()}
+
+AVAILABLE WIDGET TYPES:
+${widgetTypesDoc}
+${entitiesDoc}
+
+CURRENT CANVAS STATE:
+${canvasDoc}
+
+USER INTENT (from Stage 1):
+${interpretation}
+
+Create a CONCISE plan for accomplishing the user's intent. Be brief and specific:
+
+1. **Widgets to Delete** (if replacing existing design):
+   - List widget IDs to delete (just the IDs, nothing else)
+   
+2. **Widgets to Create**:
+   - Widget type and count (e.g., "12 button widgets for keypad")
+   - Brief purpose (1 sentence max per widget type)
+   
+3. **Layout**:
+   - Simple arrangement description (e.g., "3x4 grid" or "vertical stack")
+   - Approximate sizes (e.g., "70x70 for buttons, 300x100 for display")
+
+Keep your response SHORT and FOCUSED. Stage 3 will implement the details.
+
+Respond with ONLY your plan in plain text (no code).
+    `;
+    
+    const planningAgent = this.selectModelForTask('planning');
+    console.log(`[AI] Stage 2 - Strategic planning with ${planningAgent || 'default agent'}`);
+    
+    const response = await this.callAI(prompt, planningAgent, conversationId, 60000);
+    return response.text;
+  }
+
+  /**
+   * Stage 3: Generate executable JavaScript
+   * Uses specialized code model (CodeLlama) to implement plan
+   * 
+   * Phase 4.6: Three-stage universal pipeline
+   * 
+   * @param plan - Detailed plan from Stage 2
+   * @param conversationId - Optional conversation ID for context
+   * @returns Executable JavaScript using canvasAPI
+   */
+  private async generateCodeFromPlan(
+    plan: string,
+    conversationId?: string
+  ): Promise<string> {
+    const prompt = `
+${CodeExecutor.getAPIDocumentation()}
+
+${this.getCriticalCodeRules()}
+
+PLAN TO IMPLEMENT:
+${plan}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  CRITICAL: YOU MUST GENERATE JAVASCRIPT CODE (NOT PYTHON!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LANGUAGE REQUIREMENTS:
+- JAVASCRIPT ONLY (not Python, not TypeScript, not any other language)
+- NO import statements (import is not JavaScript browser syntax)
+- NO require() statements
+- NO Python-style imports like "import canvasapi as capi"
+- NO Python datetime or other Python libraries
+- Use JavaScript const/let for variables
+- Use JavaScript arrow functions or function keyword
+
+CODE REQUIREMENTS:
+- NO planning text or explanations
+- NO comments explaining your code  
+- NO markers like [Generated code], [CurState], [PYTHON CODE], etc.
+- NO placeholders like [...] or ... - generate COMPLETE code
+- ONLY use these methods: canvasAPI.addWidget(), canvasAPI.updateWidget(), canvasAPI.deleteWidget(), canvasAPI.gridLayout()
+
+OUTPUT FORMAT (MUST be wrapped in \`\`\`javascript fence):
+\`\`\`javascript
+canvasAPI.deleteWidget('widget-1');
+const btn1 = canvasAPI.addWidget('button', {
+  label: '1',
+  backgroundColor: '#4a5568'
+}, { x: 10, y: 10, width: 70, height: 70 });
+const btn2 = canvasAPI.addWidget('button', {
+  label: '2',
+  backgroundColor: '#4a5568'
+}, { x: 10, y: 10, width: 70, height: 70 });
+canvasAPI.gridLayout([btn1, btn2], 2, 20, 10, 10);
+\`\`\`
+
+REMEMBER: JAVASCRIPT ONLY! Use const, not import!
+    `;
+    
+    const codeAgent = this.selectModelForTask('code');
+    console.log(`[AI] Stage 3 - Code generation with ${codeAgent || 'default agent'}`);
+    
+    // Use 180s timeout for code generation (complex plans need more time)
+    const response = await this.callAI(prompt, codeAgent, conversationId, 180000);
+    return this.extractCode(response.text) || '';
+  }
+
+  /**
+   * Get critical code generation rules
+   * Enhanced instructions from Phase 3.6
+   */
+  private getCriticalCodeRules(): string {
+    return `
+⚠️ CRITICAL CODE GENERATION RULES:
+
+1. Output ONLY executable JavaScript code
+2. NO text like [Generated code], [CurState], [Plan], etc.
+3. NO comments explaining what you're doing
+4. Use ONLY these methods:
+   - canvasAPI.addWidget(type, config, position)
+   - canvasAPI.updateWidget(id, config)
+   - canvasAPI.deleteWidget(id)
+   - canvasAPI.gridLayout(widgetIds, columns, rowSpacing, colSpacing)
+
+5. When replacing widgets:
+   - ALWAYS delete old widgets FIRST
+   - Then create new widgets
+   - Example: canvasAPI.deleteWidget('widget-1'); canvasAPI.addWidget(...);
+
+6. Wrap ALL code in \`\`\`javascript blocks
+    `;
+  }
+
+  /**
+   * Get available widget types for AI context
+   */
+  private getAvailableWidgetTypes(): string {
+    return `
+- button: Interactive button with actions
+- text: Static or entity text display
+- gauge: Radial/semicircle/grafana gauge
+- slider: Horizontal/vertical slider
+- switch: Toggle switch
+- image: Static or entity image
+- icon: Icon display with 17,000+ options
+- progressbar: Linear progress bar
+- progresscircle: Circular progress
+- inputtext: Text input field
+- flipclock: Animated flip clock
+- digitalclock: LED-style clock
+- knob: Rotary knob control
+- iframe: Embed external content
+- border: Decorative border
+- value: Display entity values
+- radiobutton: Radio button group
+- colorpicker: RGB/HSV color selection
+- weather: Weather display with forecast
+- lovelace: Native HA Lovelace cards
+    `;
+  }
+
+  /**
+   * Send a chat message to the AI agent
+   * Phase 4.6: Three-stage universal pipeline (ALWAYS runs):
+   * - Stage 1: Interpret intent (Phi3)
+   * - Stage 2: Create plan (Llama3)
+   * - Stage 3: Generate code (CodeLlama)
+   * 
+   * @param text - User's message
+   * @param agentId - AI agent to use (fallback if no multi-model config)
+   * @param conversationId - Optional conversation ID for context
+   * @returns AI's response with metadata
+   */
+  async sendMessage(
+    text: string,
+    _agentId?: string, // Kept for API compatibility, not used in three-stage pipeline
+    conversationId?: string
+  ): Promise<AIResponse> {
+    try {
+      // Add user message to history
+      this.conversationHistory.push({
+        role: 'user',
+        content: text,
+        timestamp: Date.now()
+      });
+
+      // THREE-STAGE UNIVERSAL PIPELINE (Phase 4.6)
+      // Always runs for EVERY request (no keyword matching)
+      console.log('[AI] Starting three-stage pipeline');
+      
+      // STAGE 1: Interpret user intent (Phi3 - fast)
+      const interpretation = await this.interpretIntent(
+        text,
+        this.lastCanvasState,
+        conversationId
+      );
+      console.log('[AI] Stage 1 complete - Intent:', interpretation.substring(0, 100) + '...');
+      
+      // STAGE 2: Create strategic plan (Llama3 - smart)
+      const plan = await this.createPlan(
+        interpretation,
+        this.lastCanvasState,
+        conversationId
+      );
+      console.log('[AI] Stage 2 complete - Plan:', plan.substring(0, 100) + '...');
+      
+      // STAGE 3: Generate executable code (CodeLlama - specialized)
+      const code = await this.generateCodeFromPlan(plan, conversationId);
+      console.log('[AI] Stage 3 complete - Code ready for execution');
+      
+      // Store combined response in history
+      const fullResponse = `${interpretation}\n\n${plan}`;
+      this.conversationHistory.push({
+        role: 'assistant',
+        content: fullResponse,
+        timestamp: Date.now(),
+        isCode: true
+      });
+      
+      return {
+        text: fullResponse,
+        code: code,
+        hasCode: true,
+        conversationId
+      };
+      
+    } catch (error: unknown) {
+      console.error('[AI] Three-stage pipeline failed:', error);
+      throw new Error((error as Error)?.message || 'Failed to process request');
+    }
+  }
+
+  /**
+   * Select model for task based on multi-model config (Phase 4.5)
+   * 
+   * @param task - Task type: 'planning', 'code', or 'refinement'
+   * @param fallbackAgent - User-selected agent from UI (fallback if no config)
+   * @returns Agent ID to use for this task
+   */
+  private selectModelForTask(
+    task: 'planning' | 'code' | 'refinement',
+    fallbackAgent?: string
+  ): string | undefined {
+    // No multi-model config: use fallback agent
+    if (!this.config || !this.config.useMultiModel) {
+      return fallbackAgent || this.config?.models.fallback;
+    }
+
+    // Select model based on strategy and task
+    switch (this.config.strategy) {
+      case 'triple':
+        // Use specialized model for each task
+        switch (task) {
+          case 'planning':
+            return this.config.models.planning || this.config.models.fallback;
+          case 'code':
+            return this.config.models.code || this.config.models.fallback;
+          case 'refinement':
+            return this.config.models.refinement || this.config.models.fallback;
+        }
+        break;
+
+      case 'dual':
+        // Use fast model for refinement, main model for planning/code
+        if (task === 'refinement') {
+          return this.config.models.refinement || this.config.models.fallback;
+        }
+        return this.config.models.planning || this.config.models.fallback;
+
+      case 'single':
+      case 'custom':
+      default:
+        // Single model for all tasks
+        return this.config.models.fallback;
+    }
+
+    return fallbackAgent || this.config.models.fallback;
+  }
+
+  /**
+   * Call AI with given prompt
+   * Uses longer timeout (60s default, 120s for code generation) since AI can be slow
+   */
+  private async callAI(
+    text: string,
+    agentId?: string,
+    conversationId?: string,
+    timeoutMs: number = 60000
+  ): Promise<AIResponse> {
+    try {
+      // Build service data - only include agent_id if provided
+      const serviceData: any = {
+        text: text,
+        language: 'en',
+      };
+      
+      if (agentId) {
+        serviceData.agent_id = agentId;
+      }
+      
+      if (conversationId) {
+        serviceData.conversation_id = conversationId;
+      }
+      
+      console.log('Sending message via WebSocket:', { text: text.substring(0, 200) + '...' });
+      
+      // Use raw WebSocket message (like getAvailableAgents)
+      // callService doesn't return the AI response, only context metadata
+      if (!this.hass.sendMessage) {
+        throw new Error('WebSocket sendMessage not available');
+      }
+      
+      // Wrap with custom timeout (configurable, default 60s)
+      const response = await this.sendMessageWithTimeout(
+        {
+          type: 'conversation/process',
+          ...serviceData,
+        },
+        timeoutMs
+      );
+      
+      console.log('Conversation response:', response);
+      
+      // Handle WebSocket wrapper structure
+      const result = (response as any)?.result || response;
+      
+      // Try multiple possible paths for the speech text
+      const speech = 
+        result?.response?.speech?.plain?.speech ||  // Standard HA path
+        result?.speech?.plain?.speech ||  // Direct speech
+        result?.text ||  // Simple text field
+        result?.message ||  // Message field
+        response?.response?.speech?.plain?.speech ||  // Top-level response
+        response?.text ||  // Top-level text
+        response?.message;  // Top-level message
+      
+      console.log('Extracted speech:', speech);
+      
+      if (!speech) {
+        console.warn('Could not extract speech. Full result:', JSON.stringify(result, null, 2));
+        throw new Error('No response from AI');
+      }
+
+      // Extract conversation ID for context
+      const newConversationId = result?.conversation_id || (response as any)?.conversation_id;
+
+      // Check if response contains code
+      const hasCode = /```(?:javascript|js)?\n[\s\S]*?\n```/.test(speech);
+      
+      // Extract and validate code if present
+      let extractedCode: string | undefined;
+      if (hasCode) {
+        extractedCode = this.extractCode(speech);
+        
+        // Validate extracted code syntax
+        if (extractedCode) {
+          // Check for Python code first
+          if (/\b(import|from|datetime|def |class |print\()/i.test(extractedCode)) {
+            console.error('[AI] ❌ Code is Python, not JavaScript');
+            console.error('[AI] Problematic code:', extractedCode.substring(0, 200));
+            throw new Error('AI generated Python code instead of JavaScript - must use JavaScript with const/let, not import statements');
+          }
+
+          // Check for placeholders (before syntax check)
+          if (/\[\.\.\.\]|\bfunction\s*\(\.\.\.\)|gridLayout\(\s*\[\.\.\.\]/.test(extractedCode)) {
+            console.error('[AI] ❌ Code contains placeholders ([...] or ...)');
+            console.error('[AI] Problematic code:', extractedCode);
+            throw new Error('AI generated incomplete code with placeholders like [...] or ... - code must be COMPLETE and executable');
+          }
+
+          try {
+            // Quick syntax check - try to parse as JavaScript
+            new Function(extractedCode);
+            console.log('[AI] ✅ Code syntax validation passed');
+          } catch (syntaxError) {
+            console.error('[AI] ❌ Invalid JavaScript syntax:', syntaxError);
+            console.error('[AI] Problematic code:', extractedCode);
+            throw new Error(`AI generated invalid JavaScript: ${(syntaxError as Error).message}`);
+          }
+        } else {
+          console.warn('[AI] Code block found but extraction failed (likely contains planning text)');
+          throw new Error('AI response contained code blocks but no clean executable code. The code may have planning comments like [Generated code] or [CurState] mixed in.');
+        }
+      }
+
+      return {
+        text: speech,
+        conversationId: newConversationId,
+        hasCode,
+        code: extractedCode,
+      };
+    } catch (error: unknown) {
+      console.error('Failed to send message to AI:', error);
+      throw new Error((error as Error)?.message || 'Failed to communicate with AI');
+    }
+  }
+
+  /**
+   * Extract code from markdown code blocks
+   */
+  private extractCode(text: string): string | undefined {
+    // Extract ALL code blocks, then find the best one
+    const codeBlockRegex = /```(?:javascript|js)?\n([\s\S]*?)\n```/g;
+    const matches = [...text.matchAll(codeBlockRegex)];
+    
+    if (matches.length === 0) {
+      return undefined;
+    }
+
+    // Find the cleanest code block (no planning markers, actual canvasAPI calls)
+    const cleanBlocks = matches
+      .map(match => match[1].trim())
+      .filter(code => {
+        // Filter out blocks with planning text markers
+        const hasPlanningMarkers = /\[Generated code\]|\[CurState\]|\[Plan extension\]|\[Updated code\]|\[INITIAL PLAN\]/i.test(code);
+        if (hasPlanningMarkers) {
+          console.warn('[extractCode] Skipping block with planning markers:', code.substring(0, 100));
+          return false;
+        }
+
+        // Filter out blocks with placeholder syntax like [...] or ...
+        const hasPlaceholders = /\[\.\.\.\]|\bfunction\s*\(\.\.\.\)|gridLayout\(\s*\[\.\.\.\]/.test(code);
+        if (hasPlaceholders) {
+          console.warn('[extractCode] Skipping block with placeholders ([...] or ...):', code.substring(0, 100));
+          return false;
+        }
+
+        // Filter out Python code (import, from, datetime, def, etc.)
+        const isPython = /\b(import|from|datetime|def |class |print\(|if __name__)/i.test(code);
+        if (isPython) {
+          console.warn('[extractCode] Skipping Python code block:', code.substring(0, 100));
+          return false;
+        }
+
+        // Must contain at least one canvasAPI call
+        const hasCanvasAPI = /canvasAPI\.(addWidget|updateWidget|deleteWidget|gridLayout)/.test(code);
+        if (!hasCanvasAPI) {
+          console.warn('[extractCode] Skipping block without canvasAPI calls:', code.substring(0, 100));
+          return false;
+        }
+
+        return true;
+      });
+
+    if (cleanBlocks.length === 0) {
+      console.error('[extractCode] No clean code blocks found. All blocks contained planning text or no canvasAPI calls.');
+      return undefined;
+    }
+
+    // Return the longest clean block (likely the most complete)
+    const bestBlock = cleanBlocks.reduce((longest, current) => 
+      current.length > longest.length ? current : longest
+    );
+
+    console.log(`[extractCode] Selected best block (${bestBlock.length} chars) from ${matches.length} total blocks`);
+    return bestBlock;
+  }
+
+  /**
+   * Extract conversation ID from response (for follow-up messages)
+   */
+  extractConversationId(response: unknown): string | undefined {
+    return (response as { conversation_id?: string })?.conversation_id;
+  }
+}

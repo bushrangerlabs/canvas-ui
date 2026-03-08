@@ -11,6 +11,19 @@ build/
 # Byte-compiled HA component cache
 custom_components/canvas_ui/__pycache__/
 
+# Node / NPM
+canvas-ui-react/node_modules/
+canvas-ui-react/package-lock.json
+canvas-ui-react/.npm/
+canvas-ui-react/.yarn/
+
+# Build outputs (rebuild from source)
+canvas-ui-react/dist/
+canvas-ui-react/dist-hacs/
+
+# Keep www/canvas-ui (needed for HACS installation)
+!www/canvas-ui/
+
 # OS
 .DS_Store
 Thumbs.db

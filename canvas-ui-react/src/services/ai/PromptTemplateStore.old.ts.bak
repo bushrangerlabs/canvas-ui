@@ -1,0 +1,933 @@
+/**
+ * Prompt Template Store
+ * 
+ * Manages customizable AI prompt templates with localStorage persistence.
+ * Users can edit templates to customize AI behavior.
+ */
+
+export interface PromptTemplates {
+  // Simple single-pass generation
+  systemPrompt: string;
+  widgetCatalog: string;
+  outputFormat: string;
+}
+
+const TEMPLATE_VERSION = 19;  // Increment this when changing default templates
+
+const DEFAULT_TEMPLATES: PromptTemplates = {
+  // Stage 1: Conversational understanding (natural language response)
+  stage1SystemOverride: `
+You are a smart home dashboard configuration expert.
+
+Your task is to interpret user requests and confirm understanding in a conversational format.
+Respond naturally with bullet points to confirm what the user wants.
+
+This is a conversational task - respond in natural language.`.trim(),
+
+  // Stage 2: Technical planning (strict JSON output)
+  stage2SystemOverride: `
+⚠️ CRITICAL INSTRUCTION - READ FIRST ⚠️
+
+You MUST output ONLY a raw JSON object. Nothing else.
+
+❌ WRONG - WILL FAIL:
+### Dashboard Layout Plan
+To create an effective dashboard...
+
+❌ WRONG - WILL FAIL:
+\`\`\`json
+{"understanding": "..."}
+\`\`\`
+
+✅ CORRECT - START WITH {:
+{"understanding": "Creating 7 day-of-week buttons", "widgets": [...], "layout": {...}}
+
+If your response contains ANY text before { or after }, the system will reject it and fail.
+No markdown. No explanations. No code blocks. Just the JSON object.`.trim(),
+
+  // Legacy compatibility (uses Stage 2 override)
+  systemOverride: `
+You are a smart home dashboard configuration expert.
+
+Your task is to generate structured JSON configurations for dashboard widgets.
+You MUST output ONLY valid JSON - no markdown, no explanations, no text before or after.
+Follow the exact JSON format requirements in the instructions below.
+
+This is a technical configuration task requiring strict JSON output only.`.trim(),
+
+  stage1Context: `
+USER REQUEST: "{{userInput}}"
+CONTEXT: User is {{requestType}}`.trim(),
+
+  stage1Instructions: `
+Your task: Interpret what the user wants and respond in conversational format.
+
+Output format (respond naturally):
+"I understand you want:
+• [Requirement 1]
+• [Requirement 2]
+• [Requirement 3]
+..."
+
+Be specific about:
+- What widgets/controls they need
+- What entities/devices will be controlled
+- Layout preferences (if mentioned)
+
+Keep it brief (3-5 bullet points). User will confirm if correct.`.trim(),
+
+  stage2Header: `
+USER WANTS: {{userIntent}}
+(From our previous conversation - you confirmed this understanding)
+
+AVAILABLE ENTITIES (user-selected):
+{{entityList}}`.trim(),
+
+  stage2WidgetCatalog: `
+AVAILABLE WIDGET TYPES (all 27):
+
+1. button - Toggle switches, service calls, navigation
+   Example: {"type":"button","label":"Ceiling","entity_id":"light.bedroom","actionType":"toggle","backgroundColor":"#fbbf24","textColor":"#ffffff","icon":"PowerSettingsNew","iconColor":"#ffffff","iconPosition":"left","iconSize":24,"confirmAction":false,"clickFeedback":"scale"}
+   Properties: label, entity_id, actionType (auto|toggle|turn_on|turn_off|custom|navigation|url), targetView, url, service, serviceData, confirmAction, confirmMessage, clickFeedback (none|scale|highlight|ripple|shadow|color), icon, iconPosition (left|right|top|bottom|only), iconSize, iconColor, backgroundColor, textColor, fontSize, borderRadius
+   Note: Omit "icon" or set showIcon:false for text-only button. iconColor is optional (defaults to textColor).
+
+2. slider - Value controls (brightness, volume, temperature)
+   Example: {"type":"slider","entity_id":"light.bedroom","label":"Brightness","min":0,"max":100,"step":1,"orientation":"horizontal","trackColor":"#424242","fillColor":"#2196f3","thumbColor":"#2196f3","showValue":true}
+   Properties: label, entity_id, min, max, step, value, orientation (horizontal|vertical), showValue, trackColor, fillColor, thumbColor, thumbIcon, textColor, fontSize
+
+3. value - Display sensor readings, entity states
+   Example: {"type":"value","entity_id":"sensor.temperature","value":"{entity.state}","suffix":"°C","decimals":1,"fontSize":32,"fontWeight":"bold","textAlign":"center","textColor":"#ffffff"}
+   Properties: entity_id, value (supports {entity.state} binding), prefix, suffix, decimals, formatThousands, fontSize, fontWeight, textAlign, textColor, backgroundColor
+
+4. gauge - Visual meters for percentages, progress
+   Example: {"type":"gauge","entity_id":"sensor.battery","min":0,"max":100,"gaugeType":"radial","needleOnly":false,"pointerType":"needle","pointerColor":"#ffffff","showArc":true,"arcWidth":0.2,"zone1Color":"#5BE12C","zone1Limit":33,"zone2Color":"#F5CD19","zone2Limit":66,"zone3Color":"#EA4228"}
+   Properties: entity_id, min, max, unit, gaugeType (radial|grafana|semicircle), needleOnly, pointerType (needle|arrow|blob), pointerColor, pointerLength, pointerWidth, showArc, arcWidth, zone1/2/3Color, zone1/2Limit, showValue, showTicks, textColor
+
+5. switch - Toggle switches with labels
+   Example: {"type":"switch","entity_id":"switch.fan","label":"Ceiling Fan","labelPosition":"left","onColor":"#4caf50","offColor":"#757575","textColor":"#ffffff","fontSize":14}
+   Properties: label, labelPosition (left|right|top|bottom), entity_id, onColor, offColor, textColor, fontSize, fontFamily
+
+6. text - Static or dynamic text display
+   Example: {"type":"text","entity_id":"sensor.greeting","text":"{entity.state}","prefix":"Hello,","unit":"!","textColor":"#ffffff","fontSize":16,"fontWeight":"normal","textAlign":"left","verticalAlign":"center"}
+   Properties: entity_id, text (supports {entity.state} binding), prefix, unit, textColor, fontSize, fontWeight, fontFamily, textAlign (left|center|right), verticalAlign (flex-start|center|flex-end)
+
+7. image - Static or entity-bound images (cameras)
+   Example: {"type":"image","entity_id":"camera.front_door","objectFit":"cover","refreshInterval":0}
+   Alternative: {"type":"image","imageUrl":"https://example.com/image.jpg","localImagePath":"/local/image.png","objectFit":"contain"}
+   Properties: entity_id (for cameras), imageUrl, localImagePath, altText, refreshInterval (ms), objectFit (contain|cover|fill|none|scale-down)
+
+8. icon - Material Design icons (17,000+ available)
+   Example: {"type":"icon","icon":"mdi:lightbulb","color":"#fbbf24","size":100,"entity_id":"light.bedroom","fillEntity":"light.bedroom","fillMin":0,"fillMax":100,"fillDirection":"bottom-up","fillColor":"#00ff00","outlineMode":"none","glowWidth":0}
+   Properties: icon (supports {entity.state} binding), entity_id, color (supports {entity.state} binding), activeColor, size (%), fillEntity, fillMin, fillMax, fillDirection (bottom-up|top-down|left-to-right|right-to-left), fillColor, outlineMode (none|outline|filled), strokeWidth, glowWidth, glowColor, enableRotation, rotationSpeed
+
+9. progressbar - Linear progress indicators
+   Example: {"type":"progressbar","entity_id":"sensor.battery","value":50,"min":0,"max":100,"orientation":"horizontal","displayMode":"standard","showValue":true,"unit":"%","barColor":"#2196f3","backgroundColor":"#424242","textColor":"#ffffff"}
+   Advanced: {"type":"progressbar","entity_id":"sensor.battery","displayMode":"segmented","segmentCount":10,"segmentGap":4,"emptySegmentMode":"outline","useColorRanges":true,"range1Min":0,"range1Max":25,"range1Color":"#ef4444","range2Min":25,"range2Max":75,"range2Color":"#fbbf24","range3Min":75,"range3Max":100,"range3Color":"#10b981"}
+   Properties: entity_id, value, min, max, orientation (horizontal|vertical), displayMode (standard|segmented|graduated|striped), segmentCount, segmentGap, emptySegmentMode (outline|dimmed|invisible), showValue, unit, barColor, backgroundColor, textColor, borderRadius, useColorRanges, range1-4Min/Max/Color
+
+10. progresscircle - Circular progress indicators
+    Example: {"type":"progresscircle","entity_id":"sensor.cpu","value":50,"min":0,"max":100,"strokeWidth":8,"pathColor":"#2196f3","trailColor":"#d6d6d6","textColor":"#000000","showValue":true,"unit":"%","segmented":false}
+    Properties: entity_id, value, min, max, strokeWidth, pathColor, trailColor, textColor, textSize, backgroundColor, showValue, unit, counterClockwise, segmented, segmentCount, segmentGap, useColorRanges (same as progressbar)
+
+11. inputtext - Text input fields
+    Example: {"type":"inputtext","entity_id":"input_text.note","placeholder":"Enter text...","label":"Note","passwordMode":false,"textColor":"#ffffff","backgroundColor":"#424242","borderColor":"#666666","fontSize":14}
+    Properties: entity_id, placeholder, label, passwordMode, showPasswordToggle, textColor, backgroundColor, borderColor, fontSize
+
+12. flipclock - Animated flip clock display
+    Example: {"type":"flipclock","format":"12","showSeconds":true,"bgColor":"rgb(38, 37, 41)","cardTopColor":"rgb(48, 49, 53)","cardBottomColor":"rgb(57, 58, 63)","textColor":"#ffffff","fontFamily":"'Saira Extra Condensed', sans-serif","fontSizeScale":100,"showGears":true,"showBorders":true}
+    Properties: format (12|24), showSeconds, bgColor, cardTopColor, cardBottomColor, textColor, fontFamily, fontSizeScale, showGears, showBorders, showContainerBorder
+
+13. digitalclock - LED-style digital clock
+    Example: {"type":"digitalclock","format":"12","showSeconds":true,"showDate":true,"showDay":true,"backgroundColor":"#1a1a1a","timeColor":"#00ff00","dateColor":"#00ff00","fontFamily":"'DSEG7 Classic', monospace","fontSize":48,"glow":true,"blinkColon":true}
+    Properties: format (12|24), showSeconds, showDate, showDay, backgroundColor, timeColor, dateColor, fontFamily, fontFamilySecondary, fontSize, glow, blinkColon
+
+14. knob - Rotary control knobs
+    Example: {"type":"knob","entity_id":"input_number.volume","label":"Volume","min":0,"max":100,"step":1,"value":50,"skin":"p1","knobColor":"#2196f3","textColor":"#ffffff","accentColor":"#1976d2","showValue":"true","valueSuffix":"%","angleOffset":220,"angleRange":280}
+    Properties: label, entity_id, min, max, step, dialStep, value, skin (p1|p2|p3|p4|p5), contentScale, knobColor, textColor, accentColor, showValue, valuePrefix, valueSuffix, angleOffset, angleRange, markerType (triangle|rect|dot|none), markerWidth, markerColor
+
+15. iframe - Embed external content
+    Example: {"type":"iframe","urlType":"external","url":"https://example.com","allowFullscreen":true,"scrolling":"auto"}
+    Alternative: {"type":"iframe","urlType":"view","viewId":"living-room"}
+    Alternative: {"type":"iframe","urlType":"entity","entity_id":"sensor.url_source"}
+    Properties: urlType (external|view|entity), url, viewId, entity_id, allowFullscreen, sandbox, scrolling (auto|yes|no)
+
+16. border - Decorative borders, dividers
+    Example: {"type":"border","borderStyle":"solid","borderWidth":3,"borderColor":"#ffffff","borderRadius":0}
+    Properties: borderStyle (solid|dashed|dotted|double), borderWidth (thickness), borderColor, borderRadius (0=sharp, >0=rounded)
+    Note: Use borderWidth for thickness (not "thickness" property)
+
+17. radiobutton - Radio button groups
+    Example: {"type":"radiobutton","entity_id":"input_select.mode","options":"Home,Away,Sleep","values":"home,away,sleep","orientation":"vertical","fontSize":14,"textColor":"#ffffff","activeColor":"#2196f3"}
+    Properties: entity_id, options (comma-separated), values (optional comma-separated), orientation (vertical|horizontal), fontSize, textColor, activeColor, backgroundColor, fontFamily
+
+18. colorpicker - RGB/HSV color selection
+    Example: {"type":"colorpicker","entity_id":"light.bedroom","outputFormat":"auto","swatchWidth":60,"swatchHeight":60,"swatchBorderRadius":4}
+    Properties: entity_id, outputFormat (auto|rgb|hex|hex_no_hash), customService, customField, swatchWidth, swatchHeight, swatchBorderRadius
+
+19. weather - Weather display with forecast
+    Example: {"type":"weather","entity_id":"weather.home","showForecast":true,"forecastDays":5,"showHumidity":true,"showWind":true,"showPressure":false,"compactMode":false,"temperatureColor":"#ffffff","conditionColor":"#cccccc"}
+    Properties: entity_id, showForecast, forecastDays (3-7), showHumidity, showWind, showPressure, compactMode, temperatureColor, conditionColor
+
+20. graph - Line/bar/area charts for sensor history
+    Example: {"type":"graph","entity_id":"sensor.temperature","chartType":"line","dataPoints":50,"lineColor":"#2196f3","fillColor":"rgba(33, 150, 243, 0.2)","showLegend":true,"showTooltip":true,"showGrid":true,"smooth":true,"backgroundColor":"#ffffff","gridColor":"rgba(0, 0, 0, 0.1)"}
+    Properties: entity_id, chartType (line|bar|area), dataPoints (10-500), lineColor, fillColor, backgroundColor, gridColor, textColor, showLegend, showTooltip, showGrid, showAxisLabels, smooth, animationDuration, borderRadius
+
+21. lovelacecard - Embed native Home Assistant Lovelace cards (NOT the same as type="button"!)
+    WHEN TO USE: User says "lovelace card", "HA card", "use the button card type", "thermostat card", "entities card"
+    WHEN NOT TO USE: User just says "button" without "lovelace" or "card" context → use type="button" instead
+    Important: This wraps HA's native cards (button card, entities card, thermostat card), different from Canvas widgets
+    cardType options: button, entities, thermostat, weather, sensor, gauge, glance, history-graph, etc.
+    Example: {"type":"lovelacecard","cardType":"button","cardConfig":"entity: light.bedroom\\nname: My Light\\nicon: mdi:lightbulb"}
+    Example: {"type":"lovelacecard","cardType":"entities","cardConfig":"entities:\\n  - light.bedroom\\n  - light.kitchen"}
+
+22. camera - Live camera streams (WebRTC/HLS/MJPEG/snapshot)
+    Example: {"type":"camera","entity_id":"camera.front_door","streamMode":"auto","objectFit":"cover","showControls":true,"autoplay":true,"muted":true}
+    Properties: entity_id, streamMode (auto|webrtc|hls|mjpeg|snapshot), enableMicrophone, showControls, muted, autoplay, objectFit (cover|contain|fill|none|scale-down)
+
+23. html - Custom HTML content (static or entity-bound)
+    Example: {"type":"html","html":"<h1 style='color:white'>Custom HTML</h1>","overflow":"auto","backgroundColor":"transparent","padding":8}
+    Alternative: {"type":"html","useEntityHtml":true,"htmlEntity":"sensor.custom_html"}
+    Properties: useEntityHtml, htmlEntity, html (textarea for custom HTML), overflow (auto|hidden|scroll|visible), backgroundColor, padding
+
+24. calendar - Calendar events display with upcoming events
+    Example: {"type":"calendar","entity_id":"calendar.personal","maxEvents":5,"daysAhead":7,"showDate":true,"showTime":true,"showLocation":false,"compactMode":false,"backgroundColor":"#ffffff","headerColor":"#2196f3","textColor":"#000000","eventColor":"#4caf50","fontSize":14}
+    Properties: entity_id, maxEvents (1-20), daysAhead (1-365), showDate, showTime, showLocation, compactMode, backgroundColor, headerColor, textColor, eventColor, borderRadius, fontSize
+
+25. scrollingtext - Right-to-left scrolling ticker text
+    Example: {"type":"scrollingtext","text":"Breaking news...","entity_id":"sensor.ticker","scrollSpeed":50,"pauseOnHover":true,"separator":"  •  ","textColor":"#ffffff","backgroundColor":"#2196f3","fontSize":18,"fontWeight":"normal"}
+    Properties: text, entity_id, scrollSpeed (pixels/sec, 10-200), pauseOnHover, separator, textColor, backgroundColor, fontSize, fontFamily, fontWeight
+
+26. keyboard - Virtual onscreen keyboard (QWERTY/numeric)
+    Example: {"type":"keyboard","layout":"default","target_entity":"input_text.note","showDisplay":true,"draggable":true,"autoShow":false,"floatingMode":false,"backgroundColor":"#1e1e1e","buttonColor":"#3b3b3b","buttonTextColor":"#ffffff"}
+    Properties: layout (default|numeric|compact), target_entity, showDisplay, draggable, autoShow, floatingMode, theme, backgroundColor, buttonColor, buttonTextColor, buttonHoverColor, displayBackgroundColor, displayTextColor
+
+27. resolution - Dashboard boundaries (design/testing tool)
+    Example: {"type":"resolution","showResolution":true,"showRatio":true,"showLabel":true,"textColor":"#ffffff","labelColor":"#cccccc","backgroundColor":"rgba(0, 0, 0, 0.5)","fontSize":24}
+    Properties: showResolution, showRatio, showLabel, textColor, labelColor, backgroundColor, fontSize, labelSize`.trim(),
+
+  stage2EditModeInstructions: `
+The system supports THREE edit modes - choose based on what the user wants:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODE 1: UPDATE (Modify Specific Widgets) ⭐ MOST COMMON ⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ USE THIS MODE WHEN THE DASHBOARD ALREADY EXISTS AND USER WANTS TO CHANGE IT ⚠️
+
+Use when user wants to:
+  • Change colors, text, icons, or any property
+  • Modify styling (borders, shadows, backgrounds)
+  • Update entity bindings
+  • Change widget types (button → slider)
+  • Make widgets bigger/smaller
+  • Modify ANY aspect of existing widgets
+
+Examples of UPDATE mode requests:
+  • "change monday button to blue" ✓
+  • "make the clock bigger" ✓
+  • "change all button icons to calendar" ✓
+  • "update border style to dashed" ✓
+  • "add a border to the temperature widget" ✓
+  • "make it stand out" ✓
+  • "change the hello widget to show goodbye" ✓
+  • "update the text" ✓
+  • "make them glow" ✓
+
+How to identify target widgets:
+  1. User mentions widget by label: "monday button" → find widget with label="Monday"
+  2. User mentions widget by name in quotes: "'hello' widget" → find widget in view name or label
+  3. User mentions widget type: "the clock" → find widget with type="flipclock" or "digitalclock"
+  4. User says "all buttons" → find all widgets with type="button"
+  5. User says "it" or "them" → assume ALL existing widgets
+  6. User mentions position: "top left widget" → find widget at grid position
+  7. User mentions entity: "temperature sensor" → find widget bound to sensor.temperature
+
+Output format:
+{
+  "editMode": "update",
+  "targetWidgetIds": ["widget-1234567890123"],
+  "updates": {
+    "backgroundColor": "#3b82f6",
+    "borderStyle": "solid",
+    "borderWidth": 3,
+    "borderColor": "#ffffff",
+    "boxShadow": "0 0 20px rgba(59,130,246,0.8)"
+  },
+  "understanding": "Adding blue background, white border, and glow effect to existing widget",
+  "widgets": [],
+  "layout": { "columns": 12, "spacing": 8, "padding": 16 }
+}
+
+📋 CRITICAL UPDATE MODE RULES:
+
+1. ✅ PRESERVE WIDGET IDS - Use exact IDs from EXISTING WIDGETS JSON
+   ❌ WRONG: "targetWidgetIds": ["ai-widget-1234567890123"]
+   ✅ CORRECT: "targetWidgetIds": ["widget-1772340226422-lcdqcivwh"]
+
+2. ✅ PRESERVE SIZE & POSITION - Do NOT include width, height, x, y in updates unless user explicitly asks
+   ❌ WRONG: "updates": {"width": 940, "height": 344, "text": "Goodbye"}
+   ✅ CORRECT: "updates": {"text": "Goodbye"}
+   
+   Exception: User says "make it bigger" → include width/height
+   Exception: User says "move it to the right" → include x/y
+
+3. ✅ MINIMAL UPDATES OBJECT - Only include properties that are changing
+   ❌ WRONG: "updates": {"type":"text","width":470,"height":260,"x":0,"y":0,"text":"Goodbye","entity_id":"","fontSize":16,...}
+   ✅ CORRECT: "updates": {"text":"Goodbye"}
+
+4. ✅ KEEP "widgets" ARRAY EMPTY in UPDATE mode
+   ❌ WRONG: "widgets": [{"type":"text","label":"Hello",...}]
+   ✅ CORRECT: "widgets": []
+
+5. ✅ MULTIPLE WIDGETS - Can update multiple widgets at once
+   Example: "targetWidgetIds": ["widget-123", "widget-456", "widget-789"]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODE 2: ADD (Add New Widgets)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use when user wants to add NEW widgets alongside existing ones.
+
+⚠️ ONLY use ADD mode when user explicitly says "add", "also", "include", "put", "create new" ⚠️
+
+Examples of ADD mode requests:
+  • "add a clock" ✓
+  • "also include temperature sensor" ✓
+  • "put a border widget around everything" ✓
+  • "add another button" ✓
+
+❌ NOT ADD mode:
+  • "make it blue" → UPDATE (modifying existing)
+  • "change the text" → UPDATE (modifying existing)
+  • "add a border" → UPDATE (adding border property to existing widget)
+
+Output format:
+{
+  "editMode": "add",
+  "understanding": "Adding flip clock in top right corner",
+  "widgets": [
+    {
+      "type": "flipclock",
+      "purpose": "Display current time",
+      "grid": { "row": 1, "col": 9, "colSpan": 4, "rowSpan": 2 }
+    }
+  ],
+  "layout": { "columns": 12, "spacing": 8, "padding": 16 }
+}
+
+📋 CRITICAL ADD MODE RULES:
+
+1. ✅ Only include NEW widgets in "widgets" array (existing widgets are preserved)
+2. ✅ Choose grid positions that don't overlap with existing widgets
+3. ✅ Study EXISTING WIDGETS JSON to find free space
+4. ✅ System will append new widgets to existing ones
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODE 3: REPLACE (Complete Redesign) ⚠️ RARELY USED ⚠️
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ ONLY use REPLACE when user wants to throw away ALL existing widgets and start fresh ⚠️
+
+Use when user says:
+  • "make it a keypad" (complete redesign to different purpose)
+  • "redesign as energy dashboard" (complete redesign)
+  • "start over" (explicitly wants fresh start)
+  • "completely change to living room lights" (complete change)
+  • "replace everything with..." (explicit replacement)
+
+❌ NOT REPLACE mode:
+  • "change the color" → UPDATE (modifying existing)
+  • "make it look better" → UPDATE (styling existing)
+  • "add icons" → UPDATE (adding properties to existing)
+  • "change all buttons to sliders" → UPDATE (changing type but keeping IDs)
+
+Output format:
+{
+  "editMode": "replace",
+  "understanding": "Creating new 3x4 numeric keypad layout",
+  "widgets": [
+    { "type": "button", "label": "1", ... },
+    { "type": "button", "label": "2", ... },
+    // ... all new widgets
+  ],
+  "layout": { "columns": 12, "spacing": 8, "padding": 16 }
+}
+
+📋 CRITICAL REPLACE MODE RULES:
+
+1. ✅ Include ALL widgets for the new design (not just changes)
+2. ✅ System will delete existing widgets and use only your new ones
+3. ⚠️ This mode DISCARDS user's existing dashboard - use sparingly!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DECISION FLOWCHART:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Does dashboard already exist (EXISTING WIDGETS JSON provided)?
+  ↓ YES
+  |
+  Does user say "add", "also", "include", "create new"?
+  |  ↓ YES → Use ADD mode
+  |  ↓ NO
+  |  |
+  |  Does user say "redesign", "start over", "replace everything", "make it a [completely different thing]"?
+  |  |  ↓ YES → Use REPLACE mode (⚠️ destroys existing!)
+  |  |  ↓ NO
+  |  |  |
+  |  |  ✅ Use UPDATE mode (modify existing widgets)
+  |
+  ↓ NO (creating new dashboard)
+  |
+  ✅ Use REPLACE mode (first creation)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REAL-WORLD EXAMPLES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Scenario 1: User has a "hello" text widget, says "change it to goodbye"
+✅ CORRECT: UPDATE mode, targetWidgetIds=["widget-1772340226422-lcdqcivwh"], updates={"text":"goodbye"}
+❌ WRONG: REPLACE mode with new widget (discards user's existing layout/size)
+
+Scenario 2: User has 3 buttons, says "add a border and make them glow"
+✅ CORRECT: UPDATE mode, targetWidgetIds=[all 3 button IDs], updates={"borderStyle":"solid","borderWidth":2,"boxShadow":"..."}
+❌ WRONG: REPLACE mode (discards existing widgets)
+❌ WRONG: ADD mode (doesn't add new widgets, modifies existing)
+
+Scenario 3: User has temperature widget, says "make it stand out"
+✅ CORRECT: UPDATE mode, targetWidgetIds=["widget-..."], updates={"borderStyle":"solid","borderWidth":4,"boxShadow":"0 8px 16px rgba(0,0,0,0.4)"}
+❌ WRONG: REPLACE mode (changes size/position)
+
+Scenario 4: User has dashboard, says "add a clock widget"
+✅ CORRECT: ADD mode, widgets=[{type:"flipclock",...}]
+❌ WRONG: UPDATE mode (not modifying existing)
+
+Scenario 5: User has light dashboard, says "make it a thermostat control panel instead"
+✅ CORRECT: REPLACE mode (completely different purpose)
+❌ WRONG: UPDATE mode (can't transform purpose via updates)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GOLDEN RULE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔥 IF IN DOUBT, USE UPDATE MODE 🔥
+
+UPDATE mode is safe - it preserves user's layout, size, position, and IDs.
+REPLACE mode is destructive - it throws everything away.
+
+When user says vague things like "make it better", "change it", "update it" → always UPDATE mode.
+Only use REPLACE when user explicitly wants to completely redesign from scratch.`.trim(),
+
+  stage2BestPractices: `
+BEST PRACTICES FOR QUALITY DASHBOARDS:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WIDGET SELECTION & LAYOUT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Use consistent colors: Lights (#fbbf24 amber), Sensors (#3b82f6 blue), Switches (#10b981 green), Climate (#ef4444 red)
+- Logical grouping: Related controls together (all bedroom lights in one area)
+- Clear labels: Descriptive text that users understand ("Bedroom Ceiling" not just "Light")
+- Balanced layout: Distribute widgets evenly, avoid cramming one side
+- Appropriate widgets: Lights → button/slider, Sensors → value/gauge, Switches → switch
+- Use icons on buttons for visual recognition (PowerSettingsNew for lights, etc.)
+- Grid layout should be clean: 2-4 columns typically works best
+- Row/col spacing: Leave breathing room, don't pack everything tightly
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UNIVERSAL WIDGET STYLING (Works on ALL widgets!):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These properties can be added to ANY widget type to enhance visual appearance:
+
+1. BORDERS - Add visual boundaries to any widget:
+   Properties:
+   - "borderStyle": "solid" | "dashed" | "dotted" | "double"
+   - "borderWidth": 1-10 (pixels, use 2-3 for subtle, 4-6 for prominent)
+   - "borderColor": "#ffffff" (any hex color)
+   - "borderRadius": 0-50 (0=sharp corners, 4-8=subtle rounding, 15+=pill shape)
+   
+   Examples:
+   • Sharp white border: {"borderStyle":"solid","borderWidth":2,"borderColor":"#ffffff","borderRadius":0}
+   • Subtle rounded: {"borderStyle":"solid","borderWidth":1,"borderColor":"#3b82f6","borderRadius":4}
+   • Dashed accent: {"borderStyle":"dashed","borderWidth":3,"borderColor":"#fbbf24","borderRadius":8}
+   • Pill button: {"borderStyle":"solid","borderWidth":2,"borderColor":"#ffffff","borderRadius":50}
+   
+   When to use:
+   - Group related widgets visually (border around control section)
+   - Highlight important controls (border on emergency stop button)
+   - Separate sections (dashed border as divider)
+   - Match design theme (rounded for modern, sharp for industrial)
+
+2. SHADOWS (boxShadow) - Add depth and elevation:
+   Format: "horizontalOffset verticalOffset blurRadius spreadRadius color"
+   
+   Presets (copy these exactly):
+   • Subtle elevation: "0 2px 4px rgba(0,0,0,0.2)"
+   • Medium card: "0 4px 8px rgba(0,0,0,0.3)"
+   • High elevation: "0 8px 16px rgba(0,0,0,0.4)"
+   • Glow effect: "0 0 20px rgba(33,150,243,0.6)"
+   • Colored glow: "0 0 15px rgba(251,191,36,0.8)"
+   • Inner shadow: "inset 0 2px 4px rgba(0,0,0,0.3)"
+   • Pressed state: "inset 0 4px 8px rgba(0,0,0,0.4)"
+   
+   Examples:
+   • Button with elevation: {"type":"button","label":"Press","boxShadow":"0 4px 8px rgba(0,0,0,0.3)"}
+   • Glowing icon: {"type":"icon","icon":"mdi:lightbulb","color":"#fbbf24","boxShadow":"0 0 20px rgba(251,191,36,0.8)"}
+   • Inset panel: {"type":"value","entity_id":"sensor.temp","boxShadow":"inset 0 2px 4px rgba(0,0,0,0.3)"}
+   
+   When to use:
+   - Buttons/controls - medium shadow for clickable feel
+   - Important widgets - high elevation to stand out
+   - Active states - glowing shadow for "on" state
+   - Panels/groups - subtle shadow for card effect
+   - Inset displays - inner shadow for recessed look
+
+3. BACKGROUNDS - Solid colors or images:
+   
+   Solid Colors:
+   - "backgroundColor": "#1a1a1a" (any hex color, including rgba)
+   - Transparent: "backgroundColor": "transparent"
+   - Semi-transparent: "backgroundColor": "rgba(33,150,243,0.2)"
+   
+   Background Images:
+   - "backgroundImage": "url('/local/texture.png')"
+   - "backgroundImage": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+   - "backgroundImage": "url('https://example.com/pattern.jpg')"
+   - backgroundSize: "cover" | "contain" | "100% 100%"
+   - backgroundPosition: "center" | "top left" | "50% 50%"
+   - backgroundRepeat: "no-repeat" | "repeat" | "repeat-x" | "repeat-y"
+   
+   Gradient Examples:
+   • Blue to purple: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+   • Sunset: "linear-gradient(to right, #ff6b6b, #feca57, #48dbfb)"
+   • Dark subtle: "linear-gradient(180deg, #2c3e50 0%, #1a1a1a 100%)"
+   • Radial glow: "radial-gradient(circle, rgba(33,150,243,0.3) 0%, transparent 70%)"
+   
+   Examples:
+   • Textured button: {"type":"button","label":"Wood","backgroundImage":"url('/local/wood-texture.jpg')","backgroundSize":"cover"}
+   • Gradient panel: {"type":"value","entity_id":"sensor.temp","backgroundImage":"linear-gradient(135deg, #667eea 0%, #764ba2 100%)"}
+   • Semi-transparent overlay: {"type":"text","text":"Status","backgroundColor":"rgba(0,0,0,0.5)"}
+   
+   When to use:
+   - Themed widgets - textures like wood, metal, glass
+   - Visual grouping - gradient backgrounds for sections
+   - Overlays - semi-transparent backgrounds over images
+   - Branding - background images with logos/patterns
+
+4. COMBINED STYLING - Using multiple properties together:
+   
+   Example 1 - Modern Card Button:
+   {
+     "type": "button",
+     "label": "Living Room",
+     "entity_id": "light.living_room",
+     "backgroundColor": "#1e1e1e",
+     "textColor": "#ffffff",
+     "borderStyle": "solid",
+     "borderWidth": 1,
+     "borderColor": "#3b82f6",
+     "borderRadius": 8,
+     "boxShadow": "0 4px 8px rgba(0,0,0,0.3)"
+   }
+   
+   Example 2 - Glowing Active Icon:
+   {
+     "type": "icon",
+     "icon": "mdi:lightbulb",
+     "entity_id": "light.bedroom",
+     "color": "#fbbf24",
+     "size": 120,
+     "borderStyle": "solid",
+     "borderWidth": 3,
+     "borderColor": "#fbbf24",
+     "borderRadius": 50,
+     "boxShadow": "0 0 30px rgba(251,191,36,0.8)",
+     "backgroundColor": "rgba(251,191,36,0.1)"
+   }
+   
+   Example 3 - Textured Panel with Border:
+   {
+     "type": "value",
+     "entity_id": "sensor.temperature",
+     "value": "{entity.state}",
+     "suffix": "°C",
+     "fontSize": 48,
+     "backgroundImage": "linear-gradient(135deg, #2c3e50 0%, #1a1a1a 100%)",
+     "borderStyle": "solid",
+     "borderWidth": 2,
+     "borderColor": "#3b82f6",
+     "borderRadius": 12,
+     "boxShadow": "inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2)"
+   }
+   
+   Example 4 - Emergency Button (High Visibility):
+   {
+     "type": "button",
+     "label": "EMERGENCY STOP",
+     "backgroundColor": "#ef4444",
+     "textColor": "#ffffff",
+     "fontSize": 20,
+     "borderStyle": "double",
+     "borderWidth": 6,
+     "borderColor": "#ffffff",
+     "borderRadius": 4,
+     "boxShadow": "0 0 25px rgba(239,68,68,0.8), 0 8px 16px rgba(0,0,0,0.4)"
+   }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STYLING DECISION GUIDE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+User Request → Apply These Styles:
+
+"make it stand out" → Add prominent border + high shadow
+{"borderStyle":"solid","borderWidth":4,"borderColor":"#fbbf24","boxShadow":"0 8px 16px rgba(0,0,0,0.4)"}
+
+"add a border" → Simple solid border with subtle rounding
+{"borderStyle":"solid","borderWidth":2,"borderColor":"#ffffff","borderRadius":4}
+
+"make it glow" → Colored shadow matching widget color
+{"boxShadow":"0 0 20px rgba(251,191,36,0.8)"}
+
+"group these together" → Border around container area or background color
+{"borderStyle":"solid","borderWidth":2,"borderColor":"#3b82f6","borderRadius":8,"backgroundColor":"rgba(33,150,243,0.1)"}
+
+"wood texture" / "metal look" → Background image with texture URL
+{"backgroundImage":"url('/local/wood-texture.jpg')","backgroundSize":"cover"}
+
+"modern card style" → Rounded border + subtle shadow + dark background
+{"backgroundColor":"#1e1e1e","borderRadius":8,"boxShadow":"0 4px 8px rgba(0,0,0,0.3)"}
+
+"flat design" → No borders, no shadows, solid colors only
+{"backgroundColor":"#2196f3","borderRadius":0}
+
+"glass effect" → Semi-transparent background + subtle border + blur shadow
+{"backgroundColor":"rgba(255,255,255,0.1)","borderStyle":"solid","borderWidth":1,"borderColor":"rgba(255,255,255,0.3)","boxShadow":"0 8px 32px rgba(0,0,0,0.1)"}
+
+REMEMBER: These universal properties work on EVERY widget type - buttons, icons, values, gauges, etc.
+Add them freely to enhance visual design without changing widget functionality!`.trim(),
+
+  stage2OutputFormat: `
+OUTPUT FORMAT (CRITICAL - READ CAREFULLY):
+
+⚠️ SYSTEM WILL REJECT MARKDOWN - EXAMPLES OF FAILURES ⚠️
+
+❌ FAILURE - Dashboard Layout Plan:
+### Dashboard Layout Plan
+To create an effective and visually appealing dashboard...
+{"widgets": [...]}
+
+❌ FAILURE - Markdown code block:
+\`\`\`json
+{"understanding": "...", "widgets": [...]}
+\`\`\`
+
+❌ FAILURE - Explanatory text before JSON:
+Here's the configuration:
+{"understanding": "...", "widgets": [...]}
+
+✅ SUCCESS - Raw JSON object starting with {:
+{"understanding": "Creating 7 day-of-week buttons with calendar icons", "widgets": [{"type": "button", "label": "Monday", ...}], "layout": {...}}
+
+⚠️ YOUR ENTIRE RESPONSE MUST BE ONLY THE JSON OBJECT ⚠️
+
+RULES:
+1. First character of response: { (opening brace)
+2. Last character of response: } (closing brace)  
+3. NO markdown (###, \`\`\`, etc.)
+4. NO explanatory text before or after
+5. Your ENTIRE response = one valid JSON object that can be directly parsed
+
+REQUIRED JSON STRUCTURE:
+{
+  "understanding": "REPLACE_WITH_SUMMARY_OF_USERS_ACTUAL_REQUEST",
+  "widgets": [
+    {
+      "type": "WIDGET_TYPE_FROM_CATALOG",
+      "label": "DESCRIPTIVE_LABEL",
+      "entity": "OPTIONAL_ENTITY_ID",
+      "color": "#HEXCOLOR",
+      "icon": "ICON_NAME",
+      "grid": {
+        "row": 1,
+        "col": 1,
+        "colSpan": 1,
+        "rowSpan": 1
+      }
+    },
+    {
+      "type": "ANOTHER_WIDGET_TYPE",
+      "label": "ANOTHER_LABEL",
+      "entity": "ANOTHER_ENTITY",
+      "grid": {
+        "row": 2,
+        "col": 1,
+        "colSpan": 2
+      }
+    }
+  ],
+  "layout": {
+    "columns": 3,
+    "spacing": 10,
+    "padding": 16
+  }
+}
+
+CRITICAL JSON FORMAT RULES:
+1. MUST include all three top-level fields: "understanding", "widgets", "layout"
+2. Each widget MUST have a "grid" object with row/col properties
+3. Use DOUBLE QUOTES for ALL property names: "type" NOT type or 'type'
+4. Use DOUBLE QUOTES for ALL string values: "button" NOT 'button'
+5. Numbers and booleans unquoted: 1, true, false
+6. No trailing commas
+7. Valid: {"type": "button", "label": "Ceiling Light", "grid": {"row": 1, "col": 1}}
+8. Invalid: {type: 'button', label: "Light", row: 1, col: 1}
+
+IMPORTANT REQUIREMENTS:
+- Use ONLY widget types from the list above (27 types available)
+- Grid positions: row and col are 1-indexed (start at 1, not 0)
+- Grid properties: MUST be inside "grid" object: {"grid": {"row": 1, "col": 1}}
+- colSpan and rowSpan optional (default 1, use to span multiple columns/rows)
+- Colors: Use semantic colors - #fbbf24 (amber) for lights, #3b82f6 (blue) for sensors, #10b981 (green) for switches
+- Entity matching: lights/fans→button/slider, sensors→value/gauge, switches→switch, climate→gauge/value
+- Logical layout: Group related items, balance columns, leave space between groups
+- Icons: PowerSettingsNew (power), Brightness5 (brightness), Thermostat (climate), Sensors (sensors)
+- Labels: Clear and descriptive ("Bedroom Ceiling" not "Light 1")
+- Layout columns: 2-4 columns works best (3 is often ideal)
+
+REMEMBER: Output ONLY the JSON object. Nothing before it, nothing after it.`.trim(),
+
+  stage4ValidationInstructions: `
+Your task: Review the generated dashboard JSON and validate its quality.
+
+Evaluate these aspects:
+1. COMPLETENESS (0-30 points): All required widgets present? User requirements met?
+2. CORRECTNESS (0-30 points): Valid entity IDs? Appropriate widget types? Proper JSON?
+3. USABILITY (0-20 points): Clear labels? Logical layout? Good color choices?
+4. LAYOUT (0-20 points): Balanced spacing? Proper grid positions? No overlaps?
+
+For each issue found, categorize as:
+- CRITICAL (breaks functionality): Invalid entity, wrong widget type, JSON error
+- MODERATE (degrades UX): Poor labels, bad colors, awkward layout
+- MINOR (cosmetic): Spacing tweaks, icon changes
+
+Output format (JSON only):
+{
+  "score": 85,
+  "satisfied": true,
+  "issues": [
+    {"severity": "moderate", "message": "Button color should be amber for lights", "fix": "Change color to #fbbf24"}
+  ],
+  "summary": "Good dashboard with minor color inconsistencies"
+}
+
+Scoring thresholds:
+- 90-100: Excellent (satisfied = true)
+- 80-89: Good (satisfied = true)
+- 70-79: Acceptable (satisfied = true)
+- Below 70: Needs improvement (satisfied = false)`.trim(),
+
+  stage2RAGHeader: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  CRITICAL: YOUR TASK - WHAT THE USER ACTUALLY WANTS ⚠️
+
+The user's actual request from Stage 1:
+{{stage1Understanding}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ LEARN FROM PROVEN EXAMPLES ✨
+
+You have {{exampleCount}} example dashboards below.
+⚠️  These are for LEARNING PATTERNS ONLY - DO NOT copy them!
+⚠️  CREATE WHAT THE USER ASKED FOR ABOVE!
+
+{{examples}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NOW CREATE YOUR PLAN (for the user's ACTUAL request above):`.trim(),
+
+  stage2RAGReasoning: `
+STEP-BY-STEP REASONING (think before you plan):
+
+STEP 1: What did the user ACTUALLY ask for? (Re-read their request at the top)
+   • Review the widgets/controls they requested
+   • Note specific requirements (colors, layout, text, icons)
+   [Your answer: ___]
+
+STEP 2: Which design patterns from the examples can help?
+   • Look at layout strategies (grid, columns, spacing)
+   • Note useful color choices or sizing patterns
+   • Identify relevant widget configurations
+   ⚠️  Use patterns to ENHANCE the user's request, NOT replace it!
+   [Your answer: ___]
+
+STEP 3: What widgets are REQUIRED for the user's request?
+   • List the essential widgets needed to match user's description
+   • Include specific properties they mentioned (colors, icons, text)
+   [Your answer: ___]
+
+STEP 4: What layout pattern should I use?
+   • Grid layout (multi-column for compact panels)
+   • Vertical stack (single column for simple controls)
+   • Dashboard (mix of large monitoring + small controls)
+   [Your answer: ___]
+
+STEP 5: What colors did the user specify or should I use?
+   • Red (#ef4444) = danger, heat, alerts
+   • Green (#10b981) = good, available, on
+   • Blue (#3b82f6) = neutral, cooling, info
+   • Yellow (#f59e0b) = warning, attention
+   • Gray (#6b7280) = inactive, unavailable
+   [Your answer: ___]
+
+STEP 6: How should widgets be sized?
+   • Large (2+ columns) for important monitoring values
+   • Medium (1-2 columns) for controls
+   • Compact (1 column) for labels and secondary info
+   [Your answer: ___]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REASONING (explain your design decisions in 3-5 sentences):
+[Write your thinking here - explain WHY you chose this layout, these widgets, these colors]
+[MAKE SURE your plan matches what the user requested in Stage 1!]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  IMPORTANT OUTPUT FORMAT INSTRUCTION ⚠️
+
+The RAG examples above show COMPLETE VIEW STRUCTURES with full position/config details.
+Those are for LEARNING patterns and best practices ONLY.
+
+DO NOT output that full structure format!
+DO NOT copy the widgets from the examples!
+CREATE widgets based on the user's ACTUAL request!
+
+Instead, output SIMPLIFIED widget format as shown in the instructions below.
+The system will convert your simplified plan to the full structure automatically.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PLAN (JSON):`.trim(),
+
+  stage4Header: `
+YOU created this plan in Stage 2:
+{{stage2Plan}}
+
+YOU generated this JSON in Stage 3:
+{{stage3Output}}`.trim(),
+
+  retryInstructions: `
+YOU found {{issueCount}} issue(s) in YOUR generated output.
+
+Analyze what went wrong and create a REVISED plan that fixes ALL issues.
+{{previousPlan}}
+ISSUES TO FIX:
+
+{{issueList}}
+
+IMPORTANT:
+- Don't just change random things - ADDRESS THE SPECIFIC ISSUES LISTED
+- If issue mentions wrong entity, fix THAT entity binding
+- If issue mentions wrong color, use the CORRECT color
+- If issue mentions wrong type, use the CORRECT widget type
+- Keep good parts of the plan, only change what's broken
+- Make sure your revision actually solves each issue
+
+Create a revised plan that addresses all {{issueCount}} issue(s) above.
+
+OUTPUT FORMAT (required - output ONLY valid JSON, no explanations):
+{
+  "understanding": "brief summary",
+  "widgets": [
+    {
+      "type": "button|slider|value|...",
+      "purpose": "what this widget does",
+      "label": "display text",
+      "entity": "entity_id or null",  
+      "color": "#hex color",
+      "grid": {"row": 1, "col": 1, "colSpan": 1, "rowSpan": 1}
+    }
+  ],
+  "layout": {
+    "columns": 2,
+    "spacing": 10,
+    "padding": 10
+  }
+}`.trim()
+};
+
+class PromptTemplateStore {
+  private templates: PromptTemplates;
+  private storageKey = 'canvasui_prompt_templates';
+  private versionKey = 'canvasui_prompt_templates_version';
+
+  constructor() {
+    this.templates = this.loadTemplates();
+  }
+
+  private loadTemplates(): PromptTemplates {
+    try {
+      const storedVersion = localStorage.getItem(this.versionKey);
+      const currentVersion = parseInt(storedVersion || '0', 10);
+      
+      // Check version - if outdated, reset to defaults
+      if (currentVersion < TEMPLATE_VERSION) {
+        console.log(`[PromptTemplateStore] Upgrading templates from v${currentVersion} to v${TEMPLATE_VERSION}`);
+        localStorage.removeItem(this.storageKey);
+        localStorage.setItem(this.versionKey, TEMPLATE_VERSION.toString());
+        return { ...DEFAULT_TEMPLATES };
+      }
+      
+      const stored = localStorage.getItem(this.storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Merge with defaults to handle new template additions
+        return { ...DEFAULT_TEMPLATES, ...parsed };
+      }
+    } catch (error) {
+      console.error('[PromptTemplateStore] Failed to load templates:', error);
+    }
+    return { ...DEFAULT_TEMPLATES };
+  }
+
+  public saveTemplates(templates: Partial<PromptTemplates>): void {
+    this.templates = { ...this.templates, ...templates };
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.templates));
+      localStorage.setItem(this.versionKey, TEMPLATE_VERSION.toString());
+      console.log('[PromptTemplateStore] Templates saved');
+    } catch (error) {
+      console.error('[PromptTemplateStore] Failed to save templates:', error);
+    }
+  }
+
+  public getTemplates(): PromptTemplates {
+    return { ...this.templates };
+  }
+
+  public getTemplate(key: keyof PromptTemplates): string {
+    return this.templates[key];
+  }
+
+  public resetToDefaults(): void {
+    this.templates = { ...DEFAULT_TEMPLATES };
+    try {
+      localStorage.removeItem(this.storageKey);
+      localStorage.setItem(this.versionKey, TEMPLATE_VERSION.toString());
+      console.log('[PromptTemplateStore] Templates reset to defaults');
+    } catch (error) {
+      console.error('[PromptTemplateStore] Failed to reset templates:', error);
+    }
+  }
+
+  public isCustomized(): boolean {
+    const stored = localStorage.getItem(this.storageKey);
+    return !!stored;
+  }
+}
+
+export const promptTemplateStore = new PromptTemplateStore();
+export { DEFAULT_TEMPLATES };

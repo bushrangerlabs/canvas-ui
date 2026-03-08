@@ -20,7 +20,7 @@
         "description": "Configure Canvas UI settings",
         "data": {
           "enable_editor": "Enable Dashboard Editor",
-          "ollama_url": "Ollama Server URL"
+          "auto_register_resources": "Auto-register Lovelace Resources"
         }
       }
     }

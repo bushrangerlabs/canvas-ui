@@ -1,0 +1,1419 @@
+{
+  "version": "2.0.0",
+  "exportedAt": "2026-02-22T23:50:00.000Z",
+  "view": {
+    "id": "gauge-complete-demo",
+    "name": "Gauge Widget - Complete Feature Test",
+    "icon": "Speed",
+    "style": {
+      "backgroundColor": "#16213e"
+    },
+    "widgets": [
+      {
+        "id": "main-title",
+        "type": "text",
+        "x": 40,
+        "y": 20,
+        "width": 1840,
+        "height": 60,
+        "config": {
+          "text": "Gauge Widget - Complete Feature Test Suite",
+          "fontSize": 36,
+          "fontWeight": "bold",
+          "textColor": "#ffffff",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "test-slider",
+        "type": "slider",
+        "x": 40,
+        "y": 100,
+        "width": 1840,
+        "height": 60,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "label": "Test Value Control (0-100)",
+          "min": 0,
+          "max": 100,
+          "value": 65,
+          "orientation": "horizontal",
+          "showValue": true,
+          "trackColor": "#2196f3",
+          "thumbColor": "#ffffff"
+        }
+      },
+
+      {
+        "id": "section1-title",
+        "type": "text",
+        "x": 40,
+        "y": 180,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 1: Gauge Types",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "textColor": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "radial-label",
+        "type": "text",
+        "x": 80,
+        "y": 240,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Radial (Semicircle)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "radial-gauge",
+        "type": "gauge",
+        "x": 40,
+        "y": 280,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 28
+        }
+      },
+      {
+        "id": "radial-desc",
+        "type": "text",
+        "x": 40,
+        "y": 570,
+        "width": 280,
+        "height": 50,
+        "config": {
+          "text": "Classic semicircle gauge with 180° arc, ideal for most use cases",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "grafana-label",
+        "type": "text",
+        "x": 380,
+        "y": 240,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Grafana (3/4 Circle)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "grafana-gauge",
+        "type": "gauge",
+        "x": 340,
+        "y": 280,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "grafana",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.65,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.18,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 28
+        }
+      },
+      {
+        "id": "grafana-desc",
+        "type": "text",
+        "x": 340,
+        "y": 570,
+        "width": 280,
+        "height": 50,
+        "config": {
+          "text": "Grafana-style gauge with 270° arc, provides wider range display",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "semicircle-label",
+        "type": "text",
+        "x": 680,
+        "y": 240,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Semicircle",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "semicircle-gauge",
+        "type": "gauge",
+        "x": 640,
+        "y": 280,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "semicircle",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 28
+        }
+      },
+      {
+        "id": "semicircle-desc",
+        "type": "text",
+        "x": 640,
+        "y": 570,
+        "width": 280,
+        "height": 50,
+        "config": {
+          "text": "Alternative semicircle rendering with different layout",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "section2-title",
+        "type": "text",
+        "x": 40,
+        "y": 650,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 2: Needle/Pointer Types",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "textColor": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "needle-type-label",
+        "type": "text",
+        "x": 80,
+        "y": 710,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Needle (Classic)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "needle-type",
+        "type": "gauge",
+        "x": 40,
+        "y": 750,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#FF5722",
+          "pointerLength": 0.75,
+          "pointerWidth": 18,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.15,
+          "zone1Color": "#2196f3",
+          "zone1Limit": 50,
+          "zone2Color": "#FF9800",
+          "zone2Limit": 75,
+          "zone3Color": "#f44336",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 26
+        }
+      },
+
+      {
+        "id": "arrow-type-label",
+        "type": "text",
+        "x": 380,
+        "y": 710,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Arrow",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "arrow-type",
+        "type": "gauge",
+        "x": 340,
+        "y": 750,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "arrow",
+          "pointerColor": "#00BCD4",
+          "pointerLength": 0.7,
+          "pointerWidth": 20,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.15,
+          "zone1Color": "#2196f3",
+          "zone1Limit": 50,
+          "zone2Color": "#FF9800",
+          "zone2Limit": 75,
+          "zone3Color": "#f44336",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 26
+        }
+      },
+
+      {
+        "id": "blob-type-label",
+        "type": "text",
+        "x": 680,
+        "y": 710,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Blob (Modern)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "blob-type",
+        "type": "gauge",
+        "x": 640,
+        "y": 750,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "blob",
+          "pointerColor": "#9C27B0",
+          "pointerLength": 0.65,
+          "pointerWidth": 25,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.15,
+          "zone1Color": "#2196f3",
+          "zone1Limit": 50,
+          "zone2Color": "#FF9800",
+          "zone2Limit": 75,
+          "zone3Color": "#f44336",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 26
+        }
+      },
+
+      {
+        "id": "section3-title",
+        "type": "text",
+        "x": 40,
+        "y": 1060,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 3: Arc Width & Color Zones",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "textColor": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "thin-arc-label",
+        "type": "text",
+        "x": 80,
+        "y": 1120,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Thin Arc (0.1)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "thin-arc",
+        "type": "gauge",
+        "x": 40,
+        "y": 1160,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 12,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.1,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "normal-arc-label",
+        "type": "text",
+        "x": 380,
+        "y": 1120,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Normal Arc (0.2)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "normal-arc",
+        "type": "gauge",
+        "x": 340,
+        "y": 1160,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "thick-arc-label",
+        "type": "text",
+        "x": 680,
+        "y": 1120,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Thick Arc (0.35)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "thick-arc",
+        "type": "gauge",
+        "x": 640,
+        "y": 1160,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 18,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.35,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "custom-zones-label",
+        "type": "text",
+        "x": 980,
+        "y": 1120,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Custom Zone Limits",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "custom-zones",
+        "type": "gauge",
+        "x": 940,
+        "y": 1160,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#2196f3",
+          "zone1Limit": 20,
+          "zone2Color": "#4CAF50",
+          "zone2Limit": 80,
+          "zone3Color": "#FF9800",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+      {
+        "id": "custom-zones-desc",
+        "type": "text",
+        "x": 940,
+        "y": 1450,
+        "width": 280,
+        "height": 50,
+        "config": {
+          "text": "Blue (0-20%), Green (20-80%), Orange (80-100%)",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "section4-title",
+        "type": "text",
+        "x": 40,
+        "y": 1520,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 4: Needle Customization",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "textColor": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "short-needle-label",
+        "type": "text",
+        "x": 80,
+        "y": 1580,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Short Needle (0.4)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "short-needle",
+        "type": "gauge",
+        "x": 40,
+        "y": 1620,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#00BCD4",
+          "pointerLength": 0.4,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "long-needle-label",
+        "type": "text",
+        "x": 380,
+        "y": 1580,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Long Needle (0.9)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "long-needle",
+        "type": "gauge",
+        "x": 340,
+        "y": 1620,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#FF5722",
+          "pointerLength": 0.9,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "thin-needle-label",
+        "type": "text",
+        "x": 680,
+        "y": 1580,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Thin Width (8)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "thin-needle",
+        "type": "gauge",
+        "x": 640,
+        "y": 1620,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#9C27B0",
+          "pointerLength": 0.7,
+          "pointerWidth": 8,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "thick-needle-label",
+        "type": "text",
+        "x": 980,
+        "y": 1580,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Thick Width (28)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "thick-needle",
+        "type": "gauge",
+        "x": 940,
+        "y": 1620,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#4CAF50",
+          "pointerLength": 0.7,
+          "pointerWidth": 28,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "no-elastic-label",
+        "type": "text",
+        "x": 1280,
+        "y": 1580,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "No Elastic Animation",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "no-elastic",
+        "type": "gauge",
+        "x": 1240,
+        "y": 1620,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#FF9800",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": false,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+      {
+        "id": "no-elastic-desc",
+        "type": "text",
+        "x": 1240,
+        "y": 1910,
+        "width": 280,
+        "height": 50,
+        "config": {
+          "text": "Direct movement without bounce effect (smoother for rapid changes)",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "section5-title",
+        "type": "text",
+        "x": 40,
+        "y": 1980,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 5: Display Options",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "textColor": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "no-value-label",
+        "type": "text",
+        "x": 80,
+        "y": 2040,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "No Value Label",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "no-value",
+        "type": "gauge",
+        "x": 40,
+        "y": 2080,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": false,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "no-ticks-label",
+        "type": "text",
+        "x": 380,
+        "y": 2040,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "No Tick Labels",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "no-ticks",
+        "type": "gauge",
+        "x": 340,
+        "y": 2080,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": false,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "minimal-label",
+        "type": "text",
+        "x": 680,
+        "y": 2040,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Minimal (No Labels)",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "minimal",
+        "type": "gauge",
+        "x": 640,
+        "y": 2080,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 15,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": false,
+          "showTicks": false,
+          "textColor": "#ffffff",
+          "valueSize": 24
+        }
+      },
+
+      {
+        "id": "needle-only-label",
+        "type": "text",
+        "x": 980,
+        "y": 2040,
+        "width": 200,
+        "height": 30,
+        "config": {
+          "text": "Needle Only Mode",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "needle-only-gauge",
+        "type": "gauge",
+        "x": 940,
+        "y": 2080,
+        "width": 280,
+        "height": 280,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#00BCD4",
+          "pointerLength": 0.8,
+          "pointerWidth": 20,
+          "pointerElastic": true,
+          "needleOnly": true,
+          "showArc": false,
+          "arcWidth": 0.2,
+          "zone1Color": "#5BE12C",
+          "zone1Limit": 33,
+          "zone2Color": "#F5CD19",
+          "zone2Limit": 66,
+          "zone3Color": "#EA4228",
+          "showValue": true,
+          "showTicks": false,
+          "textColor": "#00BCD4",
+          "valueSize": 32
+        }
+      },
+      {
+        "id": "needle-only-desc",
+        "type": "text",
+        "x": 940,
+        "y": 2370,
+        "width": 280,
+        "height": 50,
+        "config": {
+          "text": "Transparent background - perfect for overlaying on custom gauge images",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "section6-title",
+        "type": "text",
+        "x": 40,
+        "y": 2460,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 6: Real-World Examples",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "textColor": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "temp-label",
+        "type": "text",
+        "x": 80,
+        "y": 2520,
+        "width": 280,
+        "height": 30,
+        "config": {
+          "text": "Temperature Monitor",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "temp-gauge",
+        "type": "gauge",
+        "x": 40,
+        "y": 2560,
+        "width": 360,
+        "height": 360,
+        "config": {
+          "entity_id": "sensor.living_room_temperature",
+          "min": -10,
+          "max": 40,
+          "unit": "°C",
+          "gaugeType": "grafana",
+          "pointerType": "arrow",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.65,
+          "pointerWidth": 18,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.25,
+          "zone1Color": "#2196f3",
+          "zone1Limit": 40,
+          "zone2Color": "#4CAF50",
+          "zone2Limit": 70,
+          "zone3Color": "#FF5722",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 36
+        }
+      },
+      {
+        "id": "temp-desc",
+        "type": "text",
+        "x": 40,
+        "y": 2930,
+        "width": 360,
+        "height": 50,
+        "config": {
+          "text": "Blue: Cold (-10-12°C), Green: Comfortable (12-28°C), Red: Hot (28-40°C)",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "power-label",
+        "type": "text",
+        "x": 480,
+        "y": 2520,
+        "width": 280,
+        "height": 30,
+        "config": {
+          "text": "Power Consumption",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "power-gauge",
+        "type": "gauge",
+        "x": 440,
+        "y": 2560,
+        "width": 360,
+        "height": 360,
+        "config": {
+          "entity_id": "sensor.home_power",
+          "min": 0,
+          "max": 10000,
+          "unit": "W",
+          "gaugeType": "radial",
+          "pointerType": "needle",
+          "pointerColor": "#FFEB3B",
+          "pointerLength": 0.75,
+          "pointerWidth": 20,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.22,
+          "zone1Color": "#4CAF50",
+          "zone1Limit": 25,
+          "zone2Color": "#FF9800",
+          "zone2Limit": 60,
+          "zone3Color": "#f44336",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 34
+        }
+      },
+      {
+        "id": "power-desc",
+        "type": "text",
+        "x": 440,
+        "y": 2930,
+        "width": 360,
+        "height": 50,
+        "config": {
+          "text": "Green: Low (0-2.5kW), Orange: Medium (2.5-6kW), Red: High (6-10kW)",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "battery-label",
+        "type": "text",
+        "x": 880,
+        "y": 2520,
+        "width": 280,
+        "height": 30,
+        "config": {
+          "text": "Battery Level",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "battery-gauge",
+        "type": "gauge",
+        "x": 840,
+        "y": 2560,
+        "width": 360,
+        "height": 360,
+        "config": {
+          "entity_id": "sensor.phone_battery",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "semicircle",
+          "pointerType": "blob",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.65,
+          "pointerWidth": 25,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.28,
+          "zone1Color": "#f44336",
+          "zone1Limit": 20,
+          "zone2Color": "#FF9800",
+          "zone2Limit": 50,
+          "zone3Color": "#4CAF50",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 38
+        }
+      },
+      {
+        "id": "battery-desc",
+        "type": "text",
+        "x": 840,
+        "y": 2930,
+        "width": 360,
+        "height": 50,
+        "config": {
+          "text": "Red: Critical (0-20%), Orange: Low (20-50%), Green: Good (50-100%)",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "humidity-label",
+        "type": "text",
+        "x": 1280,
+        "y": 2520,
+        "width": 280,
+        "height": 30,
+        "config": {
+          "text": "Humidity Monitor",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "humidity-gauge",
+        "type": "gauge",
+        "x": 1240,
+        "y": 2560,
+        "width": 360,
+        "height": 360,
+        "config": {
+          "entity_id": "sensor.living_room_humidity",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "gaugeType": "radial",
+          "pointerType": "arrow",
+          "pointerColor": "#03A9F4",
+          "pointerLength": 0.7,
+          "pointerWidth": 18,
+          "pointerElastic": true,
+          "showArc": true,
+          "arcWidth": 0.2,
+          "zone1Color": "#FF9800",
+          "zone1Limit": 30,
+          "zone2Color": "#4CAF50",
+          "zone2Limit": 70,
+          "zone3Color": "#2196f3",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 36
+        }
+      },
+      {
+        "id": "humidity-desc",
+        "type": "text",
+        "x": 1240,
+        "y": 2930,
+        "width": 360,
+        "height": 50,
+        "config": {
+          "text": "Orange: Dry (0-30%), Green: Ideal (30-70%), Blue: Humid (70-100%)",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "speed-label",
+        "type": "text",
+        "x": 1680,
+        "y": 2520,
+        "width": 280,
+        "height": 30,
+        "config": {
+          "text": "Wind Speed",
+          "fontSize": 14,
+          "textColor": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "speed-gauge",
+        "type": "gauge",
+        "x": 1640,
+        "y": 2560,
+        "width": 360,
+        "height": 360,
+        "config": {
+          "entity_id": "sensor.wind_speed",
+          "min": 0,
+          "max": 120,
+          "unit": "km/h",
+          "gaugeType": "grafana",
+          "pointerType": "needle",
+          "pointerColor": "#ffffff",
+          "pointerLength": 0.7,
+          "pointerWidth": 16,
+          "pointerElastic": false,
+          "showArc": true,
+          "arcWidth": 0.18,
+          "zone1Color": "#4CAF50",
+          "zone1Limit": 25,
+          "zone2Color": "#FF9800",
+          "zone2Limit": 55,
+          "zone3Color": "#f44336",
+          "showValue": true,
+          "showTicks": true,
+          "textColor": "#ffffff",
+          "valueSize": 32
+        }
+      },
+      {
+        "id": "speed-desc",
+        "type": "text",
+        "x": 1640,
+        "y": 2930,
+        "width": 360,
+        "height": 50,
+        "config": {
+          "text": "Green: Calm (0-30km/h), Orange: Windy (30-66km/h), Red: Storm (66-120km/h)",
+          "fontSize": 11,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      },
+
+      {
+        "id": "footer-note",
+        "type": "text",
+        "x": 40,
+        "y": 3020,
+        "width": 1840,
+        "height": 80,
+        "config": {
+          "text": "💡 Tips:\n• Use needle-only mode to overlay on custom gauge background images\n• Adjust zone limits to match your specific use case (default is 33%/66%)\n• Grafana type provides wider 270° range for better resolution\n• Disable elastic animation for sensors with frequent rapid changes",
+          "fontSize": 14,
+          "textColor": "#888888",
+          "textAlign": "center"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Canvas UI - Kiosk</title>
+    <style>
+      * {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #000000;
+        width: 100%;
+        height: 100%;
+      }
+      /* Hide Home Assistant sidebar and header in kiosk mode - AGGRESSIVE */
+      home-assistant,
+      home-assistant-main,
+      ha-drawer,
+      ha-sidebar,
+      app-drawer,
+      app-header,
+      app-toolbar,
+      mwc-top-app-bar-fixed,
+      mwc-drawer,
+      .mdc-drawer,
+      [slot="toolbar"],
+      [slot="sidebar"],
+      partial-panel-resolver > ha-sidebar,
+      ha-app-layout > ha-sidebar,
+      .header,
+      .toolbar,
+      .sidebar {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
+      /* Force full viewport for kiosk content */
+      hui-view,
+      hui-panel-view,
+      #view,
+      ha-panel-lovelace,
+      hui-root,
+      partial-panel-resolver {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+      }
+      #root {
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+      
+      /* Hide Home Assistant sidebar and header in kiosk mode */
+      body.kiosk-mode mwc-drawer,
+      body.kiosk-mode .mdc-drawer,
+      body.kiosk-mode app-drawer,
+      body.kiosk-mode ha-drawer,
+      body.kiosk-mode ha-sidebar,
+      body.kiosk-mode .sidebar,
+      body.kiosk-mode app-header,
+      body.kiosk-mode .header,
+      body.kiosk-mode ha-app-layout app-header,
+      body.kiosk-mode home-assistant-main > div > app-header {
+        display: none !important;
+      }
+      
+      /* Remove padding/margin from HA layout in kiosk mode */
+      body.kiosk-mode home-assistant-main,
+      body.kiosk-mode partial-panel-resolver,
+      body.kiosk-mode ha-panel-lovelace {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    </style>
+    <script>
+      // CRITICAL: Kiosk mode MUST be standalone, not embedded in HA
+      // If we detect we're in an iframe, force redirect to standalone URL
+      (function() {
+        // Check if we're in an iframe
+        if (window.self !== window.top) {
+          // We're embedded in HA - redirect parent to standalone kiosk URL
+          try {
+            // Get current hash (view name)
+            const hash = window.location.hash || '';
+            // Force parent window to load kiosk directly
+            window.top.location.href = window.location.href;
+          } catch (e) {
+            // Cross-origin restriction - show warning
+            console.error('Kiosk mode must be accessed directly, not through HA interface!');
+            console.error('Use: http://YOUR_HA_IP:8123/local/canvas-ui/kiosk.html#viewname');
+          }
+        }
+      })();
+      
+      // Add kiosk-mode class to body on load
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('kiosk-mode');
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/kiosk-entry.tsx"></script>
+  </body>
+</html>

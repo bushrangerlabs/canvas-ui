@@ -1,0 +1,344 @@
+/**
+ * Flow Trigger System
+ * 
+ * Monitors widget properties, entity states, and canvas variables for changes.
+ * Automatically executes flows when trigger conditions are met.
+ */
+
+import type { WidgetRuntimeState } from '../stores/widgetRuntimeStore';
+import type { FlowDefinition, FlowTriggerConfig } from '../types/flow';
+import { executeFlow } from './executor';
+
+/**
+ * Trigger listener callback
+ */
+type TriggerListener = (flow: FlowDefinition) => void;
+
+/**
+ * Trigger manager class
+ */
+export class FlowTriggerManager {
+  private flows: Map<string, FlowDefinition> = new Map();
+  private listeners: Map<string, Set<TriggerListener>> = new Map();
+  private intervalTimers: Map<string, number> = new Map();
+  private runtimeWatchers: Map<string, number> = new Map(); // Polling timers for runtime property changes
+  
+  // External dependencies
+  private widgets: Record<string, any> = {};
+  private entities: Record<string, any> = {};
+  private variables: Record<string, any> = {};
+  private previousWidgets: Record<string, any> = {};
+  private previousEntities: Record<string, any> = {};
+  private previousVariables: Record<string, any> = {};
+  private previousRuntimeStates: Record<string, Record<string, any>> = {}; // Track previous runtime states per widget
+  
+  // Callbacks for flow execution
+  private setWidget: (widgetId: string, property: string, value: any) => Promise<void>;
+  private setVariable: (name: string, value: any) => void;
+  private callService: (domain: string, service: string, data: any) => Promise<void>;
+  private getRuntimeState: (widgetId: string) => WidgetRuntimeState | null;
+  
+  constructor(callbacks: {
+    setWidget: (widgetId: string, property: string, value: any) => Promise<void>;
+    setVariable: (name: string, value: any) => void;
+    callService: (domain: string, service: string, data: any) => Promise<void>;
+    getRuntimeState: (widgetId: string) => WidgetRuntimeState | null;
+  }) {
+    this.setWidget = callbacks.setWidget;
+    this.setVariable = callbacks.setVariable;
+    this.callService = callbacks.callService;
+    this.getRuntimeState = callbacks.getRuntimeState;
+  }
+  
+  /**
+   * Register a flow with its triggers
+   */
+  registerFlow(flow: FlowDefinition): void {
+    if (!flow.enabled) {
+      if (import.meta.env.DEV) console.log(`[FlowTrigger] Skipping disabled flow: ${flow.name}`);
+      return; // Don't register disabled flows
+    }
+    
+    if (import.meta.env.DEV) console.log(`[FlowTrigger] Registering flow: ${flow.name} (${flow.id}) with ${flow.triggers.length} trigger(s)`);
+    this.flows.set(flow.id, flow);
+    
+    // Set up triggers
+    flow.triggers.forEach(trigger => {
+      if (import.meta.env.DEV) console.log(`[FlowTrigger] Setting up trigger type: ${trigger.type}`, trigger.config);
+      this.setupTrigger(flow, trigger);
+    });
+  }
+  
+  /**
+   * Unregister a flow and remove its triggers
+   */
+  unregisterFlow(flowId: string): void {
+    const flow = this.flows.get(flowId);
+    if (!flow) return;
+    
+    // Clean up interval timers
+    const timer = this.intervalTimers.get(flowId);
+    if (timer) {
+      clearInterval(timer);
+      this.intervalTimers.delete(flowId);
+    }
+    
+    // Clean up runtime watchers for this flow
+    flow.triggers.forEach(trigger => {
+      if (trigger.type === 'widget-change' && trigger.config?.widgetId) {
+        const watcherKey = `${flowId}:${trigger.config.widgetId}`;
+        const timer = this.runtimeWatchers.get(watcherKey);
+        if (timer) {
+          clearInterval(timer);
+          this.runtimeWatchers.delete(watcherKey);
+        }
+      }
+    });
+    
+    // Remove listeners
+    this.listeners.delete(flowId);
+    this.flows.delete(flowId);
+  }
+  
+  /**
+   * Set up a specific trigger
+   */
+  private setupTrigger(flow: FlowDefinition, trigger: FlowTriggerConfig): void {
+    switch (trigger.type) {
+      case 'time-interval': {
+        const interval = trigger.config?.interval || 60000; // Default 1 minute
+        
+        const timer = setInterval(() => {
+          this.executeFlow(flow);
+        }, interval);
+        
+        this.intervalTimers.set(flow.id, timer);
+        break;
+      }
+      
+      case 'widget-change': {
+        // Set up polling for runtime property changes
+        const widgetId = trigger.config?.widgetId;
+        const property = trigger.config?.property;
+        
+        if (import.meta.env.DEV) console.log(`[FlowTrigger] widget-change trigger: widgetId=${widgetId}, property=${property}`);
+        
+        if (widgetId && property?.startsWith('runtime.')) {
+          // This is a runtime property (e.g., runtime.value)
+          // Poll the runtime store periodically
+          const watcherKey = `${flow.id}:${widgetId}`;
+          
+          if (import.meta.env.DEV) console.log(`[FlowTrigger] Starting runtime property monitoring for ${widgetId}.${property}`);
+          
+          // Initialize previous state
+          if (!this.previousRuntimeStates[widgetId]) {
+            const currentState = this.getRuntimeState(widgetId);
+            if (import.meta.env.DEV) console.log(`[FlowTrigger] Initial runtime state for ${widgetId}:`, currentState);
+            this.previousRuntimeStates[widgetId] = currentState ? { ...currentState } : {};
+          }
+          
+          // Poll every 100ms for runtime changes
+          const timer = setInterval(() => {
+            const currentState = this.getRuntimeState(widgetId);
+            const previousState = this.previousRuntimeStates[widgetId];
+            
+            if (currentState) {
+              // Extract the runtime property name (e.g., "value" from "runtime.value")
+              const runtimeProp = property.replace('runtime.', '');
+              
+              const oldValue = previousState?.[runtimeProp];
+              const newValue = (currentState as any)[runtimeProp];
+              
+              if (oldValue !== newValue && newValue !== undefined) {
+                if (import.meta.env.DEV) console.log(`[FlowTrigger] Runtime property changed: ${widgetId}.${property} = ${newValue} (was ${oldValue})`);
+                this.executeFlow(flow);
+                
+                // Update previous state
+                this.previousRuntimeStates[widgetId] = { ...currentState };
+              }
+            }
+          }, 100); // Poll every 100ms
+          
+          if (import.meta.env.DEV) console.log(`[FlowTrigger] Runtime watcher started with timer ID: ${timer}`);
+          this.runtimeWatchers.set(watcherKey, timer);
+        } else {
+          if (import.meta.env.DEV) console.log(`[FlowTrigger] Not a runtime property or missing config, skipping polling setup`);
+        }
+        break;
+      }
+      
+      case 'manual':
+        // Manual triggers are handled by explicit executeFlow calls
+        break;
+      
+      default:
+        // Other triggers (entity-change, variable-change) are handled by update methods
+        break;
+    }
+  }
+  
+  /**
+   * Update widget states and check for triggers
+   */
+  updateWidgets(newWidgets: Record<string, any>): void {
+    this.widgets = newWidgets;
+    
+    // Check each flow's widget-change triggers
+    this.flows.forEach(flow => {
+      flow.triggers.forEach(trigger => {
+        if (trigger.type === 'widget-change') {
+          const widgetId = trigger.config?.widgetId;
+          const property = trigger.config?.property;
+          
+          if (!widgetId) return;
+          
+          const oldWidget = this.previousWidgets[widgetId];
+          const newWidget = newWidgets[widgetId];
+          
+          if (!oldWidget || !newWidget) return;
+          
+          // Check if property changed
+          if (property) {
+            const oldValue = this.getPropertyValue(oldWidget, property);
+            const newValue = this.getPropertyValue(newWidget, property);
+            
+            if (oldValue !== newValue) {
+              this.executeFlow(flow);
+            }
+          } else {
+            // No specific property - trigger on any widget change
+            if (JSON.stringify(oldWidget) !== JSON.stringify(newWidget)) {
+              this.executeFlow(flow);
+            }
+          }
+        }
+      });
+    });
+    
+    this.previousWidgets = { ...newWidgets };
+  }
+  
+  /**
+   * Update entity states and check for triggers
+   */
+  updateEntities(newEntities: Record<string, any>): void {
+    this.entities = newEntities;
+    
+    // Check each flow's entity-change triggers
+    this.flows.forEach(flow => {
+      flow.triggers.forEach(trigger => {
+        if (trigger.type === 'entity-change') {
+          const entityId = trigger.config?.entityId;
+          
+          if (!entityId) return;
+          
+          const oldEntity = this.previousEntities[entityId];
+          const newEntity = newEntities[entityId];
+          
+          if (!oldEntity || !newEntity) return;
+          
+          // Check if state changed
+          if (oldEntity.state !== newEntity.state) {
+            this.executeFlow(flow);
+          }
+        }
+      });
+    });
+    
+    this.previousEntities = { ...newEntities };
+  }
+  
+  /**
+   * Update canvas variables and check for triggers
+   */
+  updateVariables(newVariables: Record<string, any>): void {
+    this.variables = newVariables;
+    
+    // Check each flow's variable-change triggers
+    this.flows.forEach(flow => {
+      flow.triggers.forEach(trigger => {
+        if (trigger.type === 'variable-change') {
+          const variableName = trigger.config?.variableName;
+          
+          if (!variableName) return;
+          
+          const oldValue = this.previousVariables[variableName];
+          const newValue = newVariables[variableName];
+          
+          if (oldValue !== newValue) {
+            this.executeFlow(flow);
+          }
+        }
+      });
+    });
+    
+    this.previousVariables = { ...newVariables };
+  }
+  
+  /**
+   * Manually execute a flow (for manual triggers)
+   */
+  async manualExecute(flowId: string): Promise<void> {
+    const flow = this.flows.get(flowId);
+    if (!flow) {
+      console.error(`Flow not found: ${flowId}`);
+      return;
+    }
+    
+    await this.executeFlow(flow);
+  }
+  
+  /**
+   * Execute a flow
+   */
+  private async executeFlow(flow: FlowDefinition): Promise<void> {
+    try {
+      if (import.meta.env.DEV) console.log(`Executing flow: ${flow.name} (${flow.id})`);
+      
+      const result = await executeFlow(flow, {
+        widgets: this.widgets,
+        entities: this.entities,
+        variables: this.variables,
+        getRuntimeState: this.getRuntimeState,
+        setWidget: this.setWidget,
+        setVariable: this.setVariable,
+        callService: this.callService,
+      });
+      
+      if (result.status === 'error') {
+        console.error(`Flow execution failed: ${flow.name}`, result.error);
+      } else {
+        if (import.meta.env.DEV) console.log(`Flow executed successfully: ${flow.name} (${result.duration}ms)`);
+      }
+    } catch (error) {
+      console.error(`Error executing flow ${flow.name}:`, error);
+    }
+  }
+  
+  /**
+   * Get a property value from an object using dot notation
+   */
+  private getPropertyValue(obj: any, property: string): any {
+    const parts = property.split('.');
+    let value = obj;
+    
+    for (const part of parts) {
+      value = value?.[part];
+    }
+    
+    return value;
+  }
+  
+  /**
+   * Clean up all triggers
+   */
+  cleanup(): void {
+    // Clear all interval timers
+    this.intervalTimers.forEach(timer => clearInterval(timer));
+    this.intervalTimers.clear();
+    
+    // Clear all flows
+    this.flows.clear();
+    this.listeners.clear();
+  }
+}

@@ -1,0 +1,215 @@
+/**
+ * Runtime Component - Shared by Preview and Kiosk modes
+ * Displays canvas in read-only mode with entity updates
+ */
+
+import React, { useEffect, useState } from 'react';
+import { Canvas } from '../shared/components/Canvas';
+import { useFlowExecution } from '../shared/hooks/useFlowExecution';
+import { useWebSocket } from '../shared/providers/WebSocketProvider';
+import { useConfigStore } from '../shared/stores/useConfigStore';
+
+const Runtime: React.FC = () => {
+  const { connected, authenticated, hass } = useWebSocket();
+  const store = useConfigStore();
+  const { config, loadConfig } = store;
+  
+  // Initialize flow execution engine
+  useFlowExecution();
+  const [loading, setLoading] = useState(true);
+  // Track active view locally (don't use store's currentViewId to avoid URL sync)
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  
+  // Helper to update both local state and store without triggering URL sync
+  const updateActiveView = (viewId: string) => {
+    setActiveViewId(viewId);
+    // Also update store silently (for any code that reads currentViewId)
+    // Use setState directly to bypass setCurrentView action which triggers URL sync
+    useConfigStore.setState({ currentViewId: viewId }, false);
+  };
+
+  // Expose hass to window for Lovelace cards in kiosk/view mode
+  useEffect(() => {
+    if (hass && authenticated) {
+      // Check if we're in HA panel mode (flag set by canvas-kiosk-panel.js)
+      const isInHAPanel = (window as any).__CANVAS_KIOSK_MODE__ === true;
+      
+      // Try to find HA's real hass object (multiple locations)
+      let haHass = null;
+      if (isInHAPanel) {
+        // Try <home-assistant> element first (most common)
+        const homeAssistant = document.querySelector('home-assistant');
+        if (homeAssistant && (homeAssistant as any).hass) {
+          haHass = (homeAssistant as any).hass;
+          console.log('[Runtime] Found hass on <home-assistant> element');
+        }
+        // Fallback to window.hassConnection
+        if (!haHass && (window as any).hassConnection) {
+          haHass = (window as any).hassConnection;
+          console.log('[Runtime] Found hass on window.hassConnection');
+        }
+        // Last resort - window.parent.hass (probably wrong but try anyway)
+        if (!haHass && (window.parent as any).hass) {
+          haHass = (window.parent as any).hass;
+          console.log('[Runtime] Found hass on window.parent.hass');
+        }
+      }
+      
+      console.log('[Runtime] Panel detection - isInHAPanel:', isInHAPanel, 'haHass:', !!haHass);
+      if (haHass) {
+        console.log('[Runtime] HA hass has localize:', typeof haHass.localize === 'function');
+      }
+      
+      if (isInHAPanel && haHass && typeof haHass.localize === 'function') {
+        // Use HA's full hass object (has localize, formatNumber, etc.)
+        console.log('[Runtime] ✅ Using HA hass (panel mode)');
+        (window as any).hass = haHass;
+        // Also expose HA's loadCardHelpers
+        if ((window.parent as any).loadCardHelpers) {
+          (window as any).loadCardHelpers = (window.parent as any).loadCardHelpers;
+        }
+      } else {
+        // Standalone mode - use our WebSocket hass
+        console.log('[Runtime] Using WebSocket hass (standalone mode)');
+        (window as any).hass = hass;
+        // Basic card helper for standalone
+        if (!(window as any).loadCardHelpers) {
+          (window as any).loadCardHelpers = async () => {
+            return {
+              createCardElement: async (config: any) => {
+                const cardType = config.type.replace(/^hui-/, '').replace(/-card$/, '');
+                const element = document.createElement(`hui-${cardType}-card`);
+                return element;
+              }
+            };
+          };
+        }
+      }
+    }
+    return () => {
+      // Don't cleanup window.hass - other components might still need it
+    };
+  }, [hass, authenticated]);
+
+  // Load config on mount
+  useEffect(() => {
+    if (hass && authenticated) {
+      loadConfig(hass).finally(() => setLoading(false));
+    }
+  }, [hass, authenticated, loadConfig]);
+
+  // Handle hash-based navigation (like ioBroker: #viewName)
+  useEffect(() => {
+    const handleHashChange = () => {
+      let hash = window.location.hash.slice(1); // Remove #
+      
+      // Strip kiosk= prefix if present (e.g., #kiosk=demo-view → demo-view)
+      if (hash.startsWith('kiosk=')) {
+        hash = hash.substring(6); // Remove 'kiosk='
+        console.log('[Runtime] Stripped kiosk prefix, view:', hash);
+      }
+      
+      // Strip any escape characters or backslashes
+      hash = hash.replace(/\\/g, '');
+      console.log('[Runtime] Hash changed:', hash);
+      if (hash && config) {
+        console.log('[Runtime] Available views:', config.views.map(v => `"${v.name}" (id: ${v.id})`));
+        // Try exact match first, then normalized match (spaces vs hyphens)
+        const normalizedHash = hash.toLowerCase().replace(/[-_]/g, ' ');
+        console.log('[Runtime] Normalized hash:', normalizedHash);
+        const view = config.views.find(v => {
+          const exactName = v.name === hash;
+          const exactId = v.id === hash;
+          const normalizedName = v.name.toLowerCase() === normalizedHash;
+          const hyphenatedMatch = v.name.toLowerCase().replace(/\s+/g, '-') === hash.toLowerCase();
+          console.log(`[Runtime] Checking view "${v.name}": exactName=${exactName}, exactId=${exactId}, normalizedName=${normalizedName}, hyphenatedMatch=${hyphenatedMatch}`);
+          return exactName || exactId || normalizedName || hyphenatedMatch;
+        });
+        if (view) {
+          console.log('[Runtime] Found matching view:', view.name, '(id:', view.id, ')');
+          updateActiveView(view.id);
+        } else {
+          console.warn('[Runtime] No matching view found for hash:', hash);
+        }
+      } else if (config && !activeViewId && config.views.length > 0) {
+        // Only set default view if no hash and no active view
+        console.log('[Runtime] No hash, setting default view:', config.views[0].name);
+        updateActiveView(config.views[0].id);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Initial load
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [config, activeViewId]);
+
+  if (loading) {
+    return (
+      <div style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1a1a1a',
+        color: '#ffffff',
+      }}>
+        <div>
+          <div>Loading Canvas UI...</div>
+          <div style={{ fontSize: '12px', marginTop: '8px', opacity: 0.7 }}>
+            {!connected && 'Connecting to Home Assistant...'}
+            {connected && !authenticated && 'Authenticating...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!config || !activeViewId) {
+    return (
+      <div style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1a1a1a',
+        color: '#ffffff',
+      }}>
+        No view configured
+      </div>
+    );
+  }
+
+  const currentView = config.views.find(v => v.id === activeViewId);
+
+  if (!currentView) {
+    return (
+      <div style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1a1a1a',
+        color: '#ffffff',
+      }}>
+        View not found
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ 
+      width: '100vw', 
+      height: '100vh', 
+      overflow: 'auto', // Allow scrolling if view exceeds viewport
+      backgroundColor: '#000000' // Black background fills remaining space
+    }}>
+      <Canvas view={currentView} isEditMode={false} zoom={100} />
+    </div>
+  );
+};
+
+export default Runtime;

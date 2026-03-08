@@ -1,0 +1,1286 @@
+{
+  "version": "2.0.0",
+  "exportedAt": "2026-02-22T00:00:00.000Z",
+  "view": {
+    "id": "progress-circle-complete-demo",
+    "name": "Progress Circle - Complete Feature Test",
+    "icon": "DonutLargeOutlined",
+    "style": {
+      "backgroundColor": "#16213e"
+    },
+    "widgets": [
+      {
+        "id": "main-title",
+        "type": "text",
+        "x": 40,
+        "y": 20,
+        "width": 1840,
+        "height": 60,
+        "config": {
+          "text": "Progress Circle Widget - Complete Feature Test Suite",
+          "fontSize": 36,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "test-slider",
+        "type": "slider",
+        "x": 40,
+        "y": 100,
+        "width": 1840,
+        "height": 80,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "label": "Test Value Control (0-100%) - Connect this to an entity later",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "showValue": true,
+          "color": "#4CAF50",
+          "value": 65
+        }
+      },
+
+      {
+        "id": "section1-title",
+        "type": "text",
+        "x": 40,
+        "y": 220,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 1: Basic Modes & Segmentation",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "color": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "smooth-label",
+        "type": "text",
+        "x": 60,
+        "y": 280,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Smooth Circle",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "smooth-circle",
+        "type": "progresscircle",
+        "x": 60,
+        "y": 320,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#2196F3",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "seg10-label",
+        "type": "text",
+        "x": 280,
+        "y": 280,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Segmented (12)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "seg10-circle",
+        "type": "progresscircle",
+        "x": 280,
+        "y": 320,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "segmented": true,
+          "segmentCount": 12,
+          "segmentGap": 3,
+          "pathColor": "#2196F3",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "seg20-label",
+        "type": "text",
+        "x": 500,
+        "y": 280,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Segmented (24)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "seg20-circle",
+        "type": "progresscircle",
+        "x": 500,
+        "y": 320,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "segmented": true,
+          "segmentCount": 24,
+          "segmentGap": 2,
+          "pathColor": "#2196F3",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "seg36-label",
+        "type": "text",
+        "x": 720,
+        "y": 280,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Segmented (36)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "seg36-circle",
+        "type": "progresscircle",
+        "x": 720,
+        "y": 320,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "segmented": true,
+          "segmentCount": 36,
+          "segmentGap": 2,
+          "pathColor": "#2196F3",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "ccw-label",
+        "type": "text",
+        "x": 940,
+        "y": 280,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Counter-Clockwise",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "ccw-circle",
+        "type": "progresscircle",
+        "x": 940,
+        "y": 320,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "counterClockwise": true,
+          "pathColor": "#FF9800",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "novalue-label",
+        "type": "text",
+        "x": 1160,
+        "y": 280,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "No Center Value",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "novalue-circle",
+        "type": "progresscircle",
+        "x": 1160,
+        "y": 320,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "showValue": false,
+          "pathColor": "#9C27B0",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12
+        }
+      },
+
+      {
+        "id": "section2-title",
+        "type": "text",
+        "x": 40,
+        "y": 540,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 2: Stroke Width Variations",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "color": "#FF9800",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "stroke6-label",
+        "type": "text",
+        "x": 60,
+        "y": 600,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Thin (6px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "stroke6-circle",
+        "type": "progresscircle",
+        "x": 60,
+        "y": 640,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "strokeWidth": 6,
+          "pathColor": "#00BCD4",
+          "trailColor": "#3a4a5f",
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "stroke12-label",
+        "type": "text",
+        "x": 280,
+        "y": 600,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Medium (12px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "stroke12-circle",
+        "type": "progresscircle",
+        "x": 280,
+        "y": 640,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "strokeWidth": 12,
+          "pathColor": "#00BCD4",
+          "trailColor": "#3a4a5f",
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "stroke20-label",
+        "type": "text",
+        "x": 500,
+        "y": 600,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Thick (20px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "stroke20-circle",
+        "type": "progresscircle",
+        "x": 500,
+        "y": 640,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "strokeWidth": 20,
+          "pathColor": "#00BCD4",
+          "trailColor": "#3a4a5f",
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "stroke30-label",
+        "type": "text",
+        "x": 720,
+        "y": 600,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Extra Thick (30px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "stroke30-circle",
+        "type": "progresscircle",
+        "x": 720,
+        "y": 640,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "strokeWidth": 30,
+          "pathColor": "#00BCD4",
+          "trailColor": "#3a4a5f",
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "section3-title",
+        "type": "text",
+        "x": 40,
+        "y": 860,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 3: Color Combinations (Trail, Background, Text Colors)",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "color": "#9C27B0",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "color1-label",
+        "type": "text",
+        "x": 60,
+        "y": 920,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Blue on Dark",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "color1-circle",
+        "type": "progresscircle",
+        "x": 60,
+        "y": 960,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#2196F3",
+          "trailColor": "#1a1a2e",
+          "textColor": "#2196F3",
+          "backgroundColor": "#0a0e1a",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "color2-label",
+        "type": "text",
+        "x": 280,
+        "y": 920,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Green Gradient",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "color2-circle",
+        "type": "progresscircle",
+        "x": 280,
+        "y": 960,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#4CAF50",
+          "trailColor": "#1b5e20",
+          "textColor": "#81C784",
+          "backgroundColor": "#0d2818",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "color3-label",
+        "type": "text",
+        "x": 500,
+        "y": 920,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Red Warning",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "color3-circle",
+        "type": "progresscircle",
+        "x": 500,
+        "y": 960,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#F44336",
+          "trailColor": "#5d1410",
+          "textColor": "#EF5350",
+          "backgroundColor": "#2d0a08",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "color4-label",
+        "type": "text",
+        "x": 720,
+        "y": 920,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Purple Accent",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "color4-circle",
+        "type": "progresscircle",
+        "x": 720,
+        "y": 960,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#9C27B0",
+          "trailColor": "#4a148c",
+          "textColor": "#BA68C8",
+          "backgroundColor": "#1a0a25",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "color5-label",
+        "type": "text",
+        "x": 940,
+        "y": 920,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Cyan Bright",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "color5-circle",
+        "type": "progresscircle",
+        "x": 940,
+        "y": 960,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#00BCD4",
+          "trailColor": "#006064",
+          "textColor": "#4DD0E1",
+          "backgroundColor": "#00363a",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "color6-label",
+        "type": "text",
+        "x": 1160,
+        "y": 920,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Orange Energy",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "color6-circle",
+        "type": "progresscircle",
+        "x": 1160,
+        "y": 960,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#FF9800",
+          "trailColor": "#e65100",
+          "textColor": "#FFB74D",
+          "backgroundColor": "#3d1a00",
+          "strokeWidth": 12,
+          "showValue": true
+        }
+      },
+
+      {
+        "id": "section4-title",
+        "type": "text",
+        "x": 40,
+        "y": 1180,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 4: Borders & Shadows (Universal Styles)",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "color": "#00BCD4",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "border1-label",
+        "type": "text",
+        "x": 60,
+        "y": 1240,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Solid Border",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "border1-circle",
+        "type": "progresscircle",
+        "x": 60,
+        "y": 1280,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#4CAF50",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "style": {
+            "borderWidth": 3,
+            "borderColor": "#4CAF50",
+            "borderStyle": "solid",
+            "borderRadius": 100
+          }
+        }
+      },
+
+      {
+        "id": "border2-label",
+        "type": "text",
+        "x": 280,
+        "y": 1240,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Dashed Border",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "border2-circle",
+        "type": "progresscircle",
+        "x": 280,
+        "y": 1280,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#FF9800",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "style": {
+            "borderWidth": 3,
+            "borderColor": "#FF9800",
+            "borderStyle": "dashed",
+            "borderRadius": 100
+          }
+        }
+      },
+
+      {
+        "id": "shadow1-label",
+        "type": "text",
+        "x": 500,
+        "y": 1240,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Soft Shadow",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "shadow1-circle",
+        "type": "progresscircle",
+        "x": 500,
+        "y": 1280,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#2196F3",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "style": {
+            "boxShadow": "0 4px 8px rgba(33, 150, 243, 0.3)"
+          }
+        }
+      },
+
+      {
+        "id": "shadow2-label",
+        "type": "text",
+        "x": 720,
+        "y": 1240,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Strong Glow",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "shadow2-circle",
+        "type": "progresscircle",
+        "x": 720,
+        "y": 1280,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#9C27B0",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "style": {
+            "boxShadow": "0 0 20px rgba(156, 39, 176, 0.6)"
+          }
+        }
+      },
+
+      {
+        "id": "combo1-label",
+        "type": "text",
+        "x": 940,
+        "y": 1240,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Border + Shadow",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "combo1-circle",
+        "type": "progresscircle",
+        "x": 940,
+        "y": 1280,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#00BCD4",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "style": {
+            "borderWidth": 2,
+            "borderColor": "#00BCD4",
+            "borderStyle": "solid",
+            "borderRadius": 100,
+            "boxShadow": "0 0 15px rgba(0, 188, 212, 0.5)"
+          }
+        }
+      },
+
+      {
+        "id": "combo2-label",
+        "type": "text",
+        "x": 1160,
+        "y": 1240,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Segmented + Border",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "combo2-circle",
+        "type": "progresscircle",
+        "x": 1160,
+        "y": 1280,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "segmented": true,
+          "segmentCount": 24,
+          "segmentGap": 3,
+          "pathColor": "#F44336",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "style": {
+            "borderWidth": 3,
+            "borderColor": "#F44336",
+            "borderStyle": "solid",
+            "borderRadius": 100
+          }
+        }
+      },
+
+      {
+        "id": "section5-title",
+        "type": "text",
+        "x": 40,
+        "y": 1500,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 5: Size Variations",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "color": "#F44336",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "size1-label",
+        "type": "text",
+        "x": 60,
+        "y": 1560,
+        "width": 100,
+        "height": 30,
+        "config": {
+          "text": "Tiny (80px)",
+          "fontSize": 12,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "size1-circle",
+        "type": "progresscircle",
+        "x": 60,
+        "y": 1600,
+        "width": 100,
+        "height": 100,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#FFEB3B",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 8,
+          "showValue": true,
+          "textSize": 12
+        }
+      },
+
+      {
+        "id": "size2-label",
+        "type": "text",
+        "x": 200,
+        "y": 1560,
+        "width": 120,
+        "height": 30,
+        "config": {
+          "text": "Small (120px)",
+          "fontSize": 12,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "size2-circle",
+        "type": "progresscircle",
+        "x": 200,
+        "y": 1600,
+        "width": 120,
+        "height": 120,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#FFEB3B",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 10,
+          "showValue": true,
+          "textSize": 14
+        }
+      },
+
+      {
+        "id": "size3-label",
+        "type": "text",
+        "x": 360,
+        "y": 1560,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Medium (180px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "size3-circle",
+        "type": "progresscircle",
+        "x": 360,
+        "y": 1600,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#FFEB3B",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "textSize": 16
+        }
+      },
+
+      {
+        "id": "size4-label",
+        "type": "text",
+        "x": 580,
+        "y": 1560,
+        "width": 220,
+        "height": 30,
+        "config": {
+          "text": "Large (220px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "size4-circle",
+        "type": "progresscircle",
+        "x": 580,
+        "y": 1600,
+        "width": 220,
+        "height": 220,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#FFEB3B",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 14,
+          "showValue": true,
+          "textSize": 20
+        }
+      },
+
+      {
+        "id": "size5-label",
+        "type": "text",
+        "x": 840,
+        "y": 1560,
+        "width": 260,
+        "height": 30,
+        "config": {
+          "text": "Extra Large (260px)",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "size5-circle",
+        "type": "progresscircle",
+        "x": 840,
+        "y": 1600,
+        "width": 260,
+        "height": 260,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "pathColor": "#FFEB3B",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 16,
+          "showValue": true,
+          "textSize": 24
+        }
+      },
+
+      {
+        "id": "section6-title",
+        "type": "text",
+        "x": 40,
+        "y": 1900,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 6: Color Ranges (Dynamic Colors Based on Value)",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "color": "#FFEB3B",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "ranges-label",
+        "type": "text",
+        "x": 60,
+        "y": 1960,
+        "width": 260,
+        "height": 30,
+        "config": {
+          "text": "Color Ranges: 0-25 Red | 26-50 Yellow | 51-75 Blue | 76-100 Green",
+          "fontSize": 12,
+          "color": "#cccccc",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "range-circle",
+        "type": "progresscircle",
+        "x": 120,
+        "y": 2000,
+        "width": 220,
+        "height": 220,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "useColorRanges": true,
+          "range1Min": 0,
+          "range1Max": 25,
+          "range1Color": "#F44336",
+          "range2Min": 26,
+          "range2Max": 50,
+          "range2Color": "#FFEB3B",
+          "range3Min": 51,
+          "range3Max": 75,
+          "range3Color": "#2196F3",
+          "range4Min": 76,
+          "range4Max": 100,
+          "range4Color": "#4CAF50",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 16,
+          "showValue": true,
+          "textSize": 24
+        }
+      },
+
+      {
+        "id": "range-seg-label",
+        "type": "text",
+        "x": 400,
+        "y": 1960,
+        "width": 260,
+        "height": 30,
+        "config": {
+          "text": "Same ranges + Segmented (36 segments)",
+          "fontSize": 12,
+          "color": "#cccccc",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "range-seg-circle",
+        "type": "progresscircle",
+        "x": 460,
+        "y": 2000,
+        "width": 220,
+        "height": 220,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "segmented": true,
+          "segmentCount": 36,
+          "segmentGap": 2,
+          "useColorRanges": true,
+          "range1Min": 0,
+          "range1Max": 25,
+          "range1Color": "#F44336",
+          "range2Min": 26,
+          "range2Max": 50,
+          "range2Color": "#FFEB3B",
+          "range3Min": 51,
+          "range3Max": 75,
+          "range3Color": "#2196F3",
+          "range4Min": 76,
+          "range4Max": 100,
+          "range4Color": "#4CAF50",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 16,
+          "showValue": true,
+          "textSize": 24
+        }
+      },
+
+      {
+        "id": "section7-title",
+        "type": "text",
+        "x": 40,
+        "y": 2260,
+        "width": 1840,
+        "height": 40,
+        "config": {
+          "text": "Section 7: Different Units & Custom Text",
+          "fontSize": 28,
+          "fontWeight": "600",
+          "color": "#4CAF50",
+          "textAlign": "left"
+        }
+      },
+
+      {
+        "id": "unit1-label",
+        "type": "text",
+        "x": 60,
+        "y": 2320,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Percentage %",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "unit1-circle",
+        "type": "progresscircle",
+        "x": 60,
+        "y": 2360,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "unit": "%",
+          "pathColor": "#8BC34A",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "textSize": 18
+        }
+      },
+
+      {
+        "id": "unit2-label",
+        "type": "text",
+        "x": 280,
+        "y": 2320,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Temperature °C",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "unit2-circle",
+        "type": "progresscircle",
+        "x": 280,
+        "y": 2360,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "unit": "°C",
+          "pathColor": "#FF5722",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "textSize": 18
+        }
+      },
+
+      {
+        "id": "unit3-label",
+        "type": "text",
+        "x": 500,
+        "y": 2320,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Volume L",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "unit3-circle",
+        "type": "progresscircle",
+        "x": 500,
+        "y": 2360,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "unit": "L",
+          "pathColor": "#03A9F4",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "textSize": 18
+        }
+      },
+
+      {
+        "id": "unit4-label",
+        "type": "text",
+        "x": 720,
+        "y": 2320,
+        "width": 180,
+        "height": 30,
+        "config": {
+          "text": "Custom kWh",
+          "fontSize": 14,
+          "color": "#cccccc",
+          "textAlign": "center"
+        }
+      },
+      {
+        "id": "unit4-circle",
+        "type": "progresscircle",
+        "x": 720,
+        "y": 2360,
+        "width": 180,
+        "height": 180,
+        "config": {
+          "entity_id": "input_number.test_slider",
+          "value": 65,
+          "unit": "kWh",
+          "pathColor": "#CDDC39",
+          "trailColor": "#3a4a5f",
+          "strokeWidth": 12,
+          "showValue": true,
+          "textSize": 16
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "widgetCount": 70,
+    "exportedFrom": "canvas-ui"
+  }
+}

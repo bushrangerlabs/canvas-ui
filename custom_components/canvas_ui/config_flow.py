@@ -5,7 +5,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
-from .const import DEFAULT_OLLAMA_URL, DOMAIN
+from .const import DOMAIN
 
 DATA_SCHEMA = vol.Schema(
     {
@@ -31,7 +31,7 @@ class CanvasUIConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data=user_input,
                 options={
                     "enable_editor": True,
-                    "ollama_url": DEFAULT_OLLAMA_URL,
+                    "auto_register_resources": True,
                 },
             )
 
@@ -74,11 +74,11 @@ class CanvasUIOptionsFlow(config_entries.OptionsFlow):
                         default=self.config_entry.options.get("enable_editor", True),
                     ): cv.boolean,
                     vol.Optional(
-                        "ollama_url",
+                        "auto_register_resources",
                         default=self.config_entry.options.get(
-                            "ollama_url", DEFAULT_OLLAMA_URL
+                            "auto_register_resources", True
                         ),
-                    ): cv.string,
+                    ): cv.boolean,
                 }
             ),
         )

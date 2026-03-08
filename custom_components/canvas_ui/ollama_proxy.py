@@ -1,45 +1,41 @@
 """Ollama API Proxy for Canvas UI.
 
 Proxies Ollama API requests through Home Assistant to avoid CORS issues.
-Provides authentication and security while maintaining Canvas UI access
-to Ollama services.
+Provides authentication, logging, and security while maintaining Canvas UI
+access to Ollama services.
 
 Architecture:
-    Browser → HA API Proxy → Ollama
-    (same origin, no CORS)   (server-to-server)
+    Browser (192.168.1.103) → HA API Proxy → Ollama (192.168.1.204)
+    (same origin, no CORS)      (server-to-server)
 
-Configure the Ollama URL via the Canvas UI integration options in Settings →
-Devices & Services → Canvas UI → Configure.
-Default: http://localhost:11434
+Benefits:
+    - Same origin (no CORS restrictions)
+    - HA authentication required
+    - Ollama stays private (no network exposure)
+    - Full HA logging and monitoring
+    - Rate limiting capability
+    - "The HA way" - consistent with HA architecture
 """
 
 import logging
+from typing import Any
 
 import aiohttp
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DEFAULT_OLLAMA_URL, DOMAIN
-
 _LOGGER = logging.getLogger(__name__)
+
+# Ollama server URL (internal network)
+OLLAMA_BASE_URL = "http://192.168.1.204:11434"
 
 # Extended timeout for AI operations (streaming, embeddings, large models)
 OLLAMA_TIMEOUT = aiohttp.ClientTimeout(total=120)
 
 
-def _get_ollama_url(hass: HomeAssistant) -> str:
-    """Read the configured Ollama base URL from the active config entry."""
-    if DOMAIN in hass.data:
-        for entry_data in hass.data[DOMAIN].values():
-            if isinstance(entry_data, dict) and "ollama_url" in entry_data:
-                return entry_data["ollama_url"].rstrip("/")
-    return DEFAULT_OLLAMA_URL
-
-
 class OllamaProxyView(HomeAssistantView):
-    """Proxy Ollama API requests — adds HA authentication and avoids CORS."""
+    """Proxy Ollama API requests to avoid CORS while adding HA security."""
 
     url = "/api/canvas_ui/ollama/{path:.*}"
     name = "api:canvas_ui:ollama"
@@ -47,90 +43,91 @@ class OllamaProxyView(HomeAssistantView):
 
     async def post(self, request: web.Request, path: str) -> web.Response:
         """Proxy POST requests to Ollama API."""
-        ollama_url = _get_ollama_url(request.app["hass"])
-        target = f"{ollama_url}/api/{path}"
-
         try:
+            # Parse request body
             data = await request.json()
-            _LOGGER.debug("Ollama proxy POST → %s", target)
 
+            _LOGGER.debug(f"Ollama proxy POST: /api/{path}")
+
+            # Forward to Ollama server
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    target,
+                    f"{OLLAMA_BASE_URL}/api/{path}",
                     json=data,
                     timeout=OLLAMA_TIMEOUT,
                 ) as resp:
+                    # Check if response is successful
                     if resp.status != 200:
                         error_text = await resp.text()
-                        _LOGGER.error(
-                            "Ollama API error (%s): %s", resp.status, error_text
-                        )
+                        _LOGGER.error(f"Ollama API error ({resp.status}): {error_text}")
                         return self.json(
-                            {"error": f"Ollama returned {resp.status}"},
+                            {"error": f"Ollama API returned {resp.status}"},
                             status_code=resp.status,
                         )
-                    return self.json(await resp.json())
 
-        except aiohttp.ClientError as err:
-            _LOGGER.error("Ollama connection error: %s", err)
+                    # Forward Ollama response to Canvas UI
+                    result = await resp.json()
+                    return self.json(result)
+
+        except aiohttp.ClientError as e:
+            _LOGGER.error(f"Ollama connection error: {e}")
             return self.json(
-                {"error": "Cannot connect to Ollama", "details": str(err)},
+                {
+                    "error": "Cannot connect to Ollama server",
+                    "details": str(e),
+                },
                 status_code=502,
             )
-        except Exception as err:
-            _LOGGER.error("Ollama proxy error: %s", err, exc_info=True)
+        except Exception as e:
+            _LOGGER.error(f"Ollama proxy error: {e}", exc_info=True)
             return self.json(
-                {"error": "Internal proxy error", "details": str(err)},
+                {"error": "Internal proxy error", "details": str(e)},
                 status_code=500,
             )
 
     async def get(self, request: web.Request, path: str) -> web.Response:
         """Proxy GET requests to Ollama API."""
-        ollama_url = _get_ollama_url(request.app["hass"])
-        target = f"{ollama_url}/api/{path}"
-
         try:
-            _LOGGER.debug("Ollama proxy GET → %s", target)
+            _LOGGER.debug(f"Ollama proxy GET: /api/{path}")
 
+            # Forward to Ollama server
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    target,
+                    f"{OLLAMA_BASE_URL}/api/{path}",
                     timeout=OLLAMA_TIMEOUT,
                 ) as resp:
+                    # Check if response is successful
                     if resp.status != 200:
                         error_text = await resp.text()
-                        _LOGGER.error(
-                            "Ollama API error (%s): %s", resp.status, error_text
-                        )
+                        _LOGGER.error(f"Ollama API error ({resp.status}): {error_text}")
                         return self.json(
-                            {"error": f"Ollama returned {resp.status}"},
+                            {"error": f"Ollama API returned {resp.status}"},
                             status_code=resp.status,
                         )
-                    return self.json(await resp.json())
 
-        except aiohttp.ClientError as err:
-            _LOGGER.error("Ollama connection error: %s", err)
+                    # Forward Ollama response to Canvas UI
+                    result = await resp.json()
+                    return self.json(result)
+
+        except aiohttp.ClientError as e:
+            _LOGGER.error(f"Ollama connection error: {e}")
             return self.json(
-                {"error": "Cannot connect to Ollama", "details": str(err)},
+                {
+                    "error": "Cannot connect to Ollama server",
+                    "details": str(e),
+                },
                 status_code=502,
             )
-        except Exception as err:
-            _LOGGER.error("Ollama proxy error: %s", err, exc_info=True)
+        except Exception as e:
+            _LOGGER.error(f"Ollama proxy error: {e}", exc_info=True)
             return self.json(
-                {"error": "Internal proxy error", "details": str(err)},
+                {"error": "Internal proxy error", "details": str(e)},
                 status_code=500,
             )
 
 
-def setup_ollama_proxy(hass: HomeAssistant, entry: ConfigEntry | None = None) -> None:
-    """Register Ollama proxy HTTP view and store configured URL."""
-    if entry is not None:
-        # Store configured URL so _get_ollama_url can find it
-        hass.data.setdefault(DOMAIN, {})
-        hass.data[DOMAIN].setdefault(entry.entry_id, {})
-        hass.data[DOMAIN][entry.entry_id]["ollama_url"] = entry.options.get(
-            "ollama_url", DEFAULT_OLLAMA_URL
-        )
-
-    _LOGGER.info("Canvas UI: registering Ollama proxy at /api/canvas_ui/ollama/")
+def setup_ollama_proxy(hass: HomeAssistant) -> None:
+    """Register Ollama proxy HTTP view."""
+    _LOGGER.info("🔌 Registering Ollama API proxy at /api/canvas_ui/ollama/")
     hass.http.register_view(OllamaProxyView())
+    _LOGGER.info("✅ Ollama proxy registered successfully")

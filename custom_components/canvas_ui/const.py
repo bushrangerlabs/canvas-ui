@@ -6,4 +6,3 @@ VERSION = "2.0.0"
 # Default options
 DEFAULT_ENABLE_EDITOR = True
 DEFAULT_AUTO_REGISTER = True
-DEFAULT_OLLAMA_URL = "http://localhost:11434"
