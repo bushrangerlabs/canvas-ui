@@ -78,7 +78,7 @@ export async function loadCoreIcons(): Promise<void> {
 export async function loadIconCache(): Promise<IconCache> {
   try {
     // Add cache-busting timestamp
-    const response = await fetch(`/local/canvas-ui/icon-cache.json?t=${Date.now()}`);
+    const response = await fetch(`/canvas-ui-static/icon-cache.json?t=${Date.now()}`);
     if (!response.ok) {
       console.log('[IconCache] No existing cache found, creating new cache');
       return {};

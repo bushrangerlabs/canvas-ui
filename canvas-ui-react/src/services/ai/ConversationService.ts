@@ -593,9 +593,9 @@ export class ConversationService {
       console.log('[OpenWebUI] Uploading CANVAS_UI_WIDGETS.md...');
       
       // Load file from canvas-ui directory
-      const response = await fetch('/local/canvas-ui/CANVAS_UI_WIDGETS.md');
+      const response = await fetch('/canvas-ui-static/CANVAS_UI_WIDGETS.md');
       if (!response.ok) {
-        throw new Error('Failed to load CANVAS_UI_WIDGETS.md from /local/canvas-ui/');
+        throw new Error('Failed to load CANVAS_UI_WIDGETS.md from /canvas-ui-static/');
       }
       const content = await response.text();
       

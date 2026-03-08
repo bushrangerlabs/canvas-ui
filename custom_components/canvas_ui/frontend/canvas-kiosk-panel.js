@@ -53,7 +53,7 @@ class CanvasKioskPanel extends HTMLElement {
 
   async _loadViewApp() {
     try {
-      const response = await fetch("/local/canvas-ui/kiosk.html");
+      const response = await fetch("/canvas-ui-static/kiosk.html");
       const html = await response.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");

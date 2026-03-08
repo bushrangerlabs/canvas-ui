@@ -46,7 +46,7 @@ class LovelaceCardDiscoveryService {
 
     this.loadPromise = (async () => {
       try {
-        const response = await fetch('/local/canvas-ui/LOVELACE_CARDS.json');
+        const response = await fetch('/canvas-ui-static/LOVELACE_CARDS.json');
         if (!response.ok) {
           console.warn('[LovelaceCardDiscovery] Failed to load LOVELACE_CARDS.json, using empty database');
           this.cardDatabase = { cards: {} };
