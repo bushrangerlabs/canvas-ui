@@ -16,6 +16,24 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 - 💾 **View Management** - Export/import views as JSON for backup and sharing
 - 🎛️ **Inspector Panel** - Comprehensive property editing with live preview
 
+Edit Mode:-
+
+  <img width="1920" height="928" alt="Canvas_UI_Edit" src="https://github.com/user-attachments/assets/f5250d3e-15a3-4c16-88b4-b38a165b33eb" />
+
+Kiosk Mode-
+
+  <img width="1330" height="909" alt="Canvas_UI_Kiosk" src="https://github.com/user-attachments/assets/cffbe998-79c9-4db8-b565-1ef5612f25d0" />
+
+Ask AI "Create a view with a calculator with a Jarvis from Ironman theme" and this it what it created:-
+
+  <img width="1920" height="1080" alt="Jarvis" src="https://github.com/user-attachments/assets/3f5b9815-32bc-4559-80e4-1614ce102b9b" />
+
+Emded you favourite Lovalace cards but freely drag and locate them anywhere on the canvas (No Grid)
+
+
+
+
+
 ## 📦 Installation
 
 ### HACS (Home Assistant Community Store)
