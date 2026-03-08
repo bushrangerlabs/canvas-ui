@@ -1,6 +1,6 @@
 # Canvas UI for Home Assistant
 
-****** THE REPO IS NOT CURRENTLY IN FULL WORKING STATE SO PLEASE DO NOT USE ******
+**\*\*** THE REPO IS NOT CURRENTLY IN FULL WORKING STATE SO PLEASE DO NOT USE **\*\***
 
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
@@ -33,15 +33,8 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
    - Click "Add"
 3. Search for "Canvas UI" in HACS
 4. Click "Download"
-5. After HACS installs the integration, run the installation script to copy frontend files:
-   ```bash
-   # SSH into your Home Assistant server
-   cd /config/custom_components/canvas_ui
-   chmod +x ../../install.sh
-   ../../install.sh /config
-   ```
-6. Restart Home Assistant
-7. Canvas UI will appear in your sidebar
+5. Restart Home Assistant
+6. Canvas UI will appear in your sidebar
 
 ### Manual Installation
 
