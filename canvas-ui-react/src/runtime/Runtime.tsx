@@ -31,45 +31,42 @@ const Runtime: React.FC = () => {
   // Expose hass to window for Lovelace cards in kiosk/view mode
   useEffect(() => {
     if (hass && authenticated) {
-      // Check if we're in HA panel mode (flag set by canvas-kiosk-panel.js)
-      const isInHAPanel = (window as any).__CANVAS_KIOSK_MODE__ === true;
+      // Try to find HA's real hass object from <home-assistant> element.
+      // This works in ALL panel modes (edit, kiosk, preview) since Canvas UI always
+      // runs as an HA panel in the same document. The <home-assistant> element always
+      // has the full hass (localize, themes, callService, formatEntityState, etc.)
+      let haHass: any = null;
       
-      // Try to find HA's real hass object (multiple locations)
-      let haHass = null;
-      if (isInHAPanel) {
-        // Try <home-assistant> element first (most common)
-        const homeAssistant = document.querySelector('home-assistant');
-        if (homeAssistant && (homeAssistant as any).hass) {
-          haHass = (homeAssistant as any).hass;
-          console.log('[Runtime] Found hass on <home-assistant> element');
-        }
-        // Fallback to window.hassConnection
-        if (!haHass && (window as any).hassConnection) {
-          haHass = (window as any).hassConnection;
-          console.log('[Runtime] Found hass on window.hassConnection');
-        }
-        // Last resort - window.parent.hass (probably wrong but try anyway)
-        if (!haHass && (window.parent as any).hass) {
-          haHass = (window.parent as any).hass;
-          console.log('[Runtime] Found hass on window.parent.hass');
+      // Try <home-assistant> element first (most reliable in panel mode)
+      const homeAssistant = document.querySelector('home-assistant');
+      if (homeAssistant && (homeAssistant as any).hass && typeof (homeAssistant as any).hass.localize === 'function') {
+        haHass = (homeAssistant as any).hass;
+        console.log('[Runtime] Found full hass on <home-assistant> element');
+      }
+      // Fallback: check if window.hass already has the full object (set by canvas-ui-panel.js)
+      if (!haHass) {
+        const existingHass = (window as any).hass;
+        if (existingHass && typeof existingHass.localize === 'function') {
+          haHass = existingHass;
+          console.log('[Runtime] Found full hass already on window.hass');
         }
       }
-      
-      console.log('[Runtime] Panel detection - isInHAPanel:', isInHAPanel, 'haHass:', !!haHass);
-      if (haHass) {
-        console.log('[Runtime] HA hass has localize:', typeof haHass.localize === 'function');
+      // Fallback: window.hassConnection
+      if (!haHass && (window as any).hassConnection) {
+        haHass = (window as any).hassConnection;
+        console.log('[Runtime] Found hass on window.hassConnection');
       }
-      
-      if (isInHAPanel && haHass && typeof haHass.localize === 'function') {
-        // Use HA's full hass object (has localize, formatNumber, etc.)
-        console.log('[Runtime] ✅ Using HA hass (panel mode)');
+
+      if (haHass && typeof haHass.localize === 'function') {
+        // Use HA's full hass object (has localize, formatNumber, themes, etc.)
+        console.log('[Runtime] ✅ Using full HA hass (panel mode)');
         (window as any).hass = haHass;
-        // Also expose HA's loadCardHelpers
-        if ((window.parent as any).loadCardHelpers) {
+        // Make sure loadCardHelpers is available
+        if (!(window as any).loadCardHelpers && (window.parent as any).loadCardHelpers) {
           (window as any).loadCardHelpers = (window.parent as any).loadCardHelpers;
         }
       } else {
-        // Standalone mode - use our WebSocket hass
+        // Standalone mode (dev server, etc.) - use our WebSocket hass
         console.log('[Runtime] Using WebSocket hass (standalone mode)');
         (window as any).hass = hass;
         // Basic card helper for standalone

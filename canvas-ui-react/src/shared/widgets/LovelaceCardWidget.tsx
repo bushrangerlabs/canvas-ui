@@ -337,14 +337,21 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
         let cardElement: any;
         
         // Wait for hass to be available with states
-        // Prefer window.parent.hass (full HA object with localize, themes, callService, etc.)
-        // Fall back to window.hass (Canvas UI's partial object - only has states)
+        // Prefer the full HA hass (has localize, themes, callService, formatEntityState, etc.)
+        // The full hass is set by canvas-ui-panel.js before React boots, or by <home-assistant> element.
         const getFullHass = () => {
-          const parentHass = (window.parent !== window.self) ? (window.parent as any).hass : null;
+          // 1. Check <home-assistant> element (most reliable - always has full hass in panel mode)
+          const homeAssistant = document.querySelector('home-assistant');
+          if (homeAssistant && (homeAssistant as any).hass && typeof (homeAssistant as any).hass.localize === 'function') {
+            return (homeAssistant as any).hass;
+          }
+          // 2. window.hass - could be full HA hass (set by canvas-ui-panel.js) or partial (set by WebSocketProvider)
           const windowHass = (window as any).hass;
-          return (parentHass?.states && Object.keys(parentHass.states).length > 0)
-            ? parentHass
-            : windowHass;
+          if (windowHass && typeof windowHass.localize === 'function') {
+            return windowHass; // Full HA hass
+          }
+          // 3. Fall back to partial hass (WebSocketProvider's hassConnection) if that's all we have
+          return windowHass;
         };
 
         const waitForHass = () => {
@@ -480,12 +487,13 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
   // Continuously update hass object (like old Canvas UI updateHass method)
   useEffect(() => {
     const updateInterval = setInterval(() => {
-      // Prefer window.parent.hass (full HA object with localize, themes, etc.)
-      // Fall back to window.hass (Canvas UI's partial object)
-      const parentHass = (window.parent !== window.self) ? (window.parent as any).hass : null;
+      // Prefer full HA hass from <home-assistant> element (has localize, themes, etc.)
+      // Fall back to window.hass (either full HA or partial Canvas UI hass)
+      const homeAssistant = document.querySelector('home-assistant');
+      const haHass = homeAssistant && (homeAssistant as any).hass;
       const windowHass = (window as any).hass;
-      const hass = (parentHass?.states && typeof parentHass.states === 'object')
-        ? parentHass
+      const hass = (haHass && typeof haHass.localize === 'function') ? haHass
+        : (windowHass && typeof windowHass.localize === 'function') ? windowHass
         : windowHass;
       // Only update if cardElement exists and hass has a valid states object
       if (cardElementRef.current && hass && hass.states && typeof hass.states === 'object') {

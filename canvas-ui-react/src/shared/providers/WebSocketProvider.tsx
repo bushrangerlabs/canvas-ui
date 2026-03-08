@@ -209,8 +209,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
         setHass(hassConnection);
         
         // Expose hass globally for Lovelace cards (same as old Canvas UI)
+        // IMPORTANT: Only set window.hass if there isn't already a full HA hass object there.
+        // canvas-ui-panel.js sets window.hass to the real full HA hass (with localize, themes, etc.)
+        // before React boots. We must not overwrite it with our partial hassConnection.
         if (typeof window !== 'undefined') {
-          (window as any).hass = hassConnection;
+          const existingHass = (window as any).hass;
+          const hasFullHass = existingHass && typeof existingHass.localize === 'function';
+          if (!hasFullHass) {
+            (window as any).hass = hassConnection;
+          }
           
           // Load card helpers on first connection
           if (!(window as any).cardHelpers && (window as any).loadCardHelpers) {
@@ -223,7 +230,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
                 console.warn('[WebSocketProvider] Failed to load card helpers:', err);
               });
           }
-        }
+          }
 
         // Load initial states and populate hass.states
         getStates().then((states) => {
@@ -232,10 +239,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
             entitiesMap[state.entity_id] = state;
           });
           setEntities(entitiesMap);
-          // Update hass.states for lovelace cards
+          // Update hass.states for lovelace cards, but ONLY if window.hass is our partial
+          // hassConnection (not the full HA hass already set by canvas-ui-panel.js)
           hassConnection.states = entitiesMap;
           if (typeof window !== 'undefined') {
-            (window as any).hass.states = entitiesMap;
+            const winHass = (window as any).hass;
+            if (winHass && typeof winHass.localize !== 'function') {
+              winHass.states = entitiesMap;
+            }
           }
         });
 
@@ -247,7 +258,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
             hass.states = newEntities;
           }
           if (typeof window !== 'undefined' && (window as any).hass) {
-            (window as any).hass.states = newEntities;
+            const winHass = (window as any).hass;
+            // Only update if it's our partial hassConnection (not full HA hass)
+            if (typeof winHass.localize !== 'function') {
+              winHass.states = newEntities;
+            }
           }
         });
       }
