@@ -190,24 +190,27 @@ Perfect for wall-mounted tablets and dedicated displays.
 ```bash
 cd canvas-ui-react
 npm install
-npm run build
-```
-
-For HACS distribution:
-
-```bash
 npm run build:hacs
 ```
 
+Output is in `canvas-ui-react/dist-hacs/` and automatically copied to `www/canvas-ui/` by `./build.sh`.
+
 ### Deploy to Home Assistant
 
-```bash
-# Build
-npm run build
+Use the included script (reads credentials from `.env`):
 
-# Deploy (adjust paths as needed)
-scp -r dist/* user@ha-server:/config/www/canvas-ui/
-scp -r ../custom_components/canvas_ui user@ha-server:/config/custom_components/
+```bash
+./deploy.sh
+```
+
+Or manually:
+
+```bash
+cd canvas-ui-react
+npm run build:hacs
+cd ..
+cp -r canvas-ui-react/dist-hacs/* www/canvas-ui/
+scp -r www/canvas-ui/* user@ha-server:/config/www/canvas-ui/
 ```
 
 ## 📝 Configuration Storage
