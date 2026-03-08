@@ -1,4 +1,4 @@
-# Canvas UI for Home Assistant
+
 
 **\*\*** THE REPO IS NOT CURRENTLY IN FULL WORKING STATE SO PLEASE DO NOT USE **\*\***
 
@@ -17,6 +17,9 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 - 🎭 **Custom Icons** - 17,000+ icons from MDI, Font Awesome, and more
 - 💾 **View Management** - Export/import views as JSON for backup and sharing
 - 🎛️ **Inspector Panel** - Comprehensive property editing with live preview
+
+
+
 
 ## 📦 Installation
 
