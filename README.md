@@ -10,9 +10,9 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 
 ## ✨ Features
 
- - * Visual Drag-and-Drop Editor - Intuitive canvas-based layout system
- - * 27 Professional Widgets - Buttons, gauges, sliders, charts, weather, and more
- - * Lovelace Card Widget - Embed you favorite Lovelace Card and now you can just drag and place it anywhere and even stack one on the other.
+- * Visual Drag-and-Drop Editor - Intuitive canvas-based layout system
+- * 27 Professional Widgets - Buttons, gauges, sliders, charts, weather, and more
+- * Lovelace Card Widget - Embed you favorite Lovelace Card and now you can just drag and place it anywhere and even stack one on the other.
 - * AI View Generator - Create entire dashboards from natural language prompts
 - * Kiosk Mode - Full-screen display mode for wall panels and tablets
 - * Precision Tools - Alignment, grouping, grid snapping, and guides
