@@ -28,7 +28,7 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 2. Add this repository as a custom repository:
    - In HACS, click the 3 dots menu (⋮) in the top right
    - Select "Custom repositories"
-   - Add repository URL: `https://github.com/spetchal/canvas-ui`
+   - Add repository URL: `https://github.com/bushrangerlabs/canvas-ui`
    - Category: **Integration**
    - Click "Add"
 3. Search for "Canvas UI" in HACS
