@@ -1,13 +1,11 @@
-**\*\*** THE REPO IS NOT CURRENTLY IN FULL WORKING STATE SO PLEASE DO NOT USE **\*\***
-
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
-Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powerful React-based interface featuring 20+ widgets, AI-assisted view generation, and professional dashboard creation tools.
+Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powerful React-based interface featuring 27 widgets, AI-assisted view generation, and professional dashboard creation tools.
 
 ## ✨ Features
 
 - 🎨 **Visual Drag-and-Drop Editor** - Intuitive canvas-based layout system
-- 🧩 **25+ Professional Widgets** - Buttons, gauges, sliders, charts, weather, and more
+- 🧩 **27 Professional Widgets** - Buttons, gauges, sliders, charts, weather, and more
 - 🤖 **AI View Generator** - Create entire dashboards from natural language prompts
 - 📱 **Kiosk Mode** - Full-screen display mode for wall panels and tablets
 - 🎯 **Precision Tools** - Alignment, grouping, grid snapping, and guides
@@ -66,11 +64,8 @@ Emded you favourite Lovalace cards but freely drag and locate them anywhere on t
 2. **Copy files to Home Assistant**:
 
    ```bash
-   # Copy custom component
+   # Copy custom component (includes built frontend)
    cp -r custom_components/canvas_ui /path/to/ha/config/custom_components/
-
-   # Copy frontend files
-   cp -r www/canvas-ui /path/to/ha/config/www/
    ```
 
 3. **Restart Home Assistant**
@@ -79,16 +74,12 @@ Emded you favourite Lovalace cards but freely drag and locate them anywhere on t
 
 ### Building from Source
 
-If you want the latest development version:
+If you want to build locally:
 
 ```bash
 cd canvas-ui-react
 npm install
-npm run build:hacs
-
-# Then copy files
-cd ..
-cp -r canvas-ui-react/dist-hacs/* /path/to/ha/config/www/canvas-ui/
+./build.sh  # builds and copies output to custom_components/canvas_ui/frontend/
 ```
 
 ## ⚙️ Configuration
@@ -204,35 +195,25 @@ npm install
 npm run build:hacs
 ```
 
-Output is in `canvas-ui-react/dist-hacs/` and automatically copied to `www/canvas-ui/` by `./build.sh`.
+Output is in `canvas-ui-react/dist-hacs/` and automatically copied to `custom_components/canvas_ui/frontend/` by `./build.sh`.
 
 ### Deploy to Home Assistant
 
-Use the included script (reads credentials from `.env`):
+After building, copy the component to your HA server:
 
 ```bash
-./deploy.sh
-```
-
-Or manually:
-
-```bash
-cd canvas-ui-react
-npm run build:hacs
-cd ..
-cp -r canvas-ui-react/dist-hacs/* www/canvas-ui/
-scp -r www/canvas-ui/* user@ha-server:/config/www/canvas-ui/
+scp -r custom_components/canvas_ui/* user@ha-server:/config/custom_components/canvas_ui/
 ```
 
 ## 📝 Configuration Storage
 
-All views and configurations are stored in:
+All views and configurations are stored in your browser's localStorage and synced to:
 
 ```
 /config/www/canvas-ui/canvas-ui-config.json
 ```
 
-This file can be backed up and restored to preserve your dashboards.
+This file can be backed up and restored to preserve your dashboards across devices.
 
 ## 🤝 Contributing
 
@@ -251,7 +232,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/spetchal/canvas-ui/discussions)
+- **Discussions**: [GitHub Discussions](https://github.com/bushrangerlabs/canvas-ui/discussions)
 
 ---
 
