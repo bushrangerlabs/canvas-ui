@@ -54,7 +54,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     setup_ollama_proxy(hass)
 
     # Register static files for frontend (served from inside the component)
-    _register_static_files(hass)
+    await _register_static_files(hass)
 
     # Register custom panel for direct access
     await _register_panel(hass)
@@ -110,7 +110,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     setup_ollama_proxy(hass)
 
     # Register static files for frontend (served from inside the component)
-    _register_static_files(hass)
+    await _register_static_files(hass)
 
     # Register custom panel
     await _register_panel(hass)
@@ -152,22 +152,28 @@ async def async_update_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-def _register_static_files(hass: HomeAssistant) -> None:
+async def _register_static_files(hass: HomeAssistant) -> None:
     """Register Canvas UI frontend files as static HTTP path."""
     global _STATIC_REGISTERED
     if _STATIC_REGISTERED:
         return
 
     frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
-    if os.path.isdir(frontend_path):
-        hass.http.register_static_path(
-            "/canvas-ui-static",
-            frontend_path,
-            cache_headers=False,
-        )
-        _LOGGER.info("✅ Canvas UI static files registered at /canvas-ui-static")
-    else:
+    if not os.path.isdir(frontend_path):
         _LOGGER.error(f"Canvas UI frontend directory not found: {frontend_path}")
+        _STATIC_REGISTERED = True
+        return
+
+    # Try modern HA API (2024.4+) first, fall back to legacy
+    try:
+        from homeassistant.components.http import StaticPathConfig
+        await hass.http.async_register_static_paths([
+            StaticPathConfig("/canvas-ui-static", frontend_path, cache_headers=False)
+        ])
+        _LOGGER.info("✅ Canvas UI static files registered at /canvas-ui-static (StaticPathConfig)")
+    except (ImportError, AttributeError):
+        hass.http.register_static_path("/canvas-ui-static", frontend_path, cache_headers=False)
+        _LOGGER.info("✅ Canvas UI static files registered at /canvas-ui-static (legacy)")
 
     _STATIC_REGISTERED = True
 
