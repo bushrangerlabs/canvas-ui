@@ -17,7 +17,7 @@ Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powe
 - 📱 **Kiosk Mode** - Full-screen display mode for wall panels and tablets
 - 🎯 **Precision Tools** - Alignment, grouping, grid snapping, and guides
 - 🔗 **Entity Binding** - Real-time entity data integration with live state updates
-- ⚡ **Visual Flow System** - Node-based automation flows with triggers, conditions, and actions
+- ⚡ **Visual Flow System** - Frontend widget automation and inter-widget connections (complements HA automations, does not replace them)
 - 📦 **Variable System** - Canvas-scoped variables shared across widgets and flows
 - 📁 **File Manager** - Upload and manage static assets (images, fonts) directly from the UI
 - 🎭 **Custom Icons** - 17,000+ icons from MDI, Font Awesome, and more
@@ -180,16 +180,19 @@ Widgets connect to Home Assistant entities in real time. Wherever you see an ent
 
 ## ⚡ Flow System
 
-Canvas UI includes a built-in visual automation engine that runs entirely in the frontend — no HA automations required.
+The Flow System is a **frontend automation engine** focused on canvas-level UI behaviour and inter-widget communication. It runs entirely in the browser and is designed to complement — not replace — Home Assistant's own automation system.
+
+> **Note:** Flows are for controlling what happens *on your canvas* — showing/hiding widgets, updating displayed values, reacting to widget interactions, and wiring widgets together. For device automations, triggers based on complex HA events, or anything that needs to run when the dashboard is closed, continue to use HA Automations or Scripts.
 
 Flows are built from three building blocks:
 
-- **Triggers** - What starts the flow: entity state changes, time schedules, widget events, or manual execution
+- **Triggers** - What starts the flow: entity state changes, time schedules, widget events (button press, slider change), or manual execution
 - **Conditions** - Optional logic gates (entity states, variable comparisons, time windows)
-- **Actions** - What happens: call HA services, set widget properties, update variables, or chain to another flow
+- **Actions** - What happens: update widget properties, set variables, switch views, or call HA services as a side-effect
 
 Flows are created and managed in the **Flow Editor** (toolbar → ⚡ icon). They run live in the browser and are stored as part of your Canvas UI configuration. Typical use-cases include:
 
+- Wire a slider widget directly to a gauge widget without writing any code
 - Show a warning banner on the canvas when a door is left open
 - Automatically switch views on a kiosk display on a schedule
 - Update a text widget's content based on multiple entity states
