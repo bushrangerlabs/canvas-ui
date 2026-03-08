@@ -22,6 +22,9 @@ PLATFORMS: list[Platform] = []
 # Track if panel is already registered (prevents duplicate registration)
 _PANEL_REGISTERED = False
 
+# Track if static path is already registered
+_STATIC_REGISTERED = False
+
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Canvas UI integration from YAML config."""
@@ -49,6 +52,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     # Register Ollama API proxy
     setup_ollama_proxy(hass)
+
+    # Register static files for frontend (served from inside the component)
+    _register_static_files(hass)
 
     # Register custom panel for direct access
     await _register_panel(hass)
@@ -103,6 +109,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register Ollama API proxy
     setup_ollama_proxy(hass)
 
+    # Register static files for frontend (served from inside the component)
+    _register_static_files(hass)
+
     # Register custom panel
     await _register_panel(hass)
 
@@ -143,6 +152,26 @@ async def async_update_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
+def _register_static_files(hass: HomeAssistant) -> None:
+    """Register Canvas UI frontend files as static HTTP path."""
+    global _STATIC_REGISTERED
+    if _STATIC_REGISTERED:
+        return
+
+    frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
+    if os.path.isdir(frontend_path):
+        hass.http.register_static_path(
+            "/canvas-ui-static",
+            frontend_path,
+            cache_headers=False,
+        )
+        _LOGGER.info("✅ Canvas UI static files registered at /canvas-ui-static")
+    else:
+        _LOGGER.error(f"Canvas UI frontend directory not found: {frontend_path}")
+
+    _STATIC_REGISTERED = True
+
+
 async def _register_panel(hass: HomeAssistant) -> None:
     """Register Canvas UI custom panels (edit and kiosk modes)."""
     global _PANEL_REGISTERED
@@ -163,7 +192,7 @@ async def _register_panel(hass: HomeAssistant) -> None:
             webcomponent_name="canvas-ui-panel",
             sidebar_title="Canvas UI",
             sidebar_icon="mdi:view-dashboard-outline",
-            module_url=f"/local/canvas-ui/canvas-ui-panel.js?v={timestamp}",
+            module_url=f"/canvas-ui-static/canvas-ui-panel.js?v={timestamp}",
             embed_iframe=False,
             require_admin=False,
         )
@@ -178,7 +207,7 @@ async def _register_panel(hass: HomeAssistant) -> None:
             webcomponent_name="canvas-kiosk-panel",
             sidebar_title=None,  # Hidden from sidebar
             sidebar_icon=None,
-            module_url=f"/local/canvas-ui/canvas-kiosk-panel.js?v={timestamp}",
+            module_url=f"/canvas-ui-static/canvas-kiosk-panel.js?v={timestamp}",
             embed_iframe=False,
             require_admin=False,
         )
@@ -213,7 +242,7 @@ async def _setup_lovelace_resource(hass: HomeAssistant) -> None:
                 _LOGGER.warning(f"Could not read Lovelace storage: {e}")
 
         # Check if Canvas UI resource already exists
-        canvas_url = "/local/canvas-ui/canvas-ui-panel.js"
+        canvas_url = "/canvas-ui-static/canvas-ui-panel.js"
         resource_exists = any(r.get("url") == canvas_url for r in resources)
 
         if not resource_exists:
@@ -248,7 +277,7 @@ async def _setup_lovelace_resource(hass: HomeAssistant) -> None:
                     )
                     _LOGGER.info("lovelace:")
                     _LOGGER.info("  resources:")
-                    _LOGGER.info("    - url: /local/canvas-ui/canvas-ui-panel.js")
+                    _LOGGER.info("    - url: /canvas-ui-static/canvas-ui-panel.js")
                     _LOGGER.info("      type: module")
         else:
             _LOGGER.debug("Canvas UI resource already registered in Lovelace")

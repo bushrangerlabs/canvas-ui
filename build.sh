@@ -21,19 +21,20 @@ cd canvas-ui-react
 npm run build:hacs
 cd ..
 
-# Update www folder
-echo "🔄 Updating www/canvas-ui folder..."
-rm -rf www/canvas-ui
-cp -r canvas-ui-react/dist-hacs www/canvas-ui
+# Update frontend folder inside custom component
+echo "🔄 Updating custom_components/canvas_ui/frontend folder..."
+rm -rf custom_components/canvas_ui/frontend
+cp -r canvas-ui-react/dist-hacs custom_components/canvas_ui/frontend
 
 echo ""
 echo "================================================"
 echo "  ✅ Build Complete!"
 echo "================================================"
 echo ""
-echo "Built files are in: www/canvas-ui/"
+echo "Built files are in: custom_components/canvas_ui/frontend/"
 echo ""
 echo "Next steps:"
-echo "  • Run ./deploy.sh to deploy to HA server"
-echo "  • Or commit and push to GitHub"
+echo "  Deploy to HA:"
+echo "  sshpass -p 'AWpoP6Rx@wQ7jK' scp -r custom_components/canvas_ui/* root@192.168.1.103:/config/custom_components/canvas_ui/"
+echo "  Or commit and push to GitHub for HACS install"
 echo ""

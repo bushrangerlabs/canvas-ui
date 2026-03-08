@@ -21,8 +21,11 @@ canvas-ui-react/.yarn/
 canvas-ui-react/dist/
 canvas-ui-react/dist-hacs/
 
-# Keep www/canvas-ui (needed for HACS installation)
-!www/canvas-ui/
+# www folder - frontend is served from custom_components/canvas_ui/frontend/
+www/
+
+# Private development planning docs
+REACT_MIGRATION_PLAN.md
 
 # OS
 .DS_Store

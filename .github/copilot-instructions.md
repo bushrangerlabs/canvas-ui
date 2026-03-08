@@ -10,24 +10,24 @@
 
 ### **Local Development:**
 
-- **Project Root:** `/home/spetchal/Code/HADD/`
-- **React App:** `/home/spetchal/Code/HADD/canvas-ui-react/`
-- **Widgets:** `/home/spetchal/Code/HADD/canvas-ui-react/src/shared/widgets/`
-- **Registry:** `/home/spetchal/Code/HADD/canvas-ui-react/src/shared/registry/widgetRegistry.ts`
-- **Build Output:** `/home/spetchal/Code/HADD/canvas-ui-react/dist/`
+- **Project Root:** `/home/spetchal/Code/canvas-ui-hacs/`
+- **React App:** `/home/spetchal/Code/canvas-ui-hacs/canvas-ui-react/`
+- **Widgets:** `/home/spetchal/Code/canvas-ui-hacs/canvas-ui-react/src/shared/widgets/`
+- **Registry:** `/home/spetchal/Code/canvas-ui-hacs/canvas-ui-react/src/shared/registry/widgetRegistry.ts`
+- **Build Output:** `/home/spetchal/Code/canvas-ui-hacs/custom_components/canvas_ui/frontend/`
 
 ### **Home Assistant Server:**
 
-- **Deployed Files:** `/config/www/canvas-ui/`
+- **Deployed Files:** `/config/custom_components/canvas_ui/frontend/`
 - **Config Storage:** `/config/www/canvas-ui/canvas-ui-config.json`
 - **Custom Component:** `/config/custom_components/canvas_ui/`
 
 ### **Build Artifacts:**
 
-- **Assets:** `dist/assets/widget-[name]-[hash].js`
-- **Main Bundle:** `dist/assets/app-[hash].js`
-- **Icon Libraries:** `dist/assets/icons-[library]-[hash].js`
-- **Entry Points:** `dist/index.html`, `dist/app.html`
+- **Assets:** `custom_components/canvas_ui/frontend/assets/widget-[name]-[hash].js`
+- **Main Bundle:** `custom_components/canvas_ui/frontend/assets/app-[hash].js`
+- **Icon Libraries:** `custom_components/canvas_ui/frontend/assets/icons-[library]-[hash].js`
+- **Entry Points:** `custom_components/canvas_ui/frontend/index.html`, `custom_components/canvas_ui/frontend/app.html`
 
 ---
 
@@ -36,7 +36,7 @@
 ### **Development Server:**
 
 ```bash
-cd /home/spetchal/Code/HADD/canvas-ui-react
+cd /home/spetchal/Code/canvas-ui-hacs/canvas-ui-react
 npm run dev
 # Runs on http://localhost:5173
 ```
@@ -44,32 +44,31 @@ npm run dev
 ### **Production Build:**
 
 ```bash
-cd /home/spetchal/Code/HADD/canvas-ui-react
-npm run build
-# Output: dist/ folder
+cd /home/spetchal/Code/canvas-ui-hacs
+./build.sh
+# Builds HACS version → custom_components/canvas_ui/frontend/
 # Modules: ~12,000 transformed
-# Build time: ~10s
+# Build time: ~13s
 ```
 
 ### **Deploy to HA:**
 
 ```bash
-# Full deploy (all files)
-cd /home/spetchal/Code/HADD/canvas-ui-react
-npm run build && sshpass -p 'AWpoP6Rx@wQ7jK' scp -r dist/* root@192.168.1.103:/config/www/canvas-ui/
+# Full deploy (build + deploy)
+cd /home/spetchal/Code/canvas-ui-hacs
+./build.sh && sshpass -p 'AWpoP6Rx@wQ7jK' scp -r custom_components/canvas_ui/* root@192.168.1.103:/config/custom_components/canvas_ui/
 
-# Quick deploy (single file - rarely needed)
-sshpass -p 'AWpoP6Rx@wQ7jK' scp dist/assets/FILE.js root@192.168.1.103:/config/www/canvas-ui/assets/
+# Quick deploy (single JS file - rarely needed)
+sshpass -p 'AWpoP6Rx@wQ7jK' scp custom_components/canvas_ui/frontend/assets/FILE.js root@192.168.1.103:/config/custom_components/canvas_ui/frontend/assets/
 ```
 
 ### **Clear Browser Cache:**
 
 ```bash
-# Touch index.html to invalidate cache
-sshpass -p 'AWpoP6Rx@wQ7jK' ssh root@192.168.1.103 "touch /config/www/canvas-ui/index.html"
+# Restart HA to force JS reload (integration serves with cache_headers=False)
+sshpass -p 'AWpoP6Rx@wQ7jK' ssh root@192.168.1.103 "ha core restart"
 
-# Or delete .gz cache files
-sshpass -p 'AWpoP6Rx@wQ7jK' ssh root@192.168.1.103 "rm /config/www/canvas-ui/assets/*.gz"
+# Or just hard refresh browser (Ctrl+Shift+F5)
 ```
 
 ---
@@ -265,7 +264,7 @@ export default MyWidget;
 
 ```bash
 # Create new widget TypeScript file
-touch /home/spetchal/Code/HADD/canvas-ui-react/src/shared/widgets/MyWidget.tsx
+touch /home/spetchal/Code/canvas-ui-hacs/canvas-ui-react/src/shared/widgets/MyWidget.tsx
 ```
 
 ### **2. Implement Widget:**
@@ -307,9 +306,8 @@ const widgetComponents: Record<
 ### **5. Build & Deploy:**
 
 ```bash
-cd /home/spetchal/Code/HADD/canvas-ui-react
-npm run build
-sshpass -p 'AWpoP6Rx@wQ7jK' scp -r dist/* root@192.168.1.103:/config/www/canvas-ui/
+cd /home/spetchal/Code/canvas-ui-hacs
+./build.sh && sshpass -p 'AWpoP6Rx@wQ7jK' scp -r custom_components/canvas_ui/* root@192.168.1.103:/config/custom_components/canvas_ui/
 ```
 
 ### **6. Test:**
@@ -361,7 +359,7 @@ Update `REACT_MIGRATION_PLAN.md` with new widget details in current phase
 
 ## 📊 Project Status Tracking
 
-**Master Document:** `/home/spetchal/Code/HADD/REACT_MIGRATION_PLAN.md`
+**Master Document:** `/home/spetchal/Code/canvas-ui-hacs/REACT_MIGRATION_PLAN.md`
 
 **Update After:**
 
