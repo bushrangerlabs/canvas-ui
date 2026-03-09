@@ -10,6 +10,7 @@ import { useVisibility } from '../../hooks/useVisibility';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const BorderWidgetMetadata: WidgetMetadata = {
   name: 'Border',
@@ -43,9 +44,9 @@ const BorderWidget: React.FC<WidgetProps> = ({ config }) => {
   // Accept styles from inspector (config.config.style) or flat AI-generated config (config.config).
   // After normalizeConfig runs, styles are always in config.config.style. However, fall back to the
   // full config object in case normalizeConfig hasn't run yet (e.g., first render before store init).
-  const universalStyle = (config.config.style && Object.keys(config.config.style).length > 0)
+  const universalStyle = useResolvedUniversalStyle((config.config.style && Object.keys(config.config.style).length > 0)
     ? config.config.style
-    : (config.config as any);
+    : (config.config as any));
   const styleWithDefaults = {
     ...universalStyle,
     // Support both canonical names (borderColor/borderWidth/borderStyle) and legacy names

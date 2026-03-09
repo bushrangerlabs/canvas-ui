@@ -10,6 +10,7 @@ import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const SwitchWidgetMetadata: WidgetMetadata = {
   name: 'Switch',
@@ -64,7 +65,7 @@ const SwitchWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
 
   const { hass } = useWebSocket();
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   
   // Use useWidget hook for entity subscriptions
   const { getEntityState } = useWidget(config);

@@ -11,6 +11,7 @@ import { useVisibility } from '../../hooks/useVisibility';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 const FlipClockWidgetMetadata: WidgetMetadata = {
   name: 'Flip Clock',
@@ -315,9 +316,10 @@ const FlipClockWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   const radius = clockHeight * 0.136; // 30/220 ratio from original
   const padding = clockWidth * 0.03; // 12px relative to 400px width
   const columnGap = clockWidth * 0.03;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
 
   const clockStyle: React.CSSProperties = {
-    ...applyUniversalStyles(config.config),
+    ...applyUniversalStyles(universalStyle),
     display: 'grid',
     padding: `0 ${padding}px`,
     boxSizing: 'border-box',

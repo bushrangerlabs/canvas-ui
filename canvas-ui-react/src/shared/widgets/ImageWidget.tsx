@@ -9,6 +9,7 @@ import { useWidget } from '../hooks/useWidget';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const ImageWidgetMetadata: WidgetMetadata = {
   name: 'Image',
@@ -111,7 +112,8 @@ const ImageWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   // Apply universal styles
-  const finalStyle = applyUniversalStyles(style, containerStyle);
+  const resolvedStyle = useResolvedUniversalStyle(style);
+  const finalStyle = applyUniversalStyles(resolvedStyle, containerStyle);
 
   // Don't render if visibility condition is false
   if (!isVisible) return null;

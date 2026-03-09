@@ -11,6 +11,7 @@ import { useVisibility } from '../../hooks/useVisibility';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const DigitalClockWidgetMetadata: WidgetMetadata = {
   name: 'Digital Clock',
@@ -176,7 +177,8 @@ const DigitalClockWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   // Apply universal styles
-  const finalStyle = applyUniversalStyles(config.config.style, containerStyle);
+  const universalStyle = useResolvedUniversalStyle(config.config.style);
+  const finalStyle = applyUniversalStyles(universalStyle, containerStyle);
 
   return (
     <div style={finalStyle}>

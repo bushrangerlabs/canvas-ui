@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 const ResolutionWidget: React.FC<WidgetProps> = ({ config }) => {
   // Phase 44: Config destructuring with defaults
@@ -20,7 +21,7 @@ const ResolutionWidget: React.FC<WidgetProps> = ({ config }) => {
     fontSize = 24,
     labelSize = 14,
   } = config.config;
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
 
   const [resolution, setResolution] = useState({ width: 0, height: 0 });
 

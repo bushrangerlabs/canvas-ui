@@ -8,6 +8,7 @@ import { useVisibility } from '../../hooks/useVisibility';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const IFrameWidgetMetadata: WidgetMetadata = {
   name: 'IFrame',
@@ -56,7 +57,7 @@ const IFrameWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }
   } = config.config;
 
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
 
   // Get URL from entity if urlType is 'entity'
   const entityUrl = entityState?.state || '';

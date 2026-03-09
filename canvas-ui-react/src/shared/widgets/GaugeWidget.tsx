@@ -10,6 +10,7 @@ import { useWidget } from '../hooks/useWidget';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 // Static metadata for inspector
 export const GaugeWidgetMetadata: WidgetMetadata = {
@@ -101,7 +102,7 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
   } = config.config;
 
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   
   // Use useWidget hook for entity subscriptions
   const { getEntityState } = useWidget(config);

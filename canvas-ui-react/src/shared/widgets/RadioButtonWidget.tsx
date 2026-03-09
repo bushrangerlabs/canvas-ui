@@ -10,6 +10,7 @@ import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const RadioButtonWidgetMetadata: WidgetMetadata = {
   name: 'Radio Button',
@@ -60,7 +61,7 @@ const RadioButtonWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
   } = config.config;
 
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const { hass } = useWebSocket();
 
   // Parse options and values

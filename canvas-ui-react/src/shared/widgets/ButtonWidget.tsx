@@ -11,6 +11,7 @@ import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 // Static metadata for inspector
 export const ButtonWidgetMetadata: WidgetMetadata = {
@@ -171,7 +172,7 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   } = config.config;
 
   // Universal style from the inspector's Style tab (takes precedence over widget-level fields)
-  const universalStyle = config.config.style || {} as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || {} as any);
 
   // Background color: universal style overrides widget-level field
   // Fallback chain: config.style.backgroundColor → config.backgroundColor → '#2196f3'

@@ -10,6 +10,7 @@ import { useVisibility } from '../../hooks/useVisibility';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const KeyboardWidgetMetadata: WidgetMetadata = {
   name: 'Keyboard',
@@ -81,7 +82,7 @@ const KeyboardWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   } = config.config;
 
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
 
   // Auto-show keyboard when input is focused
   React.useEffect(() => {

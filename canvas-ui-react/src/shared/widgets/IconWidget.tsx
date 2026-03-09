@@ -11,6 +11,7 @@ import { useWidget } from '../hooks/useWidget';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const iconWidgetMetadata: WidgetMetadata = {
   name: 'Icon',
@@ -169,7 +170,7 @@ const IconWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   // Apply universal styles (border, background, shadow)
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const style = applyUniversalStyles(universalStyle, baseStyle);
 
   // Calculate icon size (percentage of container)

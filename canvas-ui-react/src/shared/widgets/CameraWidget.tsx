@@ -12,6 +12,7 @@ import { useWidget } from '../hooks/useWidget';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const cameraWidgetMetadata: WidgetMetadata = {
   name: 'Camera',
@@ -170,7 +171,8 @@ const CameraWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   // Apply universal styles (bindings, shadows, borders, etc.)
-  const finalStyle = applyUniversalStyles(config.config.style, containerStyle);
+  const universalStyle = useResolvedUniversalStyle(config.config.style);
+  const finalStyle = applyUniversalStyles(universalStyle, containerStyle);
 
   // Hide if visibility condition is false
   if (!isVisible) return null;

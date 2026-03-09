@@ -9,6 +9,7 @@ import { useWidget } from '../hooks/useWidget';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 // Static metadata for inspector
 export const TextWidgetMetadata: WidgetMetadata = {
@@ -101,7 +102,7 @@ const TextWidget: React.FC<WidgetProps> = ({ config }) => {
 
   // Apply universal styles (border, background, shadow)
   // Accept styles from either config.config.style (inspector) or config.config (AI/import)
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const finalStyle = applyUniversalStyles(universalStyle, textStyle);
 
   // Don't render if visibility condition is false

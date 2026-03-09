@@ -14,6 +14,7 @@ import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const SliderWidgetMetadata: WidgetMetadata = {
   name: 'Slider',
@@ -81,7 +82,7 @@ const SliderWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }
 
   const { hass } = useWebSocket();
   const { setWidgetState } = useWidgetRuntimeStore();
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   
   // Check visibility condition
   const isVisible = useVisibility(visibilityCondition);

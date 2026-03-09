@@ -8,6 +8,7 @@ import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
   const { entities } = useWebSocket();
@@ -24,7 +25,7 @@ const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
     temperatureColor = '#ffffff',
     conditionColor = '#cccccc',
   } = config.config;
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
 
   // Get weather entity state
   const weatherEntity = entity_id && entities?.[entity_id];

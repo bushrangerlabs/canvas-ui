@@ -9,6 +9,7 @@ import { useVisibility } from '../../hooks/useVisibility';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const ScrollingTextWidgetMetadata: WidgetMetadata = {
   name: 'Scrolling Text',
@@ -67,7 +68,7 @@ const ScrollingTextWidget: React.FC<WidgetProps> = ({ config }) => {
   } = config.config;
 
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
 
   // Use entity binding for dynamic text
   const displayText = useEntityBinding(entity_id ? '{entity.state}' : staticText, staticText);

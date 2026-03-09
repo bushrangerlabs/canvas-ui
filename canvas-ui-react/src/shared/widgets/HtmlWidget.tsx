@@ -8,6 +8,7 @@ import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
   // Phase 44: Config destructuring with defaults
@@ -21,7 +22,7 @@ const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
   } = config.config;
 
   const { entities } = useWebSocket();
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Get HTML from entity or static config

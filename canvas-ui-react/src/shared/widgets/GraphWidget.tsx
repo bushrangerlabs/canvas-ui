@@ -11,6 +11,7 @@ import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const GraphWidgetMetadata: WidgetMetadata = {
   name: 'Graph',
@@ -75,7 +76,7 @@ const GraphWidget: React.FC<WidgetProps> = ({ config }) => {
 
   // Support both borderRadius and cornerRadius (AI uses cornerRadius for Lovelace cards)
   // Can be either a number (all corners) or object (individual corners)
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const radiusValue = cornerRadius !== undefined ? cornerRadius : borderRadius;
   
   // Convert to CSS border-radius string

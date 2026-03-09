@@ -11,6 +11,7 @@ import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const ColorPickerWidgetMetadata: WidgetMetadata = {
   name: 'Color Picker',
@@ -65,7 +66,7 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
   } = config.config;
 
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const { hass } = useWebSocket();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

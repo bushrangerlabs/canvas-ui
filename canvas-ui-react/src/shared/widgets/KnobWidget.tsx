@@ -12,6 +12,7 @@ import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const KnobWidgetMetadata: WidgetMetadata = {
   name: 'Knob',
@@ -103,7 +104,7 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
   } = config.config;
 
   const showValue = showValueConfig !== 'false'; // Default true (string comparison)
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const markerType = rawMarkerType === 'auto' ? 'triangle' : rawMarkerType; // Handle legacy 'auto' value
 
   // Apply content scale to size (100% = fill bounds, 50% = half size with space around)

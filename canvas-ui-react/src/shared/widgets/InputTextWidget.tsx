@@ -11,6 +11,7 @@ import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
+import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
 export const InputTextWidgetMetadata: WidgetMetadata = {
   name: 'Input Text',
@@ -58,7 +59,7 @@ const InputTextWidget: React.FC<WidgetProps> = ({ config }) => {
   } = config.config;
 
   const isVisible = useVisibility(visibilityCondition);
-  const universalStyle = config.config.style || config.config as any;
+  const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const entityId = useEntityBinding(entity_id, '');
   const { hass } = useWebSocket();
   const { setWidgetState } = useWidgetRuntimeStore();
