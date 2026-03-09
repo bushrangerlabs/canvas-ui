@@ -110,26 +110,19 @@ export const ButtonWidgetMetadata: WidgetMetadata = {
     
     // Visual Feedback
     
-    // Style
-    { name: 'backgroundColor', type: 'color', label: 'Background Color', default: '#2196f3', category: 'style' },
+    // Style — note: background color, border radius, border width/color/style
+    // are controlled by the universal Style tab (saved to config.style.*)
     { name: 'textColor', type: 'color', label: 'Text Color', default: '#ffffff', category: 'style' },
     { name: 'fontFamily', type: 'font', label: 'Font Family', default: 'Arial, sans-serif', category: 'style' },
     { name: 'fontSize', type: 'number', label: 'Font Size', default: 16, min: 8, max: 72, category: 'style' },
-    { name: 'borderRadius', type: 'number', label: 'Border Radius', default: 4, min: 0, max: 50, category: 'style' },
-    { name: 'borderWidth', type: 'number', label: 'Border Width', default: 0, min: 0, max: 10, category: 'style' },
-    { name: 'borderColor', type: 'color', label: 'Border Color', default: '#ffffff', category: 'style' },
-    { name: 'borderStyle', type: 'select', label: 'Border Style', default: 'solid', category: 'style', options: [
-      { value: 'solid', label: 'Solid' },
-      { value: 'dashed', label: 'Dashed' },
-      { value: 'dotted', label: 'Dotted' },
-      { value: 'double', label: 'Double' },
-    ]},
     { name: 'fontWeight', type: 'select', label: 'Font Weight', default: 'normal', category: 'style', options: [
       { value: 'normal', label: 'Normal' },
       { value: 'bold', label: 'Bold' },
       { value: '300', label: 'Light' },
       { value: '500', label: 'Medium' },
     ]},
+    // Button Color — separate from universal background so button gets its own default
+    { name: 'backgroundColor', type: 'color', label: 'Button Color', default: '#2196f3', category: 'style', description: 'Button face color (use the Style tab Background Color to override)' },
   ],
 };
 
@@ -172,31 +165,24 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     textColor: textColorConfig = '#ffffff',
     fontFamily = 'Arial, sans-serif',
     fontSize = 16,
-    borderRadius = 4,
-    borderWidth = 0,
-    borderColor = '#ffffff',
-    borderStyle = 'solid',
-    cornerRadius, // AI sometimes uses 'cornerRadius' (Lovelace card terminology)
     fontWeight = 'normal',
+    cornerRadius, // AI sometimes uses 'cornerRadius' (Lovelace card terminology)
     visibilityCondition,
   } = config.config;
 
-  // Support both borderRadius and cornerRadius (AI uses cornerRadius for Lovelace cards)
-  // Can be either a number (all corners) or object (individual corners)
-  const universalStyle = config.config.style || config.config as any;
-  const radiusValue = cornerRadius !== undefined ? cornerRadius : borderRadius;
-  
-  // Convert to CSS border-radius string
-  const borderRadiusCSS = typeof radiusValue === 'object' && radiusValue !== null
-    ? `${radiusValue.topLeft || 0}px ${radiusValue.topRight || 0}px ${radiusValue.bottomRight || 0}px ${radiusValue.bottomLeft || 0}px`
-    : `${radiusValue}px`;
+  // Universal style from the inspector's Style tab (takes precedence over widget-level fields)
+  const universalStyle = config.config.style || {} as any;
+
+  // Background color: universal style overrides widget-level field
+  // Fallback chain: config.style.backgroundColor → config.backgroundColor → '#2196f3'
+  const resolvedBgConfig = universalStyle?.backgroundColor ?? bgColorConfig;
 
   // Check visibility condition
   const isVisible = useVisibility(visibilityCondition);
 
   // Use entity bindings for dynamic properties
   const label = useEntityBinding(labelConfig, 'Button');
-  const backgroundColor = useEntityBinding(bgColorConfig, '#2196f3');
+  const backgroundColor = useEntityBinding(resolvedBgConfig, '#2196f3');
   const textColor = useEntityBinding(textColorConfig, '#ffffff');
   const iconColor = useEntityBinding(iconColorConfig, iconColorConfig || textColor);
 
@@ -458,7 +444,11 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     color: textColor,
     // Don't set border here - let universal styles handle it unless we're overriding during click feedback
     ...(feedbackBorderOverride ? { border: feedbackBorderOverride } : {}),
-    borderRadius: borderRadiusCSS,
+    // borderRadius applied by applyUniversalStyles via config.style.borderRadius
+    // cornerRadius fallback for AI-generated configs
+    ...(cornerRadius !== undefined ? { borderRadius: typeof cornerRadius === 'object'
+      ? `${(cornerRadius as any).topLeft||0}px ${(cornerRadius as any).topRight||0}px ${(cornerRadius as any).bottomRight||0}px ${(cornerRadius as any).bottomLeft||0}px`
+      : `${cornerRadius}px` } : {}),
     fontFamily,
     fontSize: `${fontSize}px`,
     fontWeight,
@@ -478,17 +468,9 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     gap: showIcon && iconPosition !== 'only' ? `${iconSpacing}px` : '0',
   };
 
-  // Apply universal styles (z-index, rotation, background, border, shadow)
-  // Merge config border properties with universal style
-  const mergedUniversalStyle = {
-    ...universalStyle,
-    // Add border properties from config if not already in universal style
-    borderWidth: universalStyle?.borderWidth ?? borderWidth,
-    borderColor: universalStyle?.borderColor ?? borderColor,
-    borderStyle: universalStyle?.borderStyle ?? borderStyle,
-  };
-  
-  const finalStyle = applyUniversalStyles(mergedUniversalStyle, buttonStyle);
+  // Apply universal styles (z-index, rotation, background, border, border-radius, shadow)
+  // The inspector's Style tab stores these in config.style.* — applyUniversalStyles handles them
+  const finalStyle = applyUniversalStyles(universalStyle, buttonStyle);
 
   // Don't render if visibility condition is false
   if (!isVisible) return null;
