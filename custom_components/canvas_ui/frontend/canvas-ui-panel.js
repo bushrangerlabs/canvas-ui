@@ -76,7 +76,7 @@ class CanvasUIPanel extends HTMLElement {
     window.HASidebarWidth = sidebarWidth;
 
     try {
-      const response = await fetch("/canvas-ui-static/app.html");
+      const response = await fetch("/canvas-ui/app.html");
       const html = await response.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");

@@ -1,6 +1,8 @@
-import { Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
+import { useEntityBinding } from '../../hooks/useEntityBinding';
+import { BindingEvaluator } from '../../shared/utils/BindingEvaluator';
 import { useWidgetStore } from '../../store/widgetStore';
 
 interface ColorFieldComponentProps {
@@ -17,14 +19,33 @@ export function ColorFieldComponent({
   const { selectedWidget, updateConfig } = useWidgetStore();
   const [showPicker, setShowPicker] = useState(false);
 
-  if (!selectedWidget) {
-    return null;
-  }
+  // Stored value (may be hex string or binding expression like "{input_text.my_color}")
+  const storedValue: string = selectedWidget?.config[propertyPath] ?? '#000000';
 
-  const value = selectedWidget.config[propertyPath] || '#000000';
+  // Resolve binding live — if no binding, returns storedValue unchanged
+  const resolvedColor = useEntityBinding(storedValue, '#000000');
 
-  const handleChange = (newValue: string) => {
+  const isBinding = BindingEvaluator.hasBinding(storedValue);
+
+  // Check if the resolved value looks like a valid CSS color for the swatch
+  const isValidColor = (color: string): boolean => {
+    if (!color) return false;
+    // Accept hex (#rgb, #rrggbb, #rrggbbaa), rgb(), hsl(), and named colors
+    return /^#([0-9a-f]{3,8})$/i.test(color) ||
+      /^(rgb|hsl)a?\(/.test(color) ||
+      /^[a-z]+$/i.test(color);
+  };
+
+  const swatchColor = isValidColor(String(resolvedColor)) ? String(resolvedColor) : null;
+
+  if (!selectedWidget) return null;
+
+  const handleTextChange = (newValue: string) => {
     updateConfig(propertyPath, newValue);
+  };
+
+  const handlePickerChange = (hex: string) => {
+    updateConfig(propertyPath, hex);
   };
 
   return (
@@ -42,32 +63,88 @@ export function ColorFieldComponent({
         </Typography>
       )}
       <Stack spacing={1}>
-        <TextField
-          label={!description ? label : undefined}
-          value={value}
-          onChange={(e) => handleChange(e.target.value)}
-          fullWidth
-          size="small"
-          InputProps={{
-            endAdornment: (
-              <Box
-                onClick={() => setShowPicker(!showPicker)}
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {/* Text input — accepts hex values or {binding} expressions */}
+          <TextField
+            label={!description ? label : undefined}
+            value={storedValue}
+            onChange={(e) => handleTextChange(e.target.value)}
+            fullWidth
+            size="small"
+            placeholder="#rrggbb or {entity.id}"
+            inputProps={{ style: { fontFamily: 'monospace', fontSize: 13 } }}
+          />
+
+          {/* Color picker button — disabled when a binding is stored */}
+          <Tooltip title={isBinding ? 'Binding active — clear binding to use picker' : 'Open color picker'}>
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => setShowPicker(prev => !prev)}
+                disabled={isBinding}
                 sx={{
                   width: 32,
                   height: 32,
-                  backgroundColor: value,
                   border: '1px solid',
-                  borderColor: 'divider',
+                  borderColor: showPicker ? 'primary.main' : 'divider',
                   borderRadius: 1,
-                  cursor: 'pointer',
+                  p: 0,
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  bgcolor: swatchColor ?? 'transparent',
+                  // Striped pattern when color is invalid/unknown
+                  ...(!swatchColor && {
+                    backgroundImage: 'repeating-linear-gradient(45deg, #555 0px, #555 4px, #333 4px, #333 8px)',
+                  }),
+                  '&:hover': {
+                    opacity: 0.85,
+                  },
+                  '&.Mui-disabled': {
+                    opacity: 0.5,
+                    cursor: 'not-allowed',
+                  },
                 }}
               />
-            ),
-          }}
-        />
-        {showPicker && (
-          <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, boxShadow: 2 }}>
-            <HexColorPicker color={value} onChange={handleChange} />
+            </span>
+          </Tooltip>
+
+          {/* Live resolved swatch — shown when a binding is active */}
+          {isBinding && (
+            <Tooltip title={`Resolved: ${String(resolvedColor)}`}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  flexShrink: 0,
+                  border: '1px solid',
+                  borderColor: 'primary.main',
+                  borderRadius: 1,
+                  bgcolor: swatchColor ?? 'transparent',
+                  ...(!swatchColor && {
+                    backgroundImage: 'repeating-linear-gradient(45deg, #555 0px, #555 4px, #333 4px, #333 8px)',
+                  }),
+                  position: 'relative',
+                  '&::after': {
+                    content: '"🔗"',
+                    position: 'absolute',
+                    bottom: -2,
+                    right: -2,
+                    fontSize: 9,
+                    lineHeight: 1,
+                  },
+                }}
+              />
+            </Tooltip>
+          )}
+        </Stack>
+
+        {/* Color picker popup — only when picker button is active (no binding) */}
+        {showPicker && !isBinding && (
+          <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, boxShadow: 3 }}>
+            <HexColorPicker
+              color={swatchColor?.startsWith('#') ? swatchColor : '#000000'}
+              onChange={handlePickerChange}
+            />
             <Button
               fullWidth
               size="small"
