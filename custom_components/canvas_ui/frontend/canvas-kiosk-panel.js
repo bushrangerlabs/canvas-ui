@@ -53,7 +53,7 @@ class CanvasKioskPanel extends HTMLElement {
 
   async _loadViewApp() {
     try {
-      const response = await fetch("/local/canvas-ui/view.html");
+      const response = await fetch("/canvas-ui-static/kiosk.html");
       const html = await response.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
@@ -64,9 +64,7 @@ class CanvasKioskPanel extends HTMLElement {
         if (!document.querySelector(`link[href*="${href}"]`)) {
           const newLink = document.createElement("link");
           newLink.rel = "stylesheet";
-          newLink.href = href.startsWith("/")
-            ? href
-            : `/local/canvas-ui/${href}`;
+          newLink.href = href.startsWith("/") ? href : `/canvas-ui/${href}`;
           document.head.appendChild(newLink);
         }
       });
@@ -78,7 +76,7 @@ class CanvasKioskPanel extends HTMLElement {
           const newScript = document.createElement("script");
           newScript.type = "module";
           newScript.crossOrigin = "";
-          newScript.src = src.startsWith("/") ? src : `/local/canvas-ui/${src}`;
+          newScript.src = src.startsWith("/") ? src : `/canvas-ui/${src}`;
           document.head.appendChild(newScript);
           console.log("[Canvas Kiosk] Loaded script:", newScript.src);
         }
