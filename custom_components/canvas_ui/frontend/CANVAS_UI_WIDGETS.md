@@ -165,7 +165,7 @@ Toggle switches, service calls, navigation
 - `fontSize` - Font size
 - `borderRadius` - Corner radius
 
-**Bindings:** `label`, `backgroundColor`, `textColor`, `iconColor` accept `{...}` binding expressions. Example: `"label": "{light.bedroom.state;array(Turn On,Turn Off)}"`
+**Bindings:** `label`, `backgroundColor`, `textColor`, `iconColor` accept `{...}` binding expressions. Example: `"label": "{light.bedroom.state;array(Turn On,Turn Off)}"` Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 2. slider - Value Controls
 
@@ -207,7 +207,7 @@ Brightness, volume, temperature sliders
 - `thumbIcon` - Icon for thumb
 - `textColor`, `fontSize`
 
-**Bindings:** `label` and `value` accept `{...}` expressions. Setting `value` to a binding drives the slider display from live state.
+**Bindings:** `label` and `value` accept `{...}` expressions. Setting `value` to a binding drives the slider display from live state. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 3. switch - Toggle Switches
 
@@ -239,7 +239,7 @@ Brightness, volume, temperature sliders
 
 - `label`, `labelPosition` (`left`, `right`, `top`, `bottom`), `entity_id`
 
-**Bindings:** `entity_id` drives the toggle state from HA.
+**Bindings:** `entity_id` drives the toggle state from HA. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `onColor`, `offColor`, `textColor`, `fontSize`, `fontFamily`
 
 #### 4. knob - Rotary Controls
@@ -275,7 +275,7 @@ Brightness, volume, temperature sliders
 
 - `label`, `entity_id`, `min`, `max`, `step`, `dialStep`, `value`
 
-**Bindings:** `value` accepts a `{...}` binding expression to drive the knob position from a live entity state.
+**Bindings:** `value` accepts a `{...}` binding expression to drive the knob position from a live entity state. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `skin` - `p1`, `p2`, `p3`, `p4`, `p5`
 - `knobColor`, `textColor`, `accentColor`
 - `showValue`, `valuePrefix`, `valueSuffix`
@@ -320,7 +320,7 @@ Brightness, volume, temperature sliders
 - `textAlign` - `left`, `center`, `right`
 - `verticalAlign` - `flex-start`, `center`, `flex-end`
 
-**Bindings:** `text` fully supports `{...}` binding expressions including operations and mixed text. Use `entity_id` to bind the widget to an entity (the text template can then reference `{entity.state}`). Example: `"text": "{sensor.temperature.state;round(1)}°C"`
+**Bindings:** `text` fully supports `{...}` binding expressions including operations and mixed text. Use `entity_id` to bind the widget to an entity (the text template can then reference `{entity.state}`). Example: `"text": "{sensor.temperature.state;round(1)}°C"` Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 6. value - Sensor Value Display
 
@@ -353,7 +353,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `value`, `prefix`, `suffix`, `decimals`
 
-**Bindings:** `entity_id` drives the displayed value. Use `value` with a binding expression for advanced formatting: `"value": "{sensor.temp.state;round(1)}"`
+**Bindings:** `entity_id` drives the displayed value. Use `value` with a binding expression for advanced formatting: `"value": "{sensor.temp.state;round(1)}"` Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `formatThousands`, `fontSize`, `fontWeight`, `textAlign`, `textColor`, `backgroundColor`
 
 #### 7. gauge - Visual Meters
@@ -393,7 +393,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `min`, `max`, `unit`
 
-**Bindings:** `entity_id` drives the gauge needle from live entity state.
+**Bindings:** `entity_id` drives the gauge needle from live entity state. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `gaugeType` - `radial`, `grafana`, `semicircle`
 - `needleOnly`, `pointerType` (`needle`, `arrow`, `blob`)
 - `pointerColor`, `pointerLength`, `pointerWidth`
@@ -433,7 +433,7 @@ Brightness, volume, temperature sliders
 
 - `icon`, `entity_id`, `color`, `activeColor`, `size`
 
-**Bindings:** `icon` accepts a `{...}` binding expression — set it to `"{light.bedroom.state;array(LightOff,LightbulbOn)}"` to swap icons based on entity state. `entity_id` controls active/inactive color state.
+**Bindings:** `icon` accepts a `{...}` binding expression — set it to `"{light.bedroom.state;array(LightOff,LightbulbOn)}"` to swap icons based on entity state. `entity_id` controls active/inactive color state. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `fillEntity`, `fillMin`, `fillMax`
 - `fillDirection` - `bottom-up`, `top-down`, `left-to-right`, `right-to-left`
 - `fillColor`, `outlineMode` (`none`, `outline`, `filled`)
@@ -497,7 +497,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `value`, `min`, `max`
 
-**Bindings:** `entity_id` drives the bar fill from live entity state.
+**Bindings:** `entity_id` drives the bar fill from live entity state. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `orientation` - `horizontal`, `vertical`
 - `displayMode` - `standard`, `segmented`, `graduated`, `striped`
 - `segmentCount`, `segmentGap`
@@ -541,7 +541,7 @@ Brightness, volume, temperature sliders
 - `strokeWidth`, `pathColor`, `trailColor`, `textSize`
 - `counterClockwise`, `segmented`, `segmentCount`, `segmentGap`
 
-**Bindings:** `entity_id` drives the circular progress fill from live entity state.
+**Bindings:** `entity_id` drives the circular progress fill from live entity state. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 11. flipclock - Animated Flip Clock
 
@@ -578,7 +578,7 @@ Brightness, volume, temperature sliders
 - `bgColor`, `cardTopColor`, `cardBottomColor`, `textColor`
 - `fontFamily`, `fontSizeScale`, `showGears`, `showBorders`, `showContainerBorder`
 
-**Bindings:** Clock widgets display live system time — no entity binding needed.
+**Bindings:** Clock widgets display live system time — no entity binding needed. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 12. digitalclock - LED-Style Clock
 
@@ -616,7 +616,7 @@ Brightness, volume, temperature sliders
 - `backgroundColor`, `timeColor`, `dateColor`
 - `fontFamily`, `fontFamilySecondary`, `fontSize`, `glow`, `blinkColon`
 
-**Bindings:** Displays live system time — no entity binding needed. Use universal style bindings for dynamic colors.
+**Bindings:** Displays live system time — no entity binding needed. Supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 13. weather - Weather Display
 
@@ -650,7 +650,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `showForecast`, `forecastDays` (3-7)
 
-**Bindings:** `entity_id` must reference a `weather.*` entity.
+**Bindings:** `entity_id` must reference a `weather.*` entity. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `showHumidity`, `showWind`, `showPressure`
 - `compactMode`, `temperatureColor`, `conditionColor`
 
@@ -689,7 +689,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `placeholder`, `label`
 
-**Bindings:** `entity_id` reads the current entity value into the input field and writes changes back on submit.
+**Bindings:** `entity_id` reads the current entity value into the input field and writes changes back on submit. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `passwordMode`, `showPasswordToggle`
 - `textColor`, `backgroundColor`, `borderColor`, `fontSize`
 
@@ -723,7 +723,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `options` (comma-separated), `values` (optional)
 
-**Bindings:** `entity_id` drives selection state; selecting an option calls the entity's service.
+**Bindings:** `entity_id` drives selection state; selecting an option calls the entity's service. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `orientation` - `vertical`, `horizontal`
 - `fontSize`, `textColor`, `activeColor`, `backgroundColor`, `fontFamily`
 
@@ -755,7 +755,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `outputFormat` - `auto`, `rgb`, `hex`, `hex_no_hash`
 
-**Bindings:** `entity_id` reads current color from entity and writes color changes back on pick.
+**Bindings:** `entity_id` reads current color from entity and writes color changes back on pick. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `customService`, `customField`
 - `swatchWidth`, `swatchHeight`, `swatchBorderRadius`
 
@@ -801,7 +801,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id` (for cameras), `imageUrl`, `localImagePath`, `altText`
 
-**Bindings:** `entity_id` reads the `entity_picture` attribute for dynamic image URLs (e.g., camera entities, person entities).
+**Bindings:** `entity_id` reads the `entity_picture` attribute for dynamic image URLs (e.g., camera entities, person entities). Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `refreshInterval` (ms), `objectFit` - `contain`, `cover`, `fill`, `none`, `scale-down`
 
 #### 18. camera - Live Camera Streams
@@ -833,7 +833,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `streamMode` - `auto`, `webrtc`, `hls`, `mjpeg`, `snapshot`
 
-**Bindings:** `entity_id` must reference a `camera.*` entity.
+**Bindings:** `entity_id` must reference a `camera.*` entity. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `enableMicrophone`, `showControls`, `muted`, `autoplay`
 - `objectFit` - `cover`, `contain`, `fill`, `none`, `scale-down`
 
@@ -880,7 +880,7 @@ Brightness, volume, temperature sliders
 - `urlType` - `external`, `view`, `entity`
 - `url`, `viewId`, `entity_id`
 
-**Bindings:** `entity_id` can drive the displayed URL via the entity's `entity_picture` or `url` attribute.
+**Bindings:** `entity_id` can drive the displayed URL via the entity's `entity_picture` or `url` attribute. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `allowFullscreen`, `sandbox`, `scrolling` - `auto`, `yes`, `no`
 
 #### 20. border - Decorative Borders
@@ -911,7 +911,7 @@ Brightness, volume, temperature sliders
 - `borderStyle` - `solid`, `dashed`, `dotted`, `double`
 - `borderWidth` (thickness), `borderColor`, `borderRadius`
 
-**Bindings:** Use universal style bindings for live `borderColor`, `borderStyle`, or `backgroundColor`.
+**Bindings:** Supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 21. html - Custom HTML Content
 
@@ -953,7 +953,7 @@ Brightness, volume, temperature sliders
 - `overflow` - `auto`, `hidden`, `scroll`, `visible`
 - `backgroundColor`, `padding`
 
-**Bindings:** Use universal style bindings for live `backgroundColor`. HTML content itself is static.
+**Bindings:** HTML content itself is static. Supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 22. graph - Sensor History Charts
 
@@ -989,7 +989,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `chartType` - `line`, `bar`, `area`
 
-**Bindings:** `entity_id` drives the history chart — must reference a sensor entity with numeric history.
+**Bindings:** `entity_id` drives the history chart — must reference a sensor entity with numeric history. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `dataPoints` (10-500), `lineColor`, `fillColor`
 - `backgroundColor`, `gridColor`, `textColor`
 - `showLegend`, `showTooltip`, `showGrid`, `showAxisLabels`
@@ -1072,7 +1072,7 @@ Brightness, volume, temperature sliders
 }
 ```
 
-**Bindings:** All entities are configured inside `cardConfig` YAML — no Canvas UI `entity_id` or `{...}` bindings apply to lovelacecard.
+**Bindings:** Widget content uses `cardConfig` YAML — Canvas UI `entity_id` and content `{...}` bindings don't apply inside the card. Supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 24. calendar - Calendar Events
 
@@ -1109,7 +1109,7 @@ Brightness, volume, temperature sliders
 
 - `entity_id`, `maxEvents` (1-20), `daysAhead` (1-365)
 
-**Bindings:** `entity_id` must reference a `calendar.*` entity.
+**Bindings:** `entity_id` must reference a `calendar.*` entity. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `showDate`, `showTime`, `showLocation`, `compactMode`
 - `backgroundColor`, `headerColor`, `textColor`, `eventColor`, `borderRadius`, `fontSize`
 
@@ -1145,7 +1145,7 @@ Brightness, volume, temperature sliders
 
 - `text`, `entity_id`, `scrollSpeed` (pixels/sec, 10-200)
 
-**Bindings:** `text` accepts `{...}` binding expressions. `entity_id` populates `text` from live entity state automatically.
+**Bindings:** `text` accepts `{...}` binding expressions. `entity_id` populates `text` from live entity state automatically. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 - `pauseOnHover`, `separator`
 - `textColor`, `backgroundColor`, `fontSize`, `fontFamily`, `fontWeight`
 
@@ -1184,7 +1184,7 @@ Brightness, volume, temperature sliders
 - `theme`, `backgroundColor`, `buttonColor`, `buttonTextColor`, `buttonHoverColor`
 - `displayBackgroundColor`, `displayTextColor`
 
-**Bindings:** `target_entity` determines where keyboard input is sent. Use universal style bindings for dynamic theming.
+**Bindings:** `target_entity` determines where keyboard input is sent. Supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 #### 27. resolution - Dashboard Boundaries
 
@@ -1217,7 +1217,7 @@ Brightness, volume, temperature sliders
 - `showResolution`, `showRatio`, `showLabel`
 - `textColor`, `labelColor`, `backgroundColor`, `fontSize`, `labelSize`
 
-**Bindings:** Reference-only widget displaying canvas dimensions — no entity bindings.
+**Bindings:** Reference-only widget displaying canvas dimensions — no entity bindings. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
 ---
 
