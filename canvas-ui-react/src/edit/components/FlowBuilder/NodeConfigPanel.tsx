@@ -15,7 +15,7 @@ import {
     Typography
 } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
-import { getWidgetProperties } from '../../../shared/flows/autoTriggers';
+import { getWidgetProperties, getWritableWidgetProperties } from '../../../shared/flows/autoTriggers';
 import { formatWidgetDisplay, parseWidgetId } from '../../../shared/flows/widgetDisplayUtils';
 import { useWebSocket } from '../../../shared/providers/WebSocketProvider';
 import { useConfigStore } from '../../../shared/stores/useConfigStore';
@@ -131,21 +131,22 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   const currentView = appConfig?.views.find(v => v.id === currentViewId);
   const widgets = currentView?.widgets || [];
   
-  // Get selected widget's config AND runtime state properties (memoized)
+  // Get widget properties appropriate for the current node type (memoized).
+  // set-widget (write) uses getWritableWidgetProperties (content + universal style + layout).
+  // widget-property (read) uses getWidgetProperties (runtime.value + key config props).
   const widgetProperties = useMemo(() => {
     const selectedWidget = widgets.find(w => w.id === config.widget_id);
-    
-    if (!selectedWidget) {
-      return [];
-    }
-    
-    // Use the smart property detection from autoTriggers
-    const smartProperties = getWidgetProperties(selectedWidget.type);
-    
-    if (import.meta.env.DEV) console.log('[NodeConfigPanel] Smart properties for', selectedWidget.type, ':', smartProperties);
-    
-    return smartProperties;
-  }, [config.widget_id, widgets]);
+    if (!selectedWidget) return [];
+
+    const isSetWidget = nodeData?.nodeType === 'set-widget';
+    const props = isSetWidget
+      ? getWritableWidgetProperties(selectedWidget.type)
+      : getWidgetProperties(selectedWidget.type);
+
+    if (import.meta.env.DEV) console.log('[NodeConfigPanel] Properties for', selectedWidget.type, `(${nodeData?.nodeType}):`, props);
+
+    return props;
+  }, [config.widget_id, widgets, nodeData?.nodeType]);
 
   if (!node || !nodeData || !metadata) {
     return null;
