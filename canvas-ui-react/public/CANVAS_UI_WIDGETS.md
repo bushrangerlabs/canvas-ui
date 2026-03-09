@@ -1,6 +1,6 @@
 # Canvas UI Widget Reference
 
-Complete guide for creating Canvas UI views with all 27 widget types.
+Complete guide for creating Canvas UI views with all 28 widget types.
 
 ## Canvas UI View Format (For Import)
 
@@ -94,6 +94,8 @@ These properties work on **ALL** widgets:
 - `boxShadow` - CSS shadow (e.g., `"0 4px 8px rgba(0,0,0,0.3)"`)
 - `opacity` - Transparency (0-1)
 
+> **Binding support:** The string-typed style properties (`backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`) accept live entity binding expressions on **all 28 widgets**. Example: `"backgroundColor": "{input_text.accent_color}"`
+
 ### Shadow Presets
 
 - Subtle: `"0 2px 4px rgba(0,0,0,0.2)"`
@@ -163,6 +165,8 @@ Toggle switches, service calls, navigation
 - `fontSize` - Font size
 - `borderRadius` - Corner radius
 
+**Bindings:** `label`, `backgroundColor`, `textColor`, `iconColor` accept `{...}` binding expressions. Example: `"label": "{light.bedroom.state;array(Turn On,Turn Off)}"`
+
 #### 2. slider - Value Controls
 
 Brightness, volume, temperature sliders
@@ -203,6 +207,8 @@ Brightness, volume, temperature sliders
 - `thumbIcon` - Icon for thumb
 - `textColor`, `fontSize`
 
+**Bindings:** `label` and `value` accept `{...}` expressions. Setting `value` to a binding drives the slider display from live state.
+
 #### 3. switch - Toggle Switches
 
 ```json
@@ -232,6 +238,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `label`, `labelPosition` (`left`, `right`, `top`, `bottom`), `entity_id`
+
+**Bindings:** `entity_id` drives the toggle state from HA.
 - `onColor`, `offColor`, `textColor`, `fontSize`, `fontFamily`
 
 #### 4. knob - Rotary Controls
@@ -266,6 +274,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `label`, `entity_id`, `min`, `max`, `step`, `dialStep`, `value`
+
+**Bindings:** `value` accepts a `{...}` binding expression to drive the knob position from a live entity state.
 - `skin` - `p1`, `p2`, `p3`, `p4`, `p5`
 - `knobColor`, `textColor`, `accentColor`
 - `showValue`, `valuePrefix`, `valueSuffix`
@@ -305,10 +315,12 @@ Brightness, volume, temperature sliders
 
 **Properties:**
 
-- `entity_id`, `text` (supports `{entity.state}`), `prefix`, `unit`
+- `entity_id`, `text`, `prefix`, `unit`
 - `textColor`, `fontSize`, `fontWeight`, `fontFamily`
 - `textAlign` - `left`, `center`, `right`
 - `verticalAlign` - `flex-start`, `center`, `flex-end`
+
+**Bindings:** `text` fully supports `{...}` binding expressions including operations and mixed text. Use `entity_id` to bind the widget to an entity (the text template can then reference `{entity.state}`). Example: `"text": "{sensor.temperature.state;round(1)}°C"`
 
 #### 6. value - Sensor Value Display
 
@@ -340,6 +352,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `value`, `prefix`, `suffix`, `decimals`
+
+**Bindings:** `entity_id` drives the displayed value. Use `value` with a binding expression for advanced formatting: `"value": "{sensor.temp.state;round(1)}"`
 - `formatThousands`, `fontSize`, `fontWeight`, `textAlign`, `textColor`, `backgroundColor`
 
 #### 7. gauge - Visual Meters
@@ -378,6 +392,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `min`, `max`, `unit`
+
+**Bindings:** `entity_id` drives the gauge needle from live entity state.
 - `gaugeType` - `radial`, `grafana`, `semicircle`
 - `needleOnly`, `pointerType` (`needle`, `arrow`, `blob`)
 - `pointerColor`, `pointerLength`, `pointerWidth`
@@ -415,7 +431,9 @@ Brightness, volume, temperature sliders
 
 **Properties:**
 
-- `icon` (supports `{entity.state}`), `entity_id`, `color`, `activeColor`, `size`
+- `icon`, `entity_id`, `color`, `activeColor`, `size`
+
+**Bindings:** `icon` accepts a `{...}` binding expression — set it to `"{light.bedroom.state;array(LightOff,LightbulbOn)}"` to swap icons based on entity state. `entity_id` controls active/inactive color state.
 - `fillEntity`, `fillMin`, `fillMax`
 - `fillDirection` - `bottom-up`, `top-down`, `left-to-right`, `right-to-left`
 - `fillColor`, `outlineMode` (`none`, `outline`, `filled`)
@@ -478,6 +496,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `value`, `min`, `max`
+
+**Bindings:** `entity_id` drives the bar fill from live entity state.
 - `orientation` - `horizontal`, `vertical`
 - `displayMode` - `standard`, `segmented`, `graduated`, `striped`
 - `segmentCount`, `segmentGap`
@@ -521,6 +541,8 @@ Brightness, volume, temperature sliders
 - `strokeWidth`, `pathColor`, `trailColor`, `textSize`
 - `counterClockwise`, `segmented`, `segmentCount`, `segmentGap`
 
+**Bindings:** `entity_id` drives the circular progress fill from live entity state.
+
 #### 11. flipclock - Animated Flip Clock
 
 ```json
@@ -555,6 +577,8 @@ Brightness, volume, temperature sliders
 - `format` - `12` or `24`, `showSeconds`
 - `bgColor`, `cardTopColor`, `cardBottomColor`, `textColor`
 - `fontFamily`, `fontSizeScale`, `showGears`, `showBorders`, `showContainerBorder`
+
+**Bindings:** Clock widgets display live system time — no entity binding needed.
 
 #### 12. digitalclock - LED-Style Clock
 
@@ -592,6 +616,8 @@ Brightness, volume, temperature sliders
 - `backgroundColor`, `timeColor`, `dateColor`
 - `fontFamily`, `fontFamilySecondary`, `fontSize`, `glow`, `blinkColon`
 
+**Bindings:** Displays live system time — no entity binding needed. Use universal style bindings for dynamic colors.
+
 #### 13. weather - Weather Display
 
 ```json
@@ -623,6 +649,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `showForecast`, `forecastDays` (3-7)
+
+**Bindings:** `entity_id` must reference a `weather.*` entity.
 - `showHumidity`, `showWind`, `showPressure`
 - `compactMode`, `temperatureColor`, `conditionColor`
 
@@ -660,6 +688,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `placeholder`, `label`
+
+**Bindings:** `entity_id` reads the current entity value into the input field and writes changes back on submit.
 - `passwordMode`, `showPasswordToggle`
 - `textColor`, `backgroundColor`, `borderColor`, `fontSize`
 
@@ -692,6 +722,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `options` (comma-separated), `values` (optional)
+
+**Bindings:** `entity_id` drives selection state; selecting an option calls the entity's service.
 - `orientation` - `vertical`, `horizontal`
 - `fontSize`, `textColor`, `activeColor`, `backgroundColor`, `fontFamily`
 
@@ -722,6 +754,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `outputFormat` - `auto`, `rgb`, `hex`, `hex_no_hash`
+
+**Bindings:** `entity_id` reads current color from entity and writes color changes back on pick.
 - `customService`, `customField`
 - `swatchWidth`, `swatchHeight`, `swatchBorderRadius`
 
@@ -766,6 +800,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id` (for cameras), `imageUrl`, `localImagePath`, `altText`
+
+**Bindings:** `entity_id` reads the `entity_picture` attribute for dynamic image URLs (e.g., camera entities, person entities).
 - `refreshInterval` (ms), `objectFit` - `contain`, `cover`, `fill`, `none`, `scale-down`
 
 #### 18. camera - Live Camera Streams
@@ -796,6 +832,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `streamMode` - `auto`, `webrtc`, `hls`, `mjpeg`, `snapshot`
+
+**Bindings:** `entity_id` must reference a `camera.*` entity.
 - `enableMicrophone`, `showControls`, `muted`, `autoplay`
 - `objectFit` - `cover`, `contain`, `fill`, `none`, `scale-down`
 
@@ -841,6 +879,8 @@ Brightness, volume, temperature sliders
 
 - `urlType` - `external`, `view`, `entity`
 - `url`, `viewId`, `entity_id`
+
+**Bindings:** `entity_id` can drive the displayed URL via the entity's `entity_picture` or `url` attribute.
 - `allowFullscreen`, `sandbox`, `scrolling` - `auto`, `yes`, `no`
 
 #### 20. border - Decorative Borders
@@ -870,6 +910,8 @@ Brightness, volume, temperature sliders
 
 - `borderStyle` - `solid`, `dashed`, `dotted`, `double`
 - `borderWidth` (thickness), `borderColor`, `borderRadius`
+
+**Bindings:** Use universal style bindings for live `borderColor`, `borderStyle`, or `backgroundColor`.
 
 #### 21. html - Custom HTML Content
 
@@ -911,9 +953,7 @@ Brightness, volume, temperature sliders
 - `overflow` - `auto`, `hidden`, `scroll`, `visible`
 - `backgroundColor`, `padding`
 
----
-
-### Advanced Widgets
+**Bindings:** Use universal style bindings for live `backgroundColor`. HTML content itself is static.
 
 #### 22. graph - Sensor History Charts
 
@@ -948,6 +988,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `chartType` - `line`, `bar`, `area`
+
+**Bindings:** `entity_id` drives the history chart — must reference a sensor entity with numeric history.
 - `dataPoints` (10-500), `lineColor`, `fillColor`
 - `backgroundColor`, `gridColor`, `textColor`
 - `showLegend`, `showTooltip`, `showGrid`, `showAxisLabels`
@@ -1030,6 +1072,8 @@ Brightness, volume, temperature sliders
 }
 ```
 
+**Bindings:** All entities are configured inside `cardConfig` YAML — no Canvas UI `entity_id` or `{...}` bindings apply to lovelacecard.
+
 #### 24. calendar - Calendar Events
 
 ```json
@@ -1064,6 +1108,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `entity_id`, `maxEvents` (1-20), `daysAhead` (1-365)
+
+**Bindings:** `entity_id` must reference a `calendar.*` entity.
 - `showDate`, `showTime`, `showLocation`, `compactMode`
 - `backgroundColor`, `headerColor`, `textColor`, `eventColor`, `borderRadius`, `fontSize`
 
@@ -1098,6 +1144,8 @@ Brightness, volume, temperature sliders
 **Properties:**
 
 - `text`, `entity_id`, `scrollSpeed` (pixels/sec, 10-200)
+
+**Bindings:** `text` accepts `{...}` binding expressions. `entity_id` populates `text` from live entity state automatically.
 - `pauseOnHover`, `separator`
 - `textColor`, `backgroundColor`, `fontSize`, `fontFamily`, `fontWeight`
 
@@ -1136,6 +1184,8 @@ Brightness, volume, temperature sliders
 - `theme`, `backgroundColor`, `buttonColor`, `buttonTextColor`, `buttonHoverColor`
 - `displayBackgroundColor`, `displayTextColor`
 
+**Bindings:** `target_entity` determines where keyboard input is sent. Use universal style bindings for dynamic theming.
+
 #### 27. resolution - Dashboard Boundaries
 
 ```json
@@ -1166,6 +1216,8 @@ Brightness, volume, temperature sliders
 
 - `showResolution`, `showRatio`, `showLabel`
 - `textColor`, `labelColor`, `backgroundColor`, `fontSize`, `labelSize`
+
+**Bindings:** Reference-only widget displaying canvas dimensions — no entity bindings.
 
 ---
 
@@ -1290,8 +1342,43 @@ Brightness, volume, temperature sliders
    - All widgets must have empty `bindings: {}` object
 
 2. **Entity Bindings:**
-   - Text widgets support `{entity.state}` placeholder
-   - Icon widget `icon` property can use `{entity.state}`
+
+   Any string property that accepts a `{...}` expression will automatically subscribe to the referenced HA entities and re-render on state change.
+
+   **Simple:**
+   ```
+   {sensor.temperature.state}                       → entity state
+   {sensor.temperature.attributes.unit_of_measurement} → attribute
+   {sensor.temperature.ts}                          → last_updated as ms
+   {sensor.temperature.lc}                          → last_changed as ms
+   ```
+
+   **Operation pipeline** (chain ops with `;`):
+   ```
+   {sensor.temp.state;round(1)}°C                  → round + append text
+   {sensor.temp.state;*(1.8);+(32)}                → Celsius → Fahrenheit
+   {sensor.temp.state;min(0);max(100)}             → clamp to range
+   {light.x.state;array(off,on)}                   → map index to label
+   {sensor.ts.state;date(hh:mm)}                   → format as time string
+   {sensor.data.state;json(nested.key)}            → navigate JSON value
+   ```
+
+   **Multi-variable JS expression:**
+   ```
+   {h:sensor.a.state;w:sensor.b.state;Math.sqrt(h*h+w*w)}
+   Index: {t:sensor.temp.state;Math.round(t*1.8+32)}°F
+   ```
+
+   **Mixed text** (multiple bindings in one string):
+   ```
+   Temp: {sensor.temp.state;round(1)}°C  Humidity: {sensor.humidity.state}%
+   ```
+
+   **Universal style bindings** — all string-typed style properties accept `{...}` on every widget:
+   - `"backgroundColor": "{input_text.my_color}"`
+   - `"borderColor": "{input_text.accent_color}"`
+   - `"backgroundImage": "{input_text.wallpaper_url}"`
+   - Also: `backgroundSize`, `backgroundPosition`, `backgroundRepeat`, `borderStyle`
 
 3. **File Format for Import:**
    - **CRITICAL:** Use export format with `version`, `exportedAt`, `view` (singular), `metadata`
