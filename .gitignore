@@ -24,6 +24,9 @@ canvas-ui-react/dist-hacs/
 # www folder - frontend is served from custom_components/canvas_ui/frontend/
 www/
 
+# Built frontend assets — included in release zip, not committed to git
+custom_components/canvas_ui/frontend/
+
 # Private development planning docs
 REACT_MIGRATION_PLAN.md
 

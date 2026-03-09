@@ -39,22 +39,32 @@ npm run dev
 # http://localhost:5173
 ```
 
-### Production build (HACS)
+### Production build (local only)
 
 ```bash
 cd /home/spetchal/Code/canvas-ui-hacs
 ./build.sh
 # Runs npm run build:hacs, copies dist-hacs/ → custom_components/canvas_ui/frontend/
+# NOTE: frontend/ is gitignored — built assets are NOT committed to git
 ```
 
-### Deploy via GitHub (primary method)
+### Release via GitHub (HACS update method)
 
 ```bash
 cd /home/spetchal/Code/canvas-ui-hacs
-./build.sh
-git add -A && git commit -m "..." && git push
-# User then: HACS → Canvas UI → Redownload → Restart HA → Ctrl+Shift+F5
+./release.sh 0.7.0 "Brief release notes here"
+# What it does:
+#   1. Bumps manifest.json version
+#   2. Runs build:hacs
+#   3. Zips custom_components/canvas_ui/ → canvas_ui.zip (includes built frontend)
+#   4. Commits version bump, tags v0.7.0, pushes main + tag
+#   5. Creates GitHub release, uploads canvas_ui.zip as release asset
+#   6. Deletes local zip
+# User then: HACS → Canvas UI → Update → Restart HA
 ```
+
+**HACS zip mode:** `hacs.json` has `"zip_release": true` — HACS downloads the zip asset (not the git tree).
+Built `frontend/` assets are gitignored and only live inside the zip.
 
 ### Direct deploy to HA server (optional)
 
