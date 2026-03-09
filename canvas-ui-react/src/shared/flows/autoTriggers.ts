@@ -185,6 +185,10 @@ export function getWidgetProperties(widgetType: string): Array<{ value: string; 
       { value: 'config.min', label: 'Minimum', description: 'Knob minimum value' },
       { value: 'config.max', label: 'Maximum', description: 'Knob maximum value' },
     ],
+    colorpicker: [
+      { value: 'runtime.value', label: 'Selected Color (Hex)', description: 'Current color as hex string, e.g. #ff8000' },
+      { value: 'config.entity_id', label: 'Entity ID', description: 'Bound light or entity' },
+    ],
   };
   
   return [

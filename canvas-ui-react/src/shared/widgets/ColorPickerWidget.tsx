@@ -8,6 +8,7 @@ import { Dialog, IconButton } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import { useVisibility } from '../../hooks/useVisibility';
 import { useWebSocket } from '../providers/WebSocketProvider';
+import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
@@ -68,6 +69,7 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
   const isVisible = useVisibility(visibilityCondition);
   const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const { hass } = useWebSocket();
+  const { setWidgetState } = useWidgetRuntimeStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [hue, setHue] = useState(0);
@@ -111,6 +113,19 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
     setSaturation(s);
     setBrightness(v);
   }, [entityState?.attributes?.rgb_color]);
+
+  // Publish runtime state so flows can read the current color via runtime.value
+  useEffect(() => {
+    const [r, g, b] = hexToRgb(localColor);
+    setWidgetState(config.id, {
+      value: localColor,   // hex string: '#ff8000' — readable as runtime.value
+      type: 'colorpicker',
+      metadata: {
+        hex: localColor,   // same as value, for explicitness
+        rgb: [r, g, b],    // [255, 128, 0]
+      },
+    });
+  }, [localColor, config.id, setWidgetState]);
 
   const hexToRgb = (hex: string): [number, number, number] => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
