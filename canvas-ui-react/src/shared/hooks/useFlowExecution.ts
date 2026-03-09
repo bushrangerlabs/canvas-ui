@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { FlowTriggerManager } from '../flows/triggers';
 import { useWebSocket } from '../providers/WebSocketProvider';
-import { useConfigStore } from '../stores/useConfigStore';
+import { setGlobalHass, useConfigStore } from '../stores/useConfigStore';
 import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 import type { FlowDefinition } from '../types/flow';
 
@@ -18,6 +18,12 @@ import type { FlowDefinition } from '../types/flow';
 export function useFlowExecution() {
   const { config, updateWidget, setVariable, listVariables } = useConfigStore();
   const { entities, hass } = useWebSocket();
+
+  // Keep the module-level hass reference current so setVariable / deleteVariable
+  // can auto-save to HA without requiring hass to be threaded through every caller.
+  useEffect(() => {
+    setGlobalHass(hass ?? null);
+  }, [hass]);
   const { getWidgetState } = useWidgetRuntimeStore();
   const triggerManagerRef = useRef<FlowTriggerManager | null>(null);
   // Ref so the trigger manager always calls the latest callService without stale closure

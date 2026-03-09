@@ -66,6 +66,19 @@ interface ConfigState {
 
 const LOCALSTORAGE_KEY = 'canvas-ui-react-config';  // Separate key
 
+// Module-level hass reference — set by useFlowExecution (runs in both edit and runtime)
+// Allows setVariable / deleteVariable to auto-save without needing hass passed as argument
+let _hassRef: HassConnection | null = null;
+let _variableSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Call this from any React context that has a hass reference.
+ * useFlowExecution calls this automatically for both Edit and Runtime modes.
+ */
+export const setGlobalHass = (hass: HassConnection | null) => {
+  _hassRef = hass;
+};
+
 // Universal style properties that AI may place flat in config (should be in style object)
 const UNIVERSAL_STYLE_PROPS = new Set([
   'backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundPosition',
@@ -672,6 +685,15 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
     set({ config: updatedConfig });
     (get() as any)._addToHistory(updatedConfig);
+
+    // Debounced HA file save — waits 2s after the last change before writing.
+    // Keeps rapid flow-driven updates (e.g. calculator) from hammering the HA API
+    // while still persisting values across browsers and page reloads.
+    if (_variableSaveTimer) clearTimeout(_variableSaveTimer);
+    _variableSaveTimer = setTimeout(() => {
+      _variableSaveTimer = null;
+      (get() as any).saveConfig(_hassRef, updatedConfig);
+    }, 2000);
   },
 
   deleteVariable: (name: string) => {
@@ -686,6 +708,10 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
     set({ config: updatedConfig });
     (get() as any)._addToHistory(updatedConfig);
+
+    // Immediate save — deletions are infrequent design-time operations
+    if (_variableSaveTimer) { clearTimeout(_variableSaveTimer); _variableSaveTimer = null; }
+    (get() as any).saveConfig(_hassRef, updatedConfig);
   },
 
   listVariables: () => {
