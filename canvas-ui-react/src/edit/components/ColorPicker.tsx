@@ -1,7 +1,9 @@
 import ColorLensIcon from '@mui/icons-material/ColorLens';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Tab, Tabs, TextField } from '@mui/material';
+import LinkIcon from '@mui/icons-material/Link';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Tab, Tabs, TextField, Tooltip } from '@mui/material';
 import React, { useState } from 'react';
 import { RgbaColorPicker } from 'react-colorful';
+import { BindingEvaluator } from '../../shared/utils/BindingEvaluator';
 
 interface ColorPickerProps {
   value: string;
@@ -25,9 +27,16 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label
   const [tabValue, setTabValue] = useState(0);
   const [tempColor, setTempColor] = useState(value);
 
+  const isBinding = BindingEvaluator.hasBinding(value);
+
   const handleOpen = () => {
+    if (isBinding) return;
     setTempColor(value);
     setOpen(true);
+  };
+
+  const handleDirectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
   };
 
   const handleClose = () => {
@@ -136,33 +145,45 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label
       <TextField
         label={label}
         value={value}
-        onClick={handleOpen}
+        onChange={handleDirectChange}
         size="small"
         fullWidth
+        placeholder="#rrggbb, rgb(), or {entity.id}"
+        inputProps={{ style: { fontFamily: 'monospace', fontSize: 13 } }}
         InputProps={{
-          readOnly: true,
-          startAdornment: (
+          startAdornment: !isBinding ? (
             <InputAdornment position="start">
               <Box
                 sx={{
-                  width: 24,
-                  height: 24,
+                  width: 20,
+                  height: 20,
                   backgroundColor: value,
-                  border: '1px solid #ccc',
-                  borderRadius: 1,
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 0.5,
+                  flexShrink: 0,
                 }}
               />
+            </InputAdornment>
+          ) : (
+            <InputAdornment position="start">
+              <Tooltip title="Binding expression — will resolve at runtime">
+                <LinkIcon fontSize="small" color="primary" />
+              </Tooltip>
             </InputAdornment>
           ),
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton size="small" onClick={handleOpen}>
-                <ColorLensIcon />
-              </IconButton>
+              <Tooltip title={isBinding ? 'Clear binding text to use picker' : 'Open color picker'}>
+                <span>
+                  <IconButton size="small" onClick={handleOpen} disabled={isBinding}>
+                    <ColorLensIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
             </InputAdornment>
           ),
         }}
-        sx={{ cursor: 'pointer', mb: 2 }}
+        sx={{ mb: 2 }}
       />
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
