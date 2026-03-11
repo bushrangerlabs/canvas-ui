@@ -61,10 +61,12 @@ with open('custom_components/canvas_ui/manifest.json', 'w') as f:
 echo "📦 Building HACS version..."
 ./build.sh
 
-# 3. Create zip (from repo root so paths inside are custom_components/canvas_ui/...)
+# 3. Create zip (HACS expects domain at root: canvas_ui/... not custom_components/canvas_ui/...)
 echo "🗜️  Creating ${ZIP_NAME}..."
 rm -f "${ZIP_NAME}"
-zip -r "${ZIP_NAME}" custom_components/canvas_ui/ -x "*/\_\_pycache\_\_/*" -x "*/.DS_Store"
+cd custom_components
+zip -r "../${ZIP_NAME}" canvas_ui/ -x "*/\_\_pycache\_\_/*" -x "*/.DS_Store" > /dev/null
+cd ..
 ZIP_SIZE=$(du -sh "${ZIP_NAME}" | cut -f1)
 echo "   → ${ZIP_SIZE}"
 
