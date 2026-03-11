@@ -70,8 +70,7 @@ echo "   → ${ZIP_SIZE}"
 
 # 4. Commit, tag, push
 echo "🔖 Committing and tagging ${TAG}..."
-git add custom_components/canvas_ui/manifest.json hacs.json .gitignore build.sh release.sh 2>/dev/null || true
-git add -A -- ':!custom_components/canvas_ui/frontend/'
+git add -A  # frontend/ is in .gitignore so it won't be staged
 git diff --cached --quiet && echo "   (nothing new to commit)" || git commit -m "chore: release ${TAG}"
 git tag "${TAG}" 2>/dev/null && echo "   Tagged ${TAG}" || echo "   Tag ${TAG} already exists — reusing"
 git push "${REMOTE}" main
