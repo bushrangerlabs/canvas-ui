@@ -59,7 +59,7 @@ export class OpenWebUIClient {
   private widgetDocFileId: string | null = null;
 
   constructor(baseUrl: string = 'http://localhost:3000', apiKey: string = '') {
-    this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.baseUrl = baseUrl.replace(/\/$/, '').replace(/\/api$/, ''); // Remove trailing slash or /api suffix
     this.apiKey = apiKey;
   }
 
