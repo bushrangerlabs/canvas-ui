@@ -27,6 +27,9 @@ www/
 # Built frontend assets — included in release zip, not committed to git
 custom_components/canvas_ui/frontend/
 
+# Release zip — generated during release, uploaded to GitHub, then deleted
+canvas_ui.zip
+
 # Private development planning docs
 REACT_MIGRATION_PLAN.md
 
