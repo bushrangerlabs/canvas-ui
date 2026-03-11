@@ -111,7 +111,7 @@ const Editor: React.FC = () => {
   // Advanced editor features
   const [gridSnap, setGridSnap] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const gridSize = 10; // Fixed grid size for now
+  const [gridSize, setGridSize] = useState(10);
   const [zoom, setZoom] = useState(100);
 
   // Hide sidebar in kiosk mode
@@ -839,9 +839,11 @@ const Editor: React.FC = () => {
           onSave={handleSave}
           gridSnap={gridSnap}
           showGrid={showGrid}
+          gridSize={gridSize}
           zoom={zoom}
           onToggleGridSnap={() => setGridSnap(!gridSnap)}
           onToggleShowGrid={() => setShowGrid(!showGrid)}
+          onGridSizeChange={setGridSize}
           onZoomIn={() => setZoom(Math.min(200, zoom + 10))}
           onZoomOut={() => setZoom(Math.max(50, zoom - 10))}
           onZoomReset={() => setZoom(100)}

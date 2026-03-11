@@ -138,6 +138,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
       `,
       backgroundSize: `${gridSize}px ${gridSize}px`,
+      backgroundPosition: '0px 0px', // Must be 0,0 so lines align with snap positions
     }),
   };
 

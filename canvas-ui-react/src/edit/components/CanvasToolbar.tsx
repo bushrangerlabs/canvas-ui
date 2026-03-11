@@ -36,7 +36,7 @@ import {
     ZoomOut as ZoomOutIcon,
     RestartAlt as ZoomResetIcon
 } from '@mui/icons-material';
-import { AppBar, Box, Button, ButtonGroup, Divider, IconButton, Tooltip, Typography } from '@mui/material';
+import { AppBar, Box, Button, ButtonGroup, Divider, IconButton, MenuItem, Select, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ViewMode } from '../../shared/stores/useConfigStore';
 import './CanvasToolbar.css';
@@ -82,9 +82,11 @@ export interface CanvasToolbarProps {
   // Grid & Zoom
   gridSnap: boolean;
   showGrid: boolean;
+  gridSize: number;
   zoom: number;
   onToggleGridSnap: () => void;
   onToggleShowGrid: () => void;
+  onGridSizeChange: (size: number) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
@@ -131,9 +133,11 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
   isSaving,
   gridSnap,
   showGrid,
+  gridSize,
   zoom,
   onToggleGridSnap,
   onToggleShowGrid,
+  onGridSizeChange,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -469,7 +473,7 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
             icon: gridSnap ? <GridSnapIcon /> : <GridOffIcon />,
             onAction: onToggleGridSnap,
             selected: gridSnap,
-            tooltip: 'Grid Snap',
+            tooltip: 'Snap to Grid',
           },
           { 
             type: 'icon-button',
@@ -477,6 +481,34 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
             onAction: onToggleShowGrid,
             selected: showGrid,
             tooltip: 'Show Grid',
+          },
+        ],
+        [
+          {
+            type: 'custom' as const,
+            render: () => (
+              <Tooltip title="Grid Size">
+                <Select
+                  value={gridSize}
+                  onChange={(e) => onGridSizeChange(Number(e.target.value))}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontSize: '0.75rem',
+                    height: 24,
+                    minWidth: 58,
+                    color: 'inherit',
+                    '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.6)' },
+                    '.MuiSvgIcon-root': { color: 'inherit' },
+                  }}
+                >
+                  {[5, 10, 20, 25, 50].map(s => (
+                    <MenuItem key={s} value={s} sx={{ fontSize: '0.8rem' }}>{s}px</MenuItem>
+                  ))}
+                </Select>
+              </Tooltip>
+            ),
           },
         ],
       ],
@@ -518,8 +550,8 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
     return baseGroups;
   }, [
     currentViewName, onViewsClick, onCloneView, onDeleteView, onExportView, onImportView, onFileManagerClick, onVariablesClick, onFlowsClick, onPromptTemplatesClick, mode, onModeChange, handleOpenKiosk, onAddWidget, canUndo, canRedo, onUndo, onRedo,
-    selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, zoom,
-    onToggleGridSnap, onToggleShowGrid, onZoomIn, onZoomOut, onZoomReset,
+    selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, gridSize, zoom,
+    onToggleGridSnap, onToggleShowGrid, onGridSizeChange, onZoomIn, onZoomOut, onZoomReset,
     onAlignLeft, onAlignRight, onAlignTop, onAlignBottom, onAlignCenterH, onAlignCenterV, onAlignToViewCenterH, onAlignToViewCenterV,
     onDistributeH, onDistributeV,
   ]);
