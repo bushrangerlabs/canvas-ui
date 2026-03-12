@@ -149,11 +149,17 @@ export class FlowTriggerManager {
               const oldValue = previousState?.[runtimeProp];
               const newValue = (currentState as any)[runtimeProp];
               
-              if (oldValue !== newValue && newValue !== undefined) {
-                if (import.meta.env.DEV) console.log(`[FlowTrigger] Runtime property changed: ${widgetId}.${property} = ${newValue} (was ${oldValue})`);
-                this.executeFlow(flow);
-                
-                // Update previous state
+              if (newValue !== undefined && oldValue !== newValue) {
+                if (oldValue === undefined) {
+                  // Widget just initialized its runtime state for the first time —
+                  // this is NOT a user-driven change, just seed the baseline silently.
+                  if (import.meta.env.DEV) console.log(`[FlowTrigger] Initial runtime value for ${widgetId}.${property} = ${newValue}, seeding baseline (not firing)`);
+                } else {
+                  // Genuine change from a known previous value → fire the flow
+                  if (import.meta.env.DEV) console.log(`[FlowTrigger] Runtime property changed: ${widgetId}.${property} = ${newValue} (was ${oldValue})`);
+                  this.executeFlow(flow);
+                }
+                // Either way, update previous state so next real change is detected
                 this.previousRuntimeStates[widgetId] = { ...currentState };
               }
             }
