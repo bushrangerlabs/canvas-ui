@@ -144,15 +144,17 @@ async def _register_panel(hass: HomeAssistant) -> None:
     """Register Canvas UI custom panels (edit and kiosk modes)."""
     global _PANEL_REGISTERED
 
-    # Check if already registered
+    # Check if already registered — set flag early to prevent race conditions
+    # between async_setup and async_setup_entry both calling this concurrently
     if _PANEL_REGISTERED:
         _LOGGER.debug("Canvas UI panels already registered, skipping")
         return
+    _PANEL_REGISTERED = True
 
+    timestamp = int(time.time())
+
+    # Register EDIT panel (sidebar)
     try:
-        timestamp = int(time.time())
-
-        # Register EDIT panel (sidebar)
         _LOGGER.info("Registering Canvas UI Edit panel in sidebar")
         await panel_custom.async_register_panel(
             hass,
@@ -164,30 +166,26 @@ async def _register_panel(hass: HomeAssistant) -> None:
             embed_iframe=False,
             require_admin=False,
         )
+        _LOGGER.info("✅ Canvas UI edit panel registered")
+    except Exception as e:
+        _LOGGER.warning(f"Canvas UI edit panel registration: {e}")
 
-        # Register PREVIEW/KIOSK panel (hidden from sidebar)
-        # - Preview mode: /canvas-kiosk (shows HA chrome)
-        # - Kiosk mode: /canvas-kiosk?view=viewname (hides HA chrome)
+    # Register PREVIEW/KIOSK panel (hidden from sidebar)
+    try:
         _LOGGER.info("Registering Canvas UI Preview/Kiosk panel (hidden)")
         await panel_custom.async_register_panel(
             hass,
             frontend_url_path="canvas-kiosk",
             webcomponent_name="canvas-kiosk-panel",
-            sidebar_title=None,  # Hidden from sidebar
-            sidebar_icon=None,
+            sidebar_title="",
+            sidebar_icon="",
             module_url=f"/canvas-ui-static/canvas-kiosk-panel.js?v={timestamp}",
             embed_iframe=False,
             require_admin=False,
         )
-
-        _PANEL_REGISTERED = True
-
-        _LOGGER.info(
-            "✅ Canvas UI panels registered successfully (edit + preview/kiosk)"
-        )
-
+        _LOGGER.info("✅ Canvas UI kiosk panel registered")
     except Exception as e:
-        _LOGGER.error(f"Failed to register Canvas UI panels: {e}", exc_info=True)
+        _LOGGER.warning(f"Canvas UI kiosk panel registration: {e}")
 
 
 async def _setup_lovelace_resource(hass: HomeAssistant) -> None:
