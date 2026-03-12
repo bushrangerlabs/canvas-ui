@@ -70,6 +70,7 @@ const LOCALSTORAGE_KEY = 'canvas-ui-react-config';  // Separate key
 // Allows setVariable / deleteVariable to auto-save without needing hass passed as argument
 let _hassRef: HassConnection | null = null;
 let _variableSaveTimer: ReturnType<typeof setTimeout> | null = null;
+let _widgetSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * Call this from any React context that has a hass reference.
@@ -596,8 +597,15 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ config: updatedConfig });
     // Save to localStorage immediately
     (get() as any)._saveToLocalStorage(updatedConfig);
-    // Don't add to history for every drag/resize movement - only on mouse up
-    // History will be added from Editor component
+    // Debounced HA file save — waits 2s after the last change before writing.
+    // Ensures flow-driven widget updates (e.g. color picker → backgroundColor)
+    // survive page reloads and sync across devices, without hammering the HA API
+    // during rapid drag/resize or fast flows.
+    if (_widgetSaveTimer) clearTimeout(_widgetSaveTimer);
+    _widgetSaveTimer = setTimeout(() => {
+      _widgetSaveTimer = null;
+      (get() as any).saveConfig(_hassRef, updatedConfig);
+    }, 2000);
   },
 
   // Delete widget
