@@ -25,6 +25,7 @@ import { ProgressBarWidgetMetadata } from '../widgets/ProgressBarWidget';
 import { ProgressCircleWidgetMetadata } from '../widgets/ProgressCircleWidget';
 import { RadioButtonWidgetMetadata } from '../widgets/RadioButtonWidget';
 import { resolutionWidgetMetadata } from '../widgets/ResolutionWidget';
+import { screensaverWidgetMetadata } from '../widgets/ScreensaverWidget';
 import { ScrollingTextWidgetMetadata } from '../widgets/ScrollingTextWidget';
 import { SliderWidgetMetadata } from '../widgets/SliderWidget';
 import { SwitchWidgetMetadata } from '../widgets/SwitchWidget';
@@ -66,6 +67,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetMetadata> = {
   graph: GraphWidgetMetadata,
   calendar: CalendarWidgetMetadata,
   scrollingtext: ScrollingTextWidgetMetadata,
+  screensaver: screensaverWidgetMetadata,
 };
 
 /**

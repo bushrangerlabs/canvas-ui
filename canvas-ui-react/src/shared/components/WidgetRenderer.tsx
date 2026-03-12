@@ -64,6 +64,7 @@ const widgetComponents: Record<string, React.LazyExoticComponent<React.FC<Widget
   graph: lazy(() => import('../widgets/GraphWidget')),
   calendar: lazy(() => import('../widgets/CalendarWidget')),
   scrollingtext: lazy(() => import('../widgets/ScrollingTextWidget')),
+  screensaver: lazy(() => import('../widgets/ScreensaverWidget')),
 };
 
 const SNAP_THRESHOLD = 5; // pixels

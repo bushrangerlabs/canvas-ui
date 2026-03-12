@@ -225,6 +225,26 @@ export const NODE_REGISTRY: Record<FlowNodeType, NodeMetadata> = {
     inputs: 1,
     outputs: 0,
   },
+  'activate-screensaver': {
+    type: 'activate-screensaver',
+    category: 'output',
+    label: 'Activate Screensaver',
+    description: 'Trigger screensaver widget (dim overlay or view navigation)',
+    icon: 'DarkMode',
+    color: '#FF9800',
+    inputs: 1,
+    outputs: 0,
+  },
+  'dismiss-screensaver': {
+    type: 'dismiss-screensaver',
+    category: 'output',
+    label: 'Dismiss Screensaver',
+    description: 'Dismiss the active screensaver widget',
+    icon: 'LightMode',
+    color: '#FF9800',
+    inputs: 1,
+    outputs: 0,
+  },
 };
 
 /**

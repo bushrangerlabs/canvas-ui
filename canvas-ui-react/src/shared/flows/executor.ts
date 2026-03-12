@@ -523,6 +523,28 @@ async function executeNode(
         console.log(`[Flow ${context.flowId}] ${message}`, inputValue);
         return inputValue;
       }
+
+      case 'activate-screensaver': {
+        const widgetId = config?.widgetId || config?.widget_id;
+        window.dispatchEvent(
+          new CustomEvent('canvas-screensaver-activate', {
+            detail: widgetId ? { widgetId } : {},
+          })
+        );
+        flowLog(`[FlowExecutor] activate-screensaver: widgetId=${widgetId ?? '(any)'}`);
+        return true;
+      }
+
+      case 'dismiss-screensaver': {
+        const widgetId = config?.widgetId || config?.widget_id;
+        window.dispatchEvent(
+          new CustomEvent('canvas-screensaver-dismiss', {
+            detail: widgetId ? { widgetId } : {},
+          })
+        );
+        flowLog(`[FlowExecutor] dismiss-screensaver: widgetId=${widgetId ?? '(any)'}`);
+        return true;
+      }
       
       default:
         throw new Error(`Unknown node type: ${nodeType}`);

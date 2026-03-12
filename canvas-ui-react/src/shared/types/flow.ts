@@ -42,8 +42,10 @@ export type OutputNodeType =
   | 'call-service'       // Call HA service
   | 'set-variable'       // Update canvas variable
   | 'http-post'          // HTTP POST request
-  | 'local-storage'      // Browser localStorage
-  | 'console-log';       // Debug output
+  | 'local-storage'          // Browser localStorage
+  | 'console-log'            // Debug output
+  | 'activate-screensaver'   // Trigger screensaver widget
+  | 'dismiss-screensaver';   // Dismiss screensaver widget
 
 /**
  * All supported node types

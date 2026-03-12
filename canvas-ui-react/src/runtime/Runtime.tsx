@@ -28,6 +28,20 @@ const Runtime: React.FC = () => {
     useConfigStore.setState({ currentViewId: viewId }, false);
   };
 
+  // Keep a stable ref so event listeners never capture a stale closure
+  const updateActiveViewRef = React.useRef(updateActiveView);
+  useEffect(() => { updateActiveViewRef.current = updateActiveView; });
+
+  // Handle canvas-navigate-view events dispatched by ScreensaverWidget
+  useEffect(() => {
+    const handleNavigate = (e: Event) => {
+      const viewId = (e as CustomEvent<{ viewId: string }>).detail?.viewId;
+      if (viewId) updateActiveViewRef.current(viewId);
+    };
+    window.addEventListener('canvas-navigate-view', handleNavigate);
+    return () => window.removeEventListener('canvas-navigate-view', handleNavigate);
+  }, []);
+
   // Expose hass to window for Lovelace cards in kiosk/view mode
   useEffect(() => {
     if (hass && authenticated) {
