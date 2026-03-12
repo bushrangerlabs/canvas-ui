@@ -45,28 +45,29 @@ if [ ! -d "canvas-ui-react" ]; then
   exit 1
 fi
 
-# 1. Bump manifest.json version
+# 1. Bump manifest.json version (both the integration one AND the repo-root copy for HACS validation)
 echo "📝 Bumping manifest.json to ${VERSION}..."
 python3 -c "
 import json
-with open('custom_components/canvas_ui/manifest.json') as f:
-    m = json.load(f)
-m['version'] = '${VERSION}'
-with open('custom_components/canvas_ui/manifest.json', 'w') as f:
-    json.dump(m, f, indent=2)
-    f.write('\n')
+for path in ['custom_components/canvas_ui/manifest.json', 'manifest.json']:
+    with open(path) as f:
+        m = json.load(f)
+    m['version'] = '${VERSION}'
+    with open(path, 'w') as f:
+        json.dump(m, f, indent=2)
+        f.write('\n')
 "
 
 # 2. Build
 echo "📦 Building HACS version..."
 ./build.sh
 
-# 3. Create zip (content_in_root: false — HACS expects canvas_ui/manifest.json inside zip)
+# 3. Create zip (content_in_root: true — files at zip root, HACS extracts directly to custom_components/canvas_ui/)
 echo "🗜️  Creating ${ZIP_NAME}..."
 rm -f "${ZIP_NAME}"
-cd custom_components
-zip -r "../${ZIP_NAME}" canvas_ui/ -x "*/__pycache__/*" -x "*/.DS_Store" > /dev/null
-cd ..
+cd custom_components/canvas_ui
+zip -r "../../${ZIP_NAME}" . -x "*/__pycache__/*" -x "*/.DS_Store" > /dev/null
+cd ../..
 ZIP_SIZE=$(du -sh "${ZIP_NAME}" | cut -f1)
 echo "   → ${ZIP_SIZE}"
 
