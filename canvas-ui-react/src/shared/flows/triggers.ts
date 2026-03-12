@@ -33,6 +33,7 @@ export class FlowTriggerManager {
   private listeners: Map<string, Set<TriggerListener>> = new Map();
   private intervalTimers: Map<string, number> = new Map();
   private runtimeWatchers: Map<string, number> = new Map(); // Polling timers for runtime property changes
+  private flowDebounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map(); // Debounce: coalesces rapid successive fires
   
   // External dependencies
   private widgets: Record<string, any> = {};
@@ -120,6 +121,13 @@ export class FlowTriggerManager {
     // Remove listeners
     this.listeners.delete(flowId);
     this.flows.delete(flowId);
+    
+    // Clear any pending debounce timer for this flow
+    const debounceTimer = this.flowDebounceTimers.get(flowId);
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      this.flowDebounceTimers.delete(flowId);
+    }
   }
   
   /**
@@ -179,7 +187,7 @@ export class FlowTriggerManager {
                 } else {
                   // Genuine change from a known previous value → fire the flow
                   flowLog(`[FlowTrigger] FIRE: runtime change ${widgetId}.${property}: ${oldValue} → ${newValue}, triggering flow "${flow.name}"`);
-                  this.executeFlow(flow);
+                  this.debouncedExecuteFlow(flow);
                 }
                 // Either way, update previous state so next real change is detected
                 this.previousRuntimeStates[widgetId] = { ...currentState };
@@ -241,13 +249,13 @@ export class FlowTriggerManager {
             
             if (oldValue !== newValue) {
               flowLog(`[FlowTrigger] FIRE: widget-change (config) ${widgetId}.${property}: ${JSON.stringify(oldValue)} → ${JSON.stringify(newValue)}, triggering flow "${flow.name}"`);
-              this.executeFlow(flow);
+              this.debouncedExecuteFlow(flow);
             }
           } else {
             // No specific property - trigger on any widget change
             if (JSON.stringify(oldWidget) !== JSON.stringify(newWidget)) {
               flowLog(`[FlowTrigger] FIRE: widget-change (any) ${widgetId}, triggering flow "${flow.name}"`);
-              this.executeFlow(flow);
+              this.debouncedExecuteFlow(flow);
             }
           }
         }
@@ -279,7 +287,7 @@ export class FlowTriggerManager {
           // Check if state changed
           if (oldEntity.state !== newEntity.state) {
             flowLog(`[FlowTrigger] FIRE: entity-change ${entityId}: "${oldEntity.state}" → "${newEntity.state}", triggering flow "${flow.name}"`);
-            this.executeFlow(flow);
+            this.debouncedExecuteFlow(flow);
           }
         }
       });
@@ -314,7 +322,7 @@ export class FlowTriggerManager {
           
           if (oldValue !== newValue) {
             flowLog(`[FlowTrigger] FIRE: variable-change "${variableName}": ${JSON.stringify(oldValue)} → ${JSON.stringify(newValue)}, triggering flow "${flow.name}"`);
-            this.executeFlow(flow);
+            this.debouncedExecuteFlow(flow);
           }
         }
       });
@@ -338,6 +346,24 @@ export class FlowTriggerManager {
   
   /** Returns IDs of all currently registered flows — useful for diagnostics. */
   getFlowIds(): string[] { return Array.from(this.flows.keys()); }
+
+  /**
+   * Schedule a debounced flow execution.
+   * Multiple calls within DEBOUNCE_MS (50ms) are coalesced into one execution,
+   * using the latest trigger context. This prevents rapid-fire widget state changes
+   * (e.g. color picker initializing) from running the flow multiple times.
+   */
+  private static readonly DEBOUNCE_MS = 50;
+
+  private debouncedExecuteFlow(flow: FlowDefinition): void {
+    const existing = this.flowDebounceTimers.get(flow.id);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      this.flowDebounceTimers.delete(flow.id);
+      this.executeFlow(flow);
+    }, FlowTriggerManager.DEBOUNCE_MS);
+    this.flowDebounceTimers.set(flow.id, timer);
+  }
 
   /**
    * Execute a flow
@@ -392,6 +418,10 @@ export class FlowTriggerManager {
     // Clear all runtime watchers (100ms polling timers for widget-change triggers)
     this.runtimeWatchers.forEach(timer => clearInterval(timer));
     this.runtimeWatchers.clear();
+    
+    // Clear all pending debounce timers
+    this.flowDebounceTimers.forEach(timer => clearTimeout(timer));
+    this.flowDebounceTimers.clear();
     
     // Clear all flows
     this.flows.clear();
