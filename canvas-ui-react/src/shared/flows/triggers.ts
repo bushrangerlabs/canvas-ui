@@ -337,6 +337,10 @@ export class FlowTriggerManager {
     this.intervalTimers.forEach(timer => clearInterval(timer));
     this.intervalTimers.clear();
     
+    // Clear all runtime watchers (100ms polling timers for widget-change triggers)
+    this.runtimeWatchers.forEach(timer => clearInterval(timer));
+    this.runtimeWatchers.clear();
+    
     // Clear all flows
     this.flows.clear();
     this.listeners.clear();

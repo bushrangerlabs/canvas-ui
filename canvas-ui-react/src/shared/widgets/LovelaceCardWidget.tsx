@@ -468,12 +468,41 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
       cardElementRef.current = null;
     };
   }, [
-    // NOTE: 'hass' intentionally excluded - the 1s interval keeps card hass current.
-    // Including hass here would recreate the card on every entity state change.
-    config.config.cardType, 
-    config.config.cardConfig, 
+    // Only recreate the card when the card type or card config changes.
+    // Styling fields are handled by the effect below (calls setConfig, no card rebuild).
+    config.config.cardType,
+    config.config.cardConfig,
     config.config.cardModYaml,
-    // Styling fields that affect card-mod generation
+  ]);
+
+  // Update card-mod styling without rebuilding the card.
+  // When flow sets config.backgroundColor (or any other style field), we just call
+  // cardElement.setConfig() with newly-generated card-mod CSS instead of destroying
+  // and recreating the card. This makes flow-driven color/style changes instant.
+  useEffect(() => {
+    if (!cardElementRef.current) return;
+    const cardType = config.config.cardType || 'entities';
+    const cardConfigText = config.config.cardConfig || '';
+    const cardModYaml = config.config.cardModYaml || '';
+
+    const parsedConfig = parseCardConfig(cardConfigText);
+    if (!parsedConfig) return;
+
+    if (cardType !== 'other') {
+      const configType = getConfigType(cardType);
+      parsedConfig.type = configType;
+    }
+
+    const newStyledConfig = applyCardModToConfig(parsedConfig, cardModYaml);
+    try {
+      const el = cardElementRef.current as any;
+      if (el.setConfig) {
+        el.setConfig(newStyledConfig);
+      }
+    } catch (e) {
+      // Card may not support setConfig being called again — ignore
+    }
+  }, [
     config.config.backgroundColor,
     config.config.backgroundOpacity,
     config.config.gradientEnabled,
@@ -487,6 +516,7 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
     config.config.padding,
     config.config.boxShadow,
     config.config.zIndex,
+    // cardModYaml already handled in createCard — don't duplicate here
   ]);
 
   // Update hass on the card element whenever entity states change via WebSocket.
