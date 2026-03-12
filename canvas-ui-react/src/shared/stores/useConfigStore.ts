@@ -562,25 +562,39 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const viewIndex = config.views.findIndex(v => v.id === viewId);
     if (viewIndex === -1) return;
 
+    // Compute the merged widget ahead of the map so we can diff it.
+    const existingWidget = config.views[viewIndex].widgets.find(w => w.id === widgetId);
+    if (!existingWidget) return;
+
+    const mergedWidget = {
+      ...existingWidget,
+      ...updates,
+      config: updates.config ? {
+        ...existingWidget.config,
+        ...updates.config,
+        style: updates.config.style !== undefined ? {
+          ...(existingWidget.config.style || {}),
+          ...updates.config.style,
+        } : existingWidget.config.style,
+      } : existingWidget.config,
+      position: updates.position
+        ? { ...existingWidget.position, ...updates.position }
+        : existingWidget.position,
+    };
+
+    // If nothing actually changed, skip all saves — prevents spurious HA writes
+    // when a flow's set-widget fires but the widget is already at the target value.
+    const unchanged = JSON.stringify(mergedWidget) === JSON.stringify(existingWidget);
+    if (unchanged) {
+      if (import.meta.env.DEV) console.log('[ConfigStore] updateWidget: no change detected for', widgetId, '— skipping save');
+      return;
+    }
+
     const updatedViews = [...config.views];
     updatedViews[viewIndex] = {
       ...updatedViews[viewIndex],
       widgets: updatedViews[viewIndex].widgets.map((w) =>
-        w.id === widgetId ? {
-          ...w,
-          ...updates,
-          // Deep merge config - handle nested objects
-          config: updates.config ? { 
-            ...w.config, 
-            ...updates.config,
-            // Deep merge style property if it exists in updates
-            style: updates.config.style !== undefined ? {
-              ...(w.config.style || {}),
-              ...updates.config.style,
-            } : w.config.style,
-          } : w.config,
-          position: updates.position ? { ...w.position, ...updates.position } : w.position,
-        } : w
+        w.id === widgetId ? mergedWidget : w
       ),
     };
 
