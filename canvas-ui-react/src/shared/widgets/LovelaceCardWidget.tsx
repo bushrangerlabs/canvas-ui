@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useWebSocket } from '../providers/WebSocketProvider';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
-import { isCardRegistered, loadCard } from '../utils/cardLoader';
+import { isCardRegistered, loadCard, normalizeCardName } from '../utils/cardLoader';
 
 // Extend Window interface for HA card helpers
 declare global {
@@ -23,7 +23,7 @@ declare global {
 const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardElementRef = useRef<HTMLElement | null>(null);
-  const { hass } = useWebSocket();
+  const { hass, entities } = useWebSocket();
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -391,14 +391,19 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
           const helpers = await (haWindow as any).loadCardHelpers();
           cardElement = await helpers.createCardElement(styledConfig);
         } else {
-          // Fallback to direct element creation using parent window's custom elements
-          console.log('[LovelaceCardWidget] Direct element creation:', resolvedType);
-          const normalizedType = resolvedType.replace(':', '-');
-          cardElement = (haWindow as any).document.createElement(normalizedType);
+          // Fallback to direct element creation using parent window's custom elements.
+          // normalizeCardName maps config type → registered element name:
+          //   'thermostat'                  → 'hui-thermostat-card'
+          //   'custom-mushroom-climate-card' → 'mushroom-climate-card'
+          const elementName = normalizeCardName(resolvedType.replace(':', '-'));
+          console.log('[LovelaceCardWidget] Direct element creation:', resolvedType, '→', elementName);
+          cardElement = (haWindow as any).document.createElement(elementName);
           
-          // Check if element was created successfully
-          if (!cardElement || cardElement.tagName === 'UNKNOWN') {
-            throw new Error(`Card element ${normalizedType} not found. Make sure the card is installed in Home Assistant.`);
+          // Verify the element is actually a registered custom element in either window
+          const isRegistered = !!(haWindow as any).customElements?.get(elementName)
+            || !!window.customElements?.get(elementName);
+          if (!isRegistered) {
+            throw new Error(`Card '${resolvedType}' is not registered in Home Assistant. Make sure it is installed and loaded.`);
           }
         }
 
@@ -484,25 +489,32 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
     config.config.zIndex,
   ]);
 
-  // Continuously update hass object (like old Canvas UI updateHass method)
+  // Update hass on the card element whenever entity states change via WebSocket.
+  // This is event-driven (no polling) so cards reflect state changes instantly.
   useEffect(() => {
-    const updateInterval = setInterval(() => {
-      // Prefer full HA hass from <home-assistant> element (has localize, themes, etc.)
-      // Fall back to window.hass (either full HA or partial Canvas UI hass)
-      const homeAssistant = document.querySelector('home-assistant');
-      const haHass = homeAssistant && (homeAssistant as any).hass;
-      const windowHass = (window as any).hass;
-      const hass = (haHass && typeof haHass.localize === 'function') ? haHass
-        : (windowHass && typeof windowHass.localize === 'function') ? windowHass
-        : windowHass;
-      // Only update if cardElement exists and hass has a valid states object
-      if (cardElementRef.current && hass && hass.states && typeof hass.states === 'object') {
-        (cardElementRef.current as any).hass = hass;
-      }
-    }, 1000); // Update every second
+    if (!cardElementRef.current) return;
+    // Prefer full HA hass from <home-assistant> element (has localize, themes, callService, etc.)
+    // Fall back to window.hass
+    const homeAssistant = document.querySelector('home-assistant');
+    const haHass = homeAssistant && (homeAssistant as any).hass;
+    const windowHass = (window as any).hass;
+    const fullHass = (haHass && typeof haHass.localize === 'function') ? haHass
+      : (windowHass && typeof windowHass.localize === 'function') ? windowHass
+      : windowHass;
+    if (fullHass && fullHass.states && typeof fullHass.states === 'object') {
+      (cardElementRef.current as any).hass = fullHass;
+    }
+  }, [entities]); // Re-runs whenever WebSocket pushes entity state changes
 
-    return () => clearInterval(updateInterval);
-  }, []); // Empty deps - only set up interval once on mount
+  // Notify cards of container size changes so graph/chart cards reflow correctly.
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Note: Card-mod CSS generation available if needed in future
   // Can generate CSS from config.config styling options (cornerRadius, backgroundColor, etc.)
