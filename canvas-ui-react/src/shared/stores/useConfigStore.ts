@@ -586,7 +586,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     // when a flow's set-widget fires but the widget is already at the target value.
     const unchanged = JSON.stringify(mergedWidget) === JSON.stringify(existingWidget);
     if (unchanged) {
-      if (import.meta.env.DEV) console.log('[ConfigStore] updateWidget: no change detected for', widgetId, '— skipping save');
+      if (import.meta.env.DEV || (window as any).CANVAS_UI_FLOW_DEBUG) console.log('[ConfigStore] updateWidget: no change detected for', widgetId, '— skipping save');
       return;
     }
 

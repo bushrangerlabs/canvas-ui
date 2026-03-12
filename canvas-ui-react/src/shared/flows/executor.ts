@@ -9,6 +9,16 @@ import type { FlowDefinition, FlowExecutionStatus, FlowNode } from '../types/flo
 import { topologicalSort } from './topologicalSort';
 
 /**
+ * Runtime-toggleable debug logger for the flow execution engine.
+ * Enable in browser console: `(window as any).CANVAS_UI_FLOW_DEBUG = true`
+ */
+const flowLog = (...args: any[]) => {
+  if (import.meta.env.DEV || (window as any).CANVAS_UI_FLOW_DEBUG) {
+    console.log(...args);
+  }
+};
+
+/**
  * Interpolate variables and entities in a string
  * Supports: {{variables.name}}, {{entities.entity_id.state}}, {{entities.entity_id.attributes.brightness}}
  */
@@ -123,6 +133,8 @@ async function executeNode(
 ): Promise<any> {
   const { nodeType, config } = node.data;
   
+  flowLog(`[FlowExecutor] Node: ${nodeType} (${node.id})`, Object.keys(inputs).length ? { inputs } : '');
+
   try {
     switch (nodeType) {
       // INPUT NODES - Get data from sources
@@ -374,6 +386,7 @@ async function executeNode(
         }
         
         await context.setWidget(widgetId, targetProperty, value);
+        flowLog(`[FlowExecutor] set-widget: ${widgetId}.${targetProperty} =`, value);
         return value;
       }
       
@@ -390,6 +403,7 @@ async function executeNode(
         const finalData = { ...serviceData, ...inputs };
         
         await context.callService(domain, service, finalData);
+        flowLog(`[FlowExecutor] call-service: ${domain}.${service}`, finalData);
         return finalData; // Return the data that was sent
       }
       
@@ -479,6 +493,7 @@ async function executeNode(
         }
         
         context.setVariable(variableName, newValue);
+        flowLog(`[FlowExecutor] set-variable: "${variableName}" [${operation}] =`, newValue);
         return newValue;
       }
       
@@ -565,6 +580,8 @@ export async function executeFlow(
       throw new Error('Flow contains cycles or is invalid');
     }
     
+    flowLog(`[FlowExecutor] Starting flow "${flow.name}" — ${sortedNodes.length} nodes: [${sortedNodes.map(n => n.data.nodeType).join(' → ')}]`);
+    
     // Execute nodes in order
     for (const node of sortedNodes) {
       const nodeStartTime = Date.now();
@@ -578,6 +595,8 @@ export async function executeFlow(
         
         // Store result
         context.nodeOutputs[node.id] = result;
+        
+        flowLog(`[FlowExecutor]   ✓ ${node.data.nodeType} (${node.id}) → ${JSON.stringify(result)}`);
         
         nodeResults[node.id] = {
           nodeId: node.id,

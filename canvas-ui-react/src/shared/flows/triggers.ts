@@ -10,6 +10,17 @@ import type { FlowDefinition, FlowTriggerConfig } from '../types/flow';
 import { executeFlow } from './executor';
 
 /**
+ * Runtime-toggleable debug logger for the flow system.
+ * Enable in browser console: `(window as any).CANVAS_UI_FLOW_DEBUG = true`
+ * Works in both dev and production HACS builds.
+ */
+const flowLog = (...args: any[]) => {
+  if (import.meta.env.DEV || (window as any).CANVAS_UI_FLOW_DEBUG) {
+    console.log(...args);
+  }
+};
+
+/**
  * Trigger listener callback
  */
 type TriggerListener = (flow: FlowDefinition) => void;
@@ -61,16 +72,16 @@ export class FlowTriggerManager {
    */
   registerFlow(flow: FlowDefinition): void {
     if (!flow.enabled) {
-      if (import.meta.env.DEV) console.log(`[FlowTrigger] Skipping disabled flow: ${flow.name}`);
+      flowLog(`[FlowTrigger] Skipping disabled flow: ${flow.name}`);
       return; // Don't register disabled flows
     }
     
-    if (import.meta.env.DEV) console.log(`[FlowTrigger] Registering flow: ${flow.name} (${flow.id}) with ${flow.triggers.length} trigger(s)`);
+    flowLog(`[FlowTrigger] Registering flow: "${flow.name}" (${flow.id}) with ${flow.triggers.length} trigger(s)`);
     this.flows.set(flow.id, flow);
     
     // Set up triggers
     flow.triggers.forEach(trigger => {
-      if (import.meta.env.DEV) console.log(`[FlowTrigger] Setting up trigger type: ${trigger.type}`, trigger.config);
+      flowLog(`[FlowTrigger] Setting up trigger type: ${trigger.type}`, trigger.config);
       this.setupTrigger(flow, trigger);
     });
   }
@@ -127,19 +138,19 @@ export class FlowTriggerManager {
         const widgetId = trigger.config?.widgetId;
         const property = trigger.config?.property;
         
-        if (import.meta.env.DEV) console.log(`[FlowTrigger] widget-change trigger: widgetId=${widgetId}, property=${property}`);
+        flowLog(`[FlowTrigger] widget-change trigger: widgetId=${widgetId}, property=${property}`);
         
         if (widgetId && property?.startsWith('runtime.')) {
           // This is a runtime property (e.g., runtime.value)
           // Poll the runtime store periodically
           const watcherKey = `${flow.id}:${widgetId}`;
           
-          if (import.meta.env.DEV) console.log(`[FlowTrigger] Starting runtime property monitoring for ${widgetId}.${property}`);
+          flowLog(`[FlowTrigger] Starting runtime property monitoring for ${widgetId}.${property}`);
           
           // Initialize previous state
           if (!this.previousRuntimeStates[widgetId]) {
             const currentState = this.getRuntimeState(widgetId);
-            if (import.meta.env.DEV) console.log(`[FlowTrigger] Initial runtime state for ${widgetId}:`, currentState);
+            flowLog(`[FlowTrigger] Initial runtime state for ${widgetId}:`, currentState);
             this.previousRuntimeStates[widgetId] = currentState ? { ...currentState } : {};
           }
           
@@ -159,10 +170,10 @@ export class FlowTriggerManager {
                 if (oldValue === undefined) {
                   // Widget just initialized its runtime state for the first time —
                   // this is NOT a user-driven change, just seed the baseline silently.
-                  if (import.meta.env.DEV) console.log(`[FlowTrigger] Initial runtime value for ${widgetId}.${property} = ${newValue}, seeding baseline (not firing)`);
+                  flowLog(`[FlowTrigger] SEED (not firing): ${widgetId}.${property} initialized to ${newValue}`);
                 } else {
                   // Genuine change from a known previous value → fire the flow
-                  if (import.meta.env.DEV) console.log(`[FlowTrigger] Runtime property changed: ${widgetId}.${property} = ${newValue} (was ${oldValue})`);
+                  flowLog(`[FlowTrigger] FIRE: runtime change ${widgetId}.${property}: ${oldValue} → ${newValue}, triggering flow "${flow.name}"`);
                   this.executeFlow(flow);
                 }
                 // Either way, update previous state so next real change is detected
@@ -171,10 +182,10 @@ export class FlowTriggerManager {
             }
           }, 100); // Poll every 100ms
           
-          if (import.meta.env.DEV) console.log(`[FlowTrigger] Runtime watcher started with timer ID: ${timer}`);
+          flowLog(`[FlowTrigger] Runtime watcher started for ${widgetId}.${property} (timer ${timer})`);
           this.runtimeWatchers.set(watcherKey, timer);
         } else {
-          if (import.meta.env.DEV) console.log(`[FlowTrigger] Not a runtime property or missing config, skipping polling setup`);
+          flowLog(`[FlowTrigger] widget-change: not a runtime property — config-level changes handled in updateWidgets()`);
         }
         break;
       }
@@ -198,6 +209,7 @@ export class FlowTriggerManager {
     // During startup window — just seed baseline, don't fire any triggers.
     // Prevents spurious fires when HA config overwrites localStorage on page load.
     if (Date.now() < this._startupWindowEnd) {
+      flowLog('[FlowTrigger] updateWidgets: inside startup window — seeding baseline, NOT firing');
       this.previousWidgets = { ...newWidgets };
       return;
     }
@@ -222,11 +234,13 @@ export class FlowTriggerManager {
             const newValue = this.getPropertyValue(newWidget, property);
             
             if (oldValue !== newValue) {
+              flowLog(`[FlowTrigger] FIRE: widget-change (config) ${widgetId}.${property}: ${JSON.stringify(oldValue)} → ${JSON.stringify(newValue)}, triggering flow "${flow.name}"`);
               this.executeFlow(flow);
             }
           } else {
             // No specific property - trigger on any widget change
             if (JSON.stringify(oldWidget) !== JSON.stringify(newWidget)) {
+              flowLog(`[FlowTrigger] FIRE: widget-change (any) ${widgetId}, triggering flow "${flow.name}"`);
               this.executeFlow(flow);
             }
           }
@@ -258,6 +272,7 @@ export class FlowTriggerManager {
           
           // Check if state changed
           if (oldEntity.state !== newEntity.state) {
+            flowLog(`[FlowTrigger] FIRE: entity-change ${entityId}: "${oldEntity.state}" → "${newEntity.state}", triggering flow "${flow.name}"`);
             this.executeFlow(flow);
           }
         }
@@ -277,6 +292,7 @@ export class FlowTriggerManager {
     // Prevents spurious fires on first call when previousVariables is empty ({})
     // and every stored variable appears as undefined → value.
     if (Date.now() < this._startupWindowEnd) {
+      flowLog('[FlowTrigger] updateVariables: inside startup window — seeding baseline, NOT firing');
       this.previousVariables = { ...newVariables };
       return;
     }
@@ -293,6 +309,7 @@ export class FlowTriggerManager {
           const newValue = newVariables[variableName];
           
           if (oldValue !== newValue) {
+            flowLog(`[FlowTrigger] FIRE: variable-change "${variableName}": ${JSON.stringify(oldValue)} → ${JSON.stringify(newValue)}, triggering flow "${flow.name}"`);
             this.executeFlow(flow);
           }
         }
@@ -320,7 +337,7 @@ export class FlowTriggerManager {
    */
   private async executeFlow(flow: FlowDefinition): Promise<void> {
     try {
-      if (import.meta.env.DEV) console.log(`Executing flow: ${flow.name} (${flow.id})`);
+      flowLog(`[FlowTrigger] ▶ Executing flow: "${flow.name}" (${flow.id})`);
       
       const result = await executeFlow(flow, {
         widgets: this.widgets,
@@ -333,12 +350,12 @@ export class FlowTriggerManager {
       });
       
       if (result.status === 'error') {
-        console.error(`Flow execution failed: ${flow.name}`, result.error);
+        console.error(`[FlowTrigger] ✗ Flow failed: "${flow.name}"`, result.error);
       } else {
-        if (import.meta.env.DEV) console.log(`Flow executed successfully: ${flow.name} (${result.duration}ms)`);
+        flowLog(`[FlowTrigger] ✓ Flow complete: "${flow.name}" (${result.duration}ms)`);
       }
     } catch (error) {
-      console.error(`Error executing flow ${flow.name}:`, error);
+      console.error(`[FlowTrigger] ✗ Error executing flow "${flow.name}":`, error);
     }
   }
   
