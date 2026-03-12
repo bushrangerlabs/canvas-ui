@@ -32,6 +32,12 @@ export class FlowTriggerManager {
   private previousVariables: Record<string, any> = {};
   private previousRuntimeStates: Record<string, Record<string, any>> = {}; // Track previous runtime states per widget
   
+  // Startup window: suppress trigger firing for the first 2 seconds after the manager
+  // is created. This prevents spurious fires during config loading (localStorage → HA sync)
+  // and widget initialization (runtime state seeding). After this window, all genuine
+  // user-driven changes fire normally.
+  private _startupWindowEnd: number = Date.now() + 2000;
+  
   // Callbacks for flow execution
   private setWidget: (widgetId: string, property: string, value: any) => Promise<void>;
   private setVariable: (name: string, value: any) => void;
@@ -189,6 +195,13 @@ export class FlowTriggerManager {
   updateWidgets(newWidgets: Record<string, any>): void {
     this.widgets = newWidgets;
     
+    // During startup window — just seed baseline, don't fire any triggers.
+    // Prevents spurious fires when HA config overwrites localStorage on page load.
+    if (Date.now() < this._startupWindowEnd) {
+      this.previousWidgets = { ...newWidgets };
+      return;
+    }
+    
     // Check each flow's widget-change triggers
     this.flows.forEach(flow => {
       flow.triggers.forEach(trigger => {
@@ -259,6 +272,14 @@ export class FlowTriggerManager {
    */
   updateVariables(newVariables: Record<string, any>): void {
     this.variables = newVariables;
+    
+    // During startup window — just seed baseline, don't fire any triggers.
+    // Prevents spurious fires on first call when previousVariables is empty ({})
+    // and every stored variable appears as undefined → value.
+    if (Date.now() < this._startupWindowEnd) {
+      this.previousVariables = { ...newVariables };
+      return;
+    }
     
     // Check each flow's variable-change triggers
     this.flows.forEach(flow => {
