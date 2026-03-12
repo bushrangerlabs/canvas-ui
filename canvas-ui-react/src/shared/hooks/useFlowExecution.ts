@@ -64,18 +64,20 @@ export function useFlowExecution() {
           const parts = property.split('.');
           
           if (parts[0] === 'config' && parts.length > 1) {
-            // Update widget config property
-            const newConfig = { ...targetWidget.config };
-            
-            // Set nested property
-            let target: any = newConfig;
+            // Build a PARTIAL update object for the nested property path — no mutation of existing refs.
+            // e.g. 'config.style.backgroundColor' → { style: { backgroundColor: value } }
+            // updateWidget handles the deep-merge of style (and top-level config props).
+            // Mutating targetWidget.config's nested objects (via shallow copy + reference traversal)
+            // would corrupt the diff check in updateWidget and prevent set() from being called.
+            let configUpdate: any = {};
+            let target = configUpdate;
             for (let i = 1; i < parts.length - 1; i++) {
-              if (!target[parts[i]]) target[parts[i]] = {};
+              target[parts[i]] = {};
               target = target[parts[i]];
             }
             target[parts[parts.length - 1]] = value;
             
-            updateWidget(targetViewId, targetWidget.id, { config: newConfig });
+            updateWidget(targetViewId, targetWidget.id, { config: configUpdate });
           } else if (parts[0] === 'runtime') {
             // Runtime properties can't be directly set - they're computed
             console.warn(`Cannot set runtime property: ${property}`);
