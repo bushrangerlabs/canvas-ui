@@ -43,11 +43,12 @@ export class FlowTriggerManager {
   private previousVariables: Record<string, any> = {};
   private previousRuntimeStates: Record<string, Record<string, any>> = {}; // Track previous runtime states per widget
   
-  // Startup window: suppress trigger firing for the first 2 seconds after the manager
-  // is created. This prevents spurious fires during config loading (localStorage → HA sync)
-  // and widget initialization (runtime state seeding). After this window, all genuine
-  // user-driven changes fire normally.
-  private _startupWindowEnd: number = Date.now() + 2000;
+  // Startup suppression: suppress trigger firing for 500ms after the most recent
+  // flow registration. Reset on every registerFlow() call so that slow HA config
+  // loads (arriving after the original timer would have expired) are still suppressed.
+  // After the last registration + 500ms, all genuine changes fire normally.
+  private _lastRegistrationTime: number = Date.now(); // treat construction as a registration
+  private get _inStartupWindow(): boolean { return Date.now() < this._lastRegistrationTime + 500; }
   
   // Callbacks for flow execution
   private setWidget: (widgetId: string, property: string, value: any) => Promise<void>;
@@ -77,6 +78,10 @@ export class FlowTriggerManager {
     }
     
     flowLog(`[FlowTrigger] Registering flow: "${flow.name}" (${flow.id}) with ${flow.triggers.length} trigger(s)`);
+    // Reset startup window so that the React updateWidgets/updateVariables effects
+    // which fire immediately after this registration are still suppressed (500ms).
+    this._lastRegistrationTime = Date.now();
+    console.log(`[Flow] Registered: "${flow.name}" (${this.flows.size + 1} total, window resets)`);
     this.flows.set(flow.id, flow);
     
     // Set up triggers
@@ -207,8 +212,9 @@ export class FlowTriggerManager {
     this.widgets = newWidgets;
     
     // During startup window — just seed baseline, don't fire any triggers.
-    // Prevents spurious fires when HA config overwrites localStorage on page load.
-    if (Date.now() < this._startupWindowEnd) {
+    // _inStartupWindow is true for 500ms after the last registerFlow() call, so
+    // it extends automatically when HA config re-registers flows after a slow load.
+    if (this._inStartupWindow) {
       flowLog('[FlowTrigger] updateWidgets: inside startup window — seeding baseline, NOT firing');
       this.previousWidgets = { ...newWidgets };
       return;
@@ -289,9 +295,7 @@ export class FlowTriggerManager {
     this.variables = newVariables;
     
     // During startup window — just seed baseline, don't fire any triggers.
-    // Prevents spurious fires on first call when previousVariables is empty ({})
-    // and every stored variable appears as undefined → value.
-    if (Date.now() < this._startupWindowEnd) {
+    if (this._inStartupWindow) {
       flowLog('[FlowTrigger] updateVariables: inside startup window — seeding baseline, NOT firing');
       this.previousVariables = { ...newVariables };
       return;
@@ -332,11 +336,15 @@ export class FlowTriggerManager {
     await this.executeFlow(flow);
   }
   
+  /** Returns IDs of all currently registered flows — useful for diagnostics. */
+  getFlowIds(): string[] { return Array.from(this.flows.keys()); }
+
   /**
    * Execute a flow
    */
   private async executeFlow(flow: FlowDefinition): Promise<void> {
     try {
+      console.log(`[Flow] FIRED: "${flow.name}" (${flow.id})`);
       flowLog(`[FlowTrigger] ▶ Executing flow: "${flow.name}" (${flow.id})`);
       
       const result = await executeFlow(flow, {

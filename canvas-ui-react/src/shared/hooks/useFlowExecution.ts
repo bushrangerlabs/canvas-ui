@@ -114,8 +114,9 @@ export function useFlowExecution() {
     
     if (!manager) return;
     
-    // Unregister all flows
-    Object.keys(flows).forEach(flowId => {
+    // Unregister ALL currently-registered flows (not just the ones in the new config).
+    // Prevents stale runtime watchers from lingering when flows are deleted or disabled.
+    manager.getFlowIds().forEach(flowId => {
       manager.unregisterFlow(flowId);
     });
     
@@ -125,6 +126,9 @@ export function useFlowExecution() {
         manager.registerFlow(flow);
       }
     });
+    
+    const enabledCount = Object.values(flows).filter((f: FlowDefinition) => f.enabled).length;
+    console.log(`[Flow] ${enabledCount} enabled flow(s) registered`);
   }, [config?.flows]);
   
   // Update trigger manager when widgets change
