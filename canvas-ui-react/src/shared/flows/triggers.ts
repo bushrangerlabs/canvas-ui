@@ -184,8 +184,13 @@ export class FlowTriggerManager {
                   // Widget just initialized its runtime state for the first time —
                   // this is NOT a user-driven change, just seed the baseline silently.
                   flowLog(`[FlowTrigger] SEED (not firing): ${widgetId}.${property} initialized to ${newValue}`);
+                } else if (this._inStartupWindow) {
+                  // Still within the startup suppression window (500ms after last registerFlow).
+                  // The change is likely entity-state arriving on WebSocket init, not a real
+                  // user action — re-seed the baseline so it becomes the new reference point.
+                  flowLog(`[FlowTrigger] SEED (startup window): ${widgetId}.${property} ${oldValue} → ${newValue}`);
                 } else {
-                  // Genuine change from a known previous value → fire the flow
+                  // Genuine change from a known previous value, outside startup window → fire.
                   flowLog(`[FlowTrigger] FIRE: runtime change ${widgetId}.${property}: ${oldValue} → ${newValue}, triggering flow "${flow.name}"`);
                   this.debouncedExecuteFlow(flow);
                 }
