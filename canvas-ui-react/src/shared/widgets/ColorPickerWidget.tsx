@@ -5,14 +5,60 @@
 
 import CloseIcon from '@mui/icons-material/Close';
 import { Dialog, IconButton } from '@mui/material';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useVisibility } from '../../hooks/useVisibility';
 import { useWebSocket } from '../providers/WebSocketProvider';
+import { useConfigStore } from '../stores/useConfigStore';
 import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
 import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
+
+// ---------------------------------------------------------------------------
+// Pure color math helpers — module-scoped so they can be used during init
+// ---------------------------------------------------------------------------
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [255, 255, 255];
+};
+
+const rgbToHsv = (r: number, g: number, b: number): { h: number; s: number; v: number } => {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const diff = max - min;
+  let h = 0;
+  const s = max === 0 ? 0 : (diff / max) * 100;
+  const v = max * 100;
+  if (diff !== 0) {
+    if (max === r) h = ((g - b) / diff + (g < b ? 6 : 0)) * 60;
+    else if (max === g) h = ((b - r) / diff + 2) * 60;
+    else h = ((r - g) / diff + 4) * 60;
+  }
+  return { h, s, v };
+};
+
+const hsvToRgb = (h: number, s: number, v: number): [number, number, number] => {
+  s /= 100; v /= 100;
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  let r = 0, g = 0, b = 0;
+  if (h >= 0 && h < 60)       { r = c; g = x; b = 0; }
+  else if (h < 120)            { r = x; g = c; b = 0; }
+  else if (h < 180)            { r = 0; g = c; b = x; }
+  else if (h < 240)            { r = 0; g = x; b = c; }
+  else if (h < 300)            { r = x; g = 0; b = c; }
+  else                         { r = c; g = 0; b = x; }
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+};
+
+const rgbToHex = (r: number, g: number, b: number): string =>
+  `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 
 export const ColorPickerWidgetMetadata: WidgetMetadata = {
   name: 'Color Picker',
@@ -64,7 +110,37 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
     swatchHeight = 60, 
     swatchBorderRadius = 4,
     visibilityCondition,
+    // savedColor: last user-picked color — persisted to config so it survives page reloads.
+    // Priority when initialising: entity state → savedColor → #ff0000
+    savedColor: configSavedColor = '',
   } = config.config;
+
+  // ---------------------------------------------------------------------------
+  // Initial color — computed once at mount, priority: entity → savedColor → red
+  // ---------------------------------------------------------------------------
+  const getColorFromEntityState = (): string | null => {
+    if (!entityState) return null;
+    const { rgb_color } = entityState.attributes || {};
+    if (rgb_color && Array.isArray(rgb_color) && rgb_color.length >= 3) {
+      const [r, g, b] = rgb_color;
+      return rgbToHex(r, g, b);
+    }
+    if (entityState.state && typeof entityState.state === 'string') {
+      const st = entityState.state.trim();
+      if (/^#?[0-9A-Fa-f]{6}$/.test(st)) return st.startsWith('#') ? st : `#${st}`;
+    }
+    return null;
+  };
+
+  const getInitialColor = (): string => {
+    const fromEntity = getColorFromEntityState();
+    if (fromEntity) return fromEntity;
+    if (configSavedColor && /^#[0-9A-Fa-f]{6}$/i.test(configSavedColor)) return configSavedColor;
+    return '#ff0000';
+  };
+
+  const initialColor = getInitialColor();
+  const initialHsv = rgbToHsv(...hexToRgb(initialColor));
 
   const isVisible = useVisibility(visibilityCondition);
   const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
@@ -72,9 +148,13 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
   const { setWidgetState } = useWidgetRuntimeStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [hue, setHue] = useState(0);
-  const [saturation, setSaturation] = useState(100);
-  const [brightness, setBrightness] = useState(100);
+
+  // HSV state — initialised from the actual starting color so the canvas interaction
+  // useEffect does NOT fire a spurious red → savedColor clobber on mount.
+  const [hue, setHue] = useState(initialHsv.h);
+  const [saturation, setSaturation] = useState(initialHsv.s);
+  const [brightness, setBrightness] = useState(initialHsv.v);
+  const [localColor, setLocalColor] = useState(initialColor);
 
   // Preset colors
   const presetColors = [
@@ -83,36 +163,34 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
     '#FFFFFF', '#C0C0C0', '#808080', '#404040', '#000000', '#FFC0CB',
   ];
 
-  // Get current color from entity attributes or state
-  const getCurrentColor = (): string => {
-    if (!entityState) return '#ff0000';
-    
-    const { rgb_color } = entityState.attributes || {};
-    if (rgb_color && Array.isArray(rgb_color) && rgb_color.length >= 3) {
-      const [r, g, b] = rgb_color;
-      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  // ---------------------------------------------------------------------------
+  // Persistence — write savedColor to config store so it survives page reloads
+  // ---------------------------------------------------------------------------
+  const persistColor = useCallback((color: string) => {
+    const { config: storeConfig, updateWidget } = useConfigStore.getState();
+    if (!storeConfig) return;
+    let viewId: string | null = null;
+    for (const view of storeConfig.views) {
+      if (view.widgets.some(w => w.id === config.id)) { viewId = view.id; break; }
     }
-    
-    if (entityState.state && typeof entityState.state === 'string') {
-      const state = entityState.state.trim();
-      if (/^#?[0-9A-Fa-f]{6}$/.test(state)) {
-        return state.startsWith('#') ? state : `#${state}`;
-      }
+    if (viewId) {
+      updateWidget(viewId, config.id, { config: { savedColor: color } });
     }
-    
-    return '#ff0000';
-  };
+  }, [config.id]);
 
-  const [localColor, setLocalColor] = useState(getCurrentColor());
-
+  // ---------------------------------------------------------------------------
+  // Sync with entity state when it changes (entity-driven, no persistence)
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    const color = getCurrentColor();
+    const color = getColorFromEntityState();
+    if (!color) return;
     setLocalColor(color);
     const { h, s, v } = rgbToHsv(...hexToRgb(color));
     setHue(h);
     setSaturation(s);
     setBrightness(v);
-  }, [entityState?.attributes?.rgb_color]);
+    // No persistColor here — entity is authoritative; HA state is the source of truth
+  }, [entityState?.attributes?.rgb_color, entityState?.state]);
 
   // Publish runtime state so flows can read the current color via runtime.value
   useEffect(() => {
@@ -121,64 +199,19 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
       value: localColor,   // hex string: '#ff8000' — readable as runtime.value
       type: 'colorpicker',
       metadata: {
-        hex: localColor,   // same as value, for explicitness
-        rgb: [r, g, b],    // [255, 128, 0]
+        hex: localColor,
+        rgb: [r, g, b],
       },
     });
   }, [localColor, config.id, setWidgetState]);
 
-  const hexToRgb = (hex: string): [number, number, number] => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [255, 255, 255];
-  };
-
-  const rgbToHsv = (r: number, g: number, b: number): { h: number; s: number; v: number } => {
-    r /= 255;
-    g /= 255;
-    b /= 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const diff = max - min;
-    let h = 0;
-    const s = max === 0 ? 0 : (diff / max) * 100;
-    const v = max * 100;
-
-    if (diff !== 0) {
-      if (max === r) h = ((g - b) / diff + (g < b ? 6 : 0)) * 60;
-      else if (max === g) h = ((b - r) / diff + 2) * 60;
-      else h = ((r - g) / diff + 4) * 60;
-    }
-
-    return { h, s, v };
-  };
-
-  const hsvToRgb = (h: number, s: number, v: number): [number, number, number] => {
-    s /= 100;
-    v /= 100;
-    const c = v * s;
-    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = v - c;
-    let r = 0, g = 0, b = 0;
-
-    if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
-    else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
-    else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
-    else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
-    else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
-    else { r = c; g = 0; b = x; }
-
-    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
-  };
-
-  const rgbToHex = (r: number, g: number, b: number): string => {
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  };
-
+  // ---------------------------------------------------------------------------
+  // Color helpers (reuse module-scope functions)
+  // ---------------------------------------------------------------------------
   const formatColorOutput = (hexColor: string, format: string, domain: string): any => {
     if (format === 'auto') {
       return domain === 'light' ? { type: 'rgb', value: hexToRgb(hexColor) } : { type: 'hex', value: hexColor };
     }
-    
     switch (format) {
       case 'rgb': return { type: 'rgb', value: hexToRgb(hexColor) };
       case 'hex': return { type: 'hex', value: hexColor };
@@ -189,14 +222,11 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
 
   const sendColorUpdate = async (newColor: string) => {
     if (!entity_id || !hass) return;
-
     const domain = entity_id.split('.')[0];
     const formatted = formatColorOutput(newColor, outputFormat, domain);
-
     let service: string;
     let serviceDomain: string;
     let fieldName: string;
-
     if (customService) {
       const parts = customService.split('.');
       if (parts.length !== 2) return;
@@ -214,20 +244,20 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
         return;
       }
     }
-
-    const serviceData: any = { entity_id, [fieldName]: formatted.value };
-
     try {
-      await hass.callService(serviceDomain, service, serviceData);
+      await hass.callService(serviceDomain, service, { entity_id, [fieldName]: formatted.value });
     } catch (error) {
       console.error('[ColorPicker] Failed:', error);
     }
   };
 
-  const updateColorFromHSV = async () => {
-    const [r, g, b] = hsvToRgb(hue, saturation, brightness);
-    const newColor = rgbToHex(r, g, b);
+  // Called directly by user interaction handlers (canvas, brightness slider).
+  // Takes explicit h/s/b values to avoid stale-closure issues with state reads.
+  const applyHsv = async (h: number, s: number, b: number) => {
+    const [r, g, b2] = hsvToRgb(h, s, b);
+    const newColor = rgbToHex(r, g, b2);
     setLocalColor(newColor);
+    persistColor(newColor);
     await sendColorUpdate(newColor);
   };
 
@@ -237,6 +267,7 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
     setHue(h);
     setSaturation(s);
     setBrightness(v);
+    persistColor(color);
     await sendColorUpdate(color);
   };
 
@@ -255,15 +286,20 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance <= radius) {
-      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-      setHue((angle + 360) % 360);
-      setSaturation(Math.min(100, (distance / radius) * 100));
+      const newHue = (Math.atan2(dy, dx) * (180 / Math.PI) + 360) % 360;
+      const newSat = Math.min(100, (distance / radius) * 100);
+      // Update state for the canvas-drawing useEffect AND apply the new color directly
+      // (can't read state inside the same event cycle — pass explicit values to applyHsv)
+      setHue(newHue);
+      setSaturation(newSat);
+      applyHsv(newHue, newSat, brightness);
     }
   };
 
-  useEffect(() => {
-    updateColorFromHSV();
-  }, [hue, saturation, brightness]);
+  // NOTE: there is intentionally NO useEffect([hue, saturation, brightness]) here.
+  // Color application is triggered explicitly by user interaction handlers (canvas,
+  // brightness slider, preset clicks) to avoid clobbering savedColor on mount and
+  // to prevent spurious flow triggers during entity-driven state updates.
 
   // Draw color wheel
   useEffect(() => {
@@ -368,7 +404,11 @@ const ColorPickerWidget: React.FC<WidgetProps> = ({ config, entityState }) => {
             Brightness: {Math.round(brightness)}%
           </label>
           <input type="range" min="0" max="100" value={brightness}
-            onChange={(e) => setBrightness(Number(e.target.value))}
+            onChange={(e) => {
+              const newBri = Number(e.target.value);
+              setBrightness(newBri);
+              applyHsv(hue, saturation, newBri);
+            }}
             style={{
               width: '100%', height: '40px', cursor: 'pointer', appearance: 'none',
               background: `linear-gradient(to right, #000000, ${rgbToHex(...hsvToRgb(hue, saturation, 100))})`,
