@@ -268,66 +268,46 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
       const thisRight = thisX + newSize.width;
       const thisBottom = thisY + newSize.height;
 
+      // Guide lines only — do NOT modify newSize here.
+      // Snapping used to lock the dimension at the threshold, which prevented
+      // the user from dragging past another widget's edge. Now we only show
+      // the guide line as a visual hint; the dimension keeps tracking the cursor.
       otherWidgets.forEach(other => {
         const otherRight = other.position.x + other.position.width;
         const otherBottom = other.position.y + other.position.height;
 
-        // Vertical alignment (X-axis) - snap edges during horizontal resize
+        // Vertical alignment (X-axis) - guide lines during horizontal resize
         if (direction === 'e' || direction === 'se' || direction === 'ne') {
-          // Right edge aligns with other's right edge
           if (Math.abs(thisRight - otherRight) < SNAP_THRESHOLD) {
-            newSize.width = otherRight - thisX;
             guides.vertical.push(otherRight);
           }
-          // Right edge aligns with other's left edge
           if (Math.abs(thisRight - other.position.x) < SNAP_THRESHOLD) {
-            newSize.width = other.position.x - thisX;
             guides.vertical.push(other.position.x);
           }
         }
         if (direction === 'w' || direction === 'sw' || direction === 'nw') {
-          // Left edge aligns with other's left edge
           if (Math.abs(thisX - other.position.x) < SNAP_THRESHOLD) {
-            const diff = thisX - other.position.x;
-            newSize.x = other.position.x;
-            newSize.width = newSize.width + diff;
             guides.vertical.push(other.position.x);
           }
-          // Left edge aligns with other's right edge
           if (Math.abs(thisX - otherRight) < SNAP_THRESHOLD) {
-            const diff = thisX - otherRight;
-            newSize.x = otherRight;
-            newSize.width = newSize.width + diff;
             guides.vertical.push(otherRight);
           }
         }
 
-        // Horizontal alignment (Y-axis) - snap edges during vertical resize
+        // Horizontal alignment (Y-axis) - guide lines during vertical resize
         if (direction === 's' || direction === 'se' || direction === 'sw') {
-          // Bottom edge aligns with other's bottom edge
           if (Math.abs(thisBottom - otherBottom) < SNAP_THRESHOLD) {
-            newSize.height = otherBottom - thisY;
             guides.horizontal.push(otherBottom);
           }
-          // Bottom edge aligns with other's top edge
           if (Math.abs(thisBottom - other.position.y) < SNAP_THRESHOLD) {
-            newSize.height = other.position.y - thisY;
             guides.horizontal.push(other.position.y);
           }
         }
         if (direction === 'n' || direction === 'ne' || direction === 'nw') {
-          // Top edge aligns with other's top edge
           if (Math.abs(thisY - other.position.y) < SNAP_THRESHOLD) {
-            const diff = thisY - other.position.y;
-            newSize.y = other.position.y;
-            newSize.height = newSize.height + diff;
             guides.horizontal.push(other.position.y);
           }
-          // Top edge aligns with other's bottom edge
           if (Math.abs(thisY - otherBottom) < SNAP_THRESHOLD) {
-            const diff = thisY - otherBottom;
-            newSize.y = otherBottom;
-            newSize.height = newSize.height + diff;
             guides.horizontal.push(otherBottom);
           }
         }
