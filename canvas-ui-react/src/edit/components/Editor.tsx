@@ -112,6 +112,7 @@ const Editor: React.FC = () => {
   const [gridSnap, setGridSnap] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [gridSize, setGridSize] = useState(10);
+  const [gridColor, setGridColor] = useState('#ffffff');
   const [zoom, setZoom] = useState(100);
 
   // Hide sidebar in kiosk mode
@@ -840,10 +841,12 @@ const Editor: React.FC = () => {
           gridSnap={gridSnap}
           showGrid={showGrid}
           gridSize={gridSize}
+          gridColor={gridColor}
           zoom={zoom}
           onToggleGridSnap={() => setGridSnap(!gridSnap)}
           onToggleShowGrid={() => setShowGrid(!showGrid)}
           onGridSizeChange={setGridSize}
+          onGridColorChange={setGridColor}
           onZoomIn={() => setZoom(Math.min(200, zoom + 10))}
           onZoomOut={() => setZoom(Math.max(50, zoom - 10))}
           onZoomReset={() => setZoom(100)}
@@ -887,6 +890,7 @@ const Editor: React.FC = () => {
             gridSnap={gridSnap}
             gridSize={gridSize}
             showGrid={showGrid}
+            gridColor={gridColor}
             zoom={zoom}
           />
         ) : (

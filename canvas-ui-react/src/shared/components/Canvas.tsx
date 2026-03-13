@@ -21,6 +21,7 @@ interface CanvasProps {
   gridSnap?: boolean;
   gridSize?: number;
   showGrid?: boolean;
+  gridColor?: string; // CSS color for grid lines, e.g. '#ffffff'
   zoom?: number;
 }
 
@@ -36,6 +37,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   gridSnap = false,
   gridSize = 10,
   showGrid = false,
+  gridColor = '#ffffff',
   zoom = 100
 }) => {
   const [alignmentGuides, setAlignmentGuides] = useState<{ 
@@ -145,8 +147,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     }),
     ...(showGrid && (() => {
       const gridLines = [
-        'linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px)',
-        'linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)',
+        `linear-gradient(to right, ${gridColor} 1px, transparent 1px)`,
+        `linear-gradient(to bottom, ${gridColor} 1px, transparent 1px)`,
       ];
       return {
         // Layer grid on top of background image (if any)

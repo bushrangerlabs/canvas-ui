@@ -83,10 +83,12 @@ export interface CanvasToolbarProps {
   gridSnap: boolean;
   showGrid: boolean;
   gridSize: number;
+  gridColor: string;
   zoom: number;
   onToggleGridSnap: () => void;
   onToggleShowGrid: () => void;
   onGridSizeChange: (size: number) => void;
+  onGridColorChange: (color: string) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
@@ -134,10 +136,12 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
   gridSnap,
   showGrid,
   gridSize,
+  gridColor,
   zoom,
   onToggleGridSnap,
   onToggleShowGrid,
   onGridSizeChange,
+  onGridColorChange,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -503,10 +507,33 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
                     '.MuiSvgIcon-root': { color: 'inherit' },
                   }}
                 >
-                  {[5, 10, 20, 25, 50].map(s => (
+                  {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map(s => (
                     <MenuItem key={s} value={s} sx={{ fontSize: '0.8rem' }}>{s}px</MenuItem>
                   ))}
                 </Select>
+              </Tooltip>
+            ),
+          },
+          {
+            type: 'custom' as const,
+            render: () => (
+              <Tooltip title="Grid Color">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <input
+                    type="color"
+                    value={gridColor}
+                    onChange={(e) => onGridColorChange(e.target.value)}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      padding: 0,
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      backgroundColor: 'transparent',
+                    }}
+                  />
+                </Box>
               </Tooltip>
             ),
           },
@@ -550,8 +577,8 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
     return baseGroups;
   }, [
     currentViewName, onViewsClick, onCloneView, onDeleteView, onExportView, onImportView, onFileManagerClick, onVariablesClick, onFlowsClick, onPromptTemplatesClick, mode, onModeChange, handleOpenKiosk, onAddWidget, canUndo, canRedo, onUndo, onRedo,
-    selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, gridSize, zoom,
-    onToggleGridSnap, onToggleShowGrid, onGridSizeChange, onZoomIn, onZoomOut, onZoomReset,
+    selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, gridSize, gridColor, zoom,
+    onToggleGridSnap, onToggleShowGrid, onGridSizeChange, onGridColorChange, onZoomIn, onZoomOut, onZoomReset,
     onAlignLeft, onAlignRight, onAlignTop, onAlignBottom, onAlignCenterH, onAlignCenterV, onAlignToViewCenterH, onAlignToViewCenterV,
     onDistributeH, onDistributeV,
   ]);
@@ -572,7 +599,11 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
         
         <Box sx={{ flexGrow: 1 }} />
         
-        {/* Right side - Save indicator */}
+        {/* Right side - version + Save indicator */}
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', mr: 2, fontFamily: 'monospace', fontSize: '0.7rem' }}>
+          v{__APP_VERSION__}
+        </Typography>
+
         {isSaving && (
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
             <SaveIcon sx={{ fontSize: 18, mr: 1, color: '#4caf50' }} />
