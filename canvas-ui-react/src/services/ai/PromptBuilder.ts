@@ -206,46 +206,90 @@ ${promptTemplateStore.getTemplate('outputFormat')
 }
 
 /**
- * Escape literal control characters (0x00–0x1F) that appear inside JSON string
- * values.  LLMs sometimes emit bare newlines/tabs/etc. inside strings, which
- * JSON.parse rejects.  Structural whitespace outside strings is left untouched.
+ * Single-pass JSON sanitiser for LLM output.
+ *
+ * Handles two classes of AI-generated defects in one character-by-character
+ * walk that correctly tracks string context:
+ *
+ *  1. Comments outside strings — `// …` (line) and `/* … *\/` (block).
+ *     Regex-based stripping would corrupt URLs like https://… because the
+ *     `//` in the URL sits inside a string value.
+ *
+ *  2. Bare control characters (0x00–0x1F) inside string values.
+ *     JSON.parse rejects them; they must be escaped as \n, \t, etc.
  */
-function sanitizeJsonControlChars(json: string): string {
+function sanitizeJson(json: string): string {
   const CTRL_ESCAPE: Record<number, string> = {
     0x08: '\\b', 0x09: '\\t', 0x0a: '\\n',
     0x0c: '\\f', 0x0d: '\\r',
   };
+
   let result = '';
   let inString = false;
   let escaped = false;
+  let i = 0;
 
-  for (let i = 0; i < json.length; i++) {
-    const code = json.charCodeAt(i);
+  while (i < json.length) {
     const char = json[i];
+    const code = json.charCodeAt(i);
 
-    if (escaped) {
+    // --- inside a string literal ---
+    if (inString) {
+      if (escaped) {
+        result += char;
+        escaped = false;
+        i++;
+        continue;
+      }
+      if (char === '\\') {
+        result += char;
+        escaped = true;
+        i++;
+        continue;
+      }
+      if (char === '"') {
+        inString = false;
+        result += char;
+        i++;
+        continue;
+      }
+      // Escape bare control characters that JSON.parse rejects
+      if (code < 0x20) {
+        result += CTRL_ESCAPE[code] ?? `\\u${code.toString(16).padStart(4, '0')}`;
+        i++;
+        continue;
+      }
       result += char;
-      escaped = false;
+      i++;
       continue;
     }
 
-    if (char === '\\' && inString) {
-      result += char;
-      escaped = true;
-      continue;
-    }
+    // --- outside a string literal ---
 
+    // Opening string
     if (char === '"') {
-      inString = !inString;
+      inString = true;
       result += char;
+      i++;
       continue;
     }
 
-    if (inString && code < 0x20) {
-      result += CTRL_ESCAPE[code] ?? `\\u${code.toString(16).padStart(4, '0')}`;
-    } else {
-      result += char;
+    // Line comment: // …  — skip to end of line
+    if (char === '/' && json[i + 1] === '/') {
+      while (i < json.length && json[i] !== '\n') i++;
+      continue;
     }
+
+    // Block comment: /* … */
+    if (char === '/' && json[i + 1] === '*') {
+      i += 2;
+      while (i < json.length - 1 && !(json[i] === '*' && json[i + 1] === '/')) i++;
+      i += 2; // skip closing */
+      continue;
+    }
+
+    result += char;
+    i++;
   }
 
   return result;
@@ -271,18 +315,12 @@ export function extractExportedView(aiResponse: string): ExportedView | null {
 
     let extracted = jsonStr.substring(startIdx, lastIdx + 1);
     
-    // Remove JavaScript-style comments (AI sometimes adds them)
-    // Remove single-line comments: // comment
-    extracted = extracted.replace(/\/\/.*$/gm, '');
-    // Remove multi-line comments: /* comment */
-    extracted = extracted.replace(/\/\*[\s\S]*?\*\//g, '');
+    // Single-pass sanitiser: strips // and /* */ comments outside strings,
+    // and escapes bare control characters inside strings.
+    // (Regex-based // stripping would corrupt URLs like https://…)
+    extracted = sanitizeJson(extracted);
     // Remove trailing commas before closing braces/brackets (common AI mistake)
     extracted = extracted.replace(/,(\s*[}\]])/g, '$1');
-
-    // Sanitize bare control characters inside JSON string values.
-    // LLMs sometimes emit literal \n, \t, or other 0x00–0x1F bytes inside strings,
-    // which JSON.parse rejects.  Walk char-by-char, escape only inside strings.
-    extracted = sanitizeJsonControlChars(extracted);
 
     const parsed = JSON.parse(extracted);
 
