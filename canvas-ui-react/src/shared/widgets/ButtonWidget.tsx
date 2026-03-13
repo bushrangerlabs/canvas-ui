@@ -122,8 +122,6 @@ export const ButtonWidgetMetadata: WidgetMetadata = {
       { value: '300', label: 'Light' },
       { value: '500', label: 'Medium' },
     ]},
-    // Button Color — separate from universal background so button gets its own default
-    { name: 'backgroundColor', type: 'color', label: 'Button Color', default: '#2196f3', category: 'style', description: 'Button face color (use the Style tab Background Color to override)' },
   ],
 };
 
@@ -162,7 +160,6 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     iconSize = 24,
     iconSpacing = 8,
     iconColor: iconColorConfig = '',
-    backgroundColor: bgColorConfig = '#2196f3',
     textColor: textColorConfig = '#ffffff',
     fontFamily = 'Arial, sans-serif',
     fontSize = 16,
@@ -171,19 +168,15 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     visibilityCondition,
   } = config.config;
 
-  // Universal style from the inspector's Style tab (takes precedence over widget-level fields)
+  // Universal style from the inspector's Style tab
   const universalStyle = useResolvedUniversalStyle(config.config.style || {} as any);
-
-  // Background color: universal style overrides widget-level field
-  // Fallback chain: config.style.backgroundColor → config.backgroundColor → '#2196f3'
-  const resolvedBgConfig = universalStyle?.backgroundColor ?? bgColorConfig;
 
   // Check visibility condition
   const isVisible = useVisibility(visibilityCondition);
 
   // Use entity bindings for dynamic properties
   const label = useEntityBinding(labelConfig, 'Button');
-  const backgroundColor = useEntityBinding(resolvedBgConfig, '#2196f3');
+  const backgroundColor = useEntityBinding(universalStyle?.backgroundColor ?? '#2196f3', '#2196f3');
   const textColor = useEntityBinding(textColorConfig, '#ffffff');
   const iconColor = useEntityBinding(iconColorConfig, iconColorConfig || textColor);
 
@@ -472,6 +465,11 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   // Apply universal styles (z-index, rotation, background, border, border-radius, shadow)
   // The inspector's Style tab stores these in config.style.* — applyUniversalStyles handles them
   const finalStyle = applyUniversalStyles(universalStyle, buttonStyle);
+
+  // Color-feedback override must go AFTER applyUniversalStyles so universal background doesn't clobber it
+  if (isActive && !isEditMode && clickFeedback === 'color') {
+    finalStyle.backgroundColor = clickBackgroundColor;
+  }
 
   // Don't render if visibility condition is false
   if (!isVisible) return null;
