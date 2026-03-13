@@ -206,6 +206,52 @@ ${promptTemplateStore.getTemplate('outputFormat')
 }
 
 /**
+ * Escape literal control characters (0x00–0x1F) that appear inside JSON string
+ * values.  LLMs sometimes emit bare newlines/tabs/etc. inside strings, which
+ * JSON.parse rejects.  Structural whitespace outside strings is left untouched.
+ */
+function sanitizeJsonControlChars(json: string): string {
+  const CTRL_ESCAPE: Record<number, string> = {
+    0x08: '\\b', 0x09: '\\t', 0x0a: '\\n',
+    0x0c: '\\f', 0x0d: '\\r',
+  };
+  let result = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < json.length; i++) {
+    const code = json.charCodeAt(i);
+    const char = json[i];
+
+    if (escaped) {
+      result += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\' && inString) {
+      result += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      result += char;
+      continue;
+    }
+
+    if (inString && code < 0x20) {
+      result += CTRL_ESCAPE[code] ?? `\\u${code.toString(16).padStart(4, '0')}`;
+    } else {
+      result += char;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Extract ExportedView JSON from AI response
  * Handles markdown code blocks and plain JSON
  */
@@ -232,7 +278,12 @@ export function extractExportedView(aiResponse: string): ExportedView | null {
     extracted = extracted.replace(/\/\*[\s\S]*?\*\//g, '');
     // Remove trailing commas before closing braces/brackets (common AI mistake)
     extracted = extracted.replace(/,(\s*[}\]])/g, '$1');
-    
+
+    // Sanitize bare control characters inside JSON string values.
+    // LLMs sometimes emit literal \n, \t, or other 0x00–0x1F bytes inside strings,
+    // which JSON.parse rejects.  Walk char-by-char, escape only inside strings.
+    extracted = sanitizeJsonControlChars(extracted);
+
     const parsed = JSON.parse(extracted);
 
     // Validate basic structure
