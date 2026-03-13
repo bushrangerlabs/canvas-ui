@@ -548,13 +548,25 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     height: tempSize ? tempSize.height : widget.position.height,
     zIndex: widget.config.style?.zIndex ?? widget.position.zIndex ?? 1,
     cursor: isEditMode && !isSelected ? 'pointer' : 'default',
-    // Apply border-radius to container for background clipping
+    // Apply border-radius to container for clipping children to shape
     borderRadius: widget.config.style?.borderRadius ? (typeof widget.config.style.borderRadius === 'number' ? `${widget.config.style.borderRadius}px` : undefined) : undefined,
     // Selection border in edit mode
     border: isEditMode && isSelected ? '2px solid #2196f3' : isEditMode ? '1px dashed rgba(255, 255, 255, 0.3)' : 'none',
     // Only apply opacity during resize (backgroundOpacity is now handled in styleBuilder via rgba)
     opacity: isResizing ? 0.7 : 1,
-    overflow: 'hidden', // Ensure background stays within container bounds
+    // box-shadow must live on the container — overflow:hidden on a child would clip it
+    boxShadow: (() => {
+      const s = widget.config.style?.boxShadow;
+      if (!s) return undefined;
+      if (typeof s === 'string') return s === 'none' ? undefined : s;
+      if (Array.isArray(s)) {
+        return s.length === 0 ? undefined : s.map((sh: any) =>
+          `${sh.inset ? 'inset ' : ''}${sh.offsetX ?? 0}px ${sh.offsetY ?? 0}px ${sh.blur ?? 0}px ${sh.spread ?? 0}px ${sh.color ?? 'transparent'}`
+        ).join(', ');
+      }
+      return undefined;
+    })(),
+    // NOTE: overflow is on the inner content div so shadow is never clipped
   };
 
   // Convert /config/www/ paths to /local/ for browser access
@@ -649,8 +661,8 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         </>
       )}
       
-      {/* Widget content layer - sits above background */}
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
+      {/* Widget content layer - overflow:hidden here (not on container) so box-shadow is never clipped */}
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', overflow: 'hidden', borderRadius: 'inherit' }}>
         <Suspense fallback={<div style={{ color: '#666' }}>Loading...</div>}>
           <WidgetComponent
             config={widgetConfig}
