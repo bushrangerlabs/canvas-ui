@@ -677,12 +677,49 @@ export class ConversationService {
       }
       const imageDataUrl = this.pendingImageDataUrl;
       this.pendingImageDataUrl = undefined;
+
+      // For the actual API call, include the image in the message
+      // But store only text in history — images must NOT persist across turns (re-sent every call → 413)
       if (imageDataUrl) {
         const visionContent: VisionContent[] = [
           { type: 'text', text: prompt },
           { type: 'image_url', image_url: { url: imageDataUrl } },
         ];
-        this.copilotProxyMessages.push({ role: 'user', content: visionContent });
+        // History entry: text only (no image blob)
+        this.copilotProxyMessages.push({ role: 'user', content: prompt });
+        // Build the messages array for this request with image on the last user turn
+        const messagesWithImage = [
+          ...this.copilotProxyMessages.slice(0, -1),
+          { role: 'user' as const, content: visionContent },
+        ];
+
+        console.group('🤖 [Copilot Proxy Request]');
+        console.log('Model:', this.model);
+        console.log('Proxy URL:', this.copilotProxyUrl);
+        console.log('Timeout:', `${timeoutMs / 1000}s`);
+        console.log('\n📤 PROMPT:\n', prompt);
+        console.groupEnd();
+
+        const response = await Promise.race([
+          client.chat({
+            model: this.model,
+            messages: messagesWithImage,
+            temperature: 0.7,
+            max_tokens: 16000,
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout after ${timeoutMs / 1000}s`)), timeoutMs)
+          ),
+        ]);
+
+        const content = response.choices[0].message.content || '';
+        this.copilotProxyMessages.push({ role: 'assistant', content });
+
+        console.group('🤖 [Copilot Proxy Response]');
+        console.log('\n📥 RESPONSE:\n', content);
+        console.groupEnd();
+
+        return content;
       } else {
         this.copilotProxyMessages.push({ role: 'user', content: prompt });
       }
@@ -832,8 +869,8 @@ export class ConversationService {
    */
   private static async compressImageDataUrl(
     dataUrl: string,
-    maxDimension: number = 1024,
-    quality: number = 0.8
+    maxDimension: number = 512,
+    quality: number = 0.6
   ): Promise<string> {
     return new Promise((resolve) => {
       const img = new Image();
