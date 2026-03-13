@@ -30,6 +30,7 @@ export const GaugeWidgetMetadata: WidgetMetadata = {
     
     // Behavior
     { name: 'entity_id', type: 'entity', label: 'Entity ID', default: '', category: 'behavior', description: 'Sensor entity to display' },
+    { name: 'value', type: 'number', label: 'Override Value', default: 0, category: 'behavior', description: 'Direct value override (used when no entity is set)' },
     { name: 'min', type: 'number', label: 'Minimum Value', default: 0, category: 'behavior' },
     { name: 'max', type: 'number', label: 'Maximum Value', default: 100, category: 'behavior' },
     { name: 'unit', type: 'text', label: 'Unit', default: '', category: 'behavior', description: 'e.g. °C, %, W' },
@@ -80,6 +81,7 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
     min = 0,
     max = 100,
     unit = '',
+    value: gaugeValue = 0,
     gaugeType = 'radial',
     needleOnly = false,
     pointerType = 'needle',
@@ -107,8 +109,10 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
   // Use useWidget hook for entity subscriptions
   const { getEntityState } = useWidget(config);
 
-  // Get value from entity state
-  const rawValue = getEntityState('entity_id') || 0;
+  // Get value: use entity state when entity_id is configured, otherwise fall back to static override
+  const entityState = getEntityState('entity_id');
+  const isEntityConfigured = !!(config.config.entity_id);
+  const rawValue = isEntityConfigured ? (entityState || 0) : (gaugeValue || 0);
   const value = typeof rawValue === 'number' ? rawValue : parseFloat(String(rawValue)) || 0;
 
   // Adjust showArc based on needleOnly mode

@@ -192,6 +192,7 @@ export function getWritableWidgetProperties(widgetType: string): Array<{ value: 
     ],
     gauge: [
       { value: 'config.entity_id', label: 'Entity ID', description: 'Bound entity (numeric)' },
+      { value: 'config.value',     label: 'Value',     description: 'Direct gauge value (overrides entity)' },
       { value: 'config.min',       label: 'Minimum',   description: 'Gauge minimum' },
       { value: 'config.max',       label: 'Maximum',   description: 'Gauge maximum' },
       { value: 'config.title',     label: 'Title',     description: 'Gauge label' },
@@ -208,10 +209,12 @@ export function getWritableWidgetProperties(widgetType: string): Array<{ value: 
       { value: 'config.label',     label: 'Label',     description: 'Switch label text' },
     ],
     icon: [
-      { value: 'config.icon',      label: 'Icon',        description: 'Icon identifier' },
-      { value: 'config.color',     label: 'Icon Color',  description: 'Icon tint color' },
-      { value: 'config.iconSize',  label: 'Icon Size',   description: 'Icon size in pixels' },
-      { value: 'config.entity_id', label: 'Entity ID',   description: 'Bound entity (controls active state)' },
+      { value: 'config.icon',        label: 'Icon',          description: 'Icon identifier' },
+      { value: 'config.color',       label: 'Icon Color',    description: 'Icon tint color' },
+      { value: 'config.size',        label: 'Icon Size',     description: 'Icon size (% of container)' },
+      { value: 'config.fillValue',   label: 'Fill Value (%)', description: 'Static fill level 0–100 (overrides Fill Entity)' },
+      { value: 'config.fillColor',   label: 'Fill Color',    description: 'Fill effect color' },
+      { value: 'config.entity_id',   label: 'Entity ID',     description: 'Bound entity (controls active state)' },
     ],
     image: [
       { value: 'config.src',       label: 'Image URL',  description: 'Image source URL' },

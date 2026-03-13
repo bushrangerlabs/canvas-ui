@@ -83,6 +83,7 @@ export const iconWidgetMetadata: WidgetMetadata = {
     { name: 'fillEntity', type: 'entity', label: 'Fill Entity', default: '', category: 'behavior', binding: true },
     { name: 'fillMin', type: 'number', label: 'Fill Min Value', default: 0, category: 'style' },
     { name: 'fillMax', type: 'number', label: 'Fill Max Value', default: 100, category: 'style' },
+    { name: 'fillValue', type: 'number', label: 'Fill Value (%)', default: 0, min: 0, max: 100, category: 'behavior', description: 'Static fill level 0–100 (used when no Fill Entity is set)' },
   ],
 };
 
@@ -112,6 +113,7 @@ const IconWidget: React.FC<WidgetProps> = ({ config }) => {
     fillEntity: _fillEntity,
     fillMin = 0,
     fillMax = 100,
+    fillValue = 0,
     width = 80,
     height = 80,
     visibilityCondition,
@@ -142,14 +144,14 @@ const IconWidget: React.FC<WidgetProps> = ({ config }) => {
   const fillEntityValue = fillEntityState || '';
   const hasFillEntity = isEntityAvailable('fillEntity');
   
-  // Calculate fill percentage
-  const fillPercentage = fillEntityValue && hasFillEntity
+  // Calculate fill percentage — entity takes priority, then static fillValue, then 0
+  const fillPercentage = hasFillEntity
     ? Math.max(0, Math.min(100, ((parseFloat(fillEntityValue) - fillMin) / (fillMax - fillMin)) * 100))
-    : 0;
+    : Math.max(0, Math.min(100, fillValue));
 
-  // Auto-enable filled outline mode when fillEntity is configured
+  // Auto-enable filled outline mode when fillEntity is configured or fillValue is set
   let finalOutlineMode = outlineMode;
-  if (hasFillEntity && outlineMode === 'none') {
+  if ((hasFillEntity || fillValue > 0) && outlineMode === 'none') {
     finalOutlineMode = 'filled';
   }
 
@@ -178,7 +180,7 @@ const IconWidget: React.FC<WidgetProps> = ({ config }) => {
   const calculatedSize = (containerSize * iconSize) / 100;
 
   // Use UniversalIcon for simple mode, DynamicIcon only for advanced features
-  const useAdvancedFeatures = finalOutlineMode !== 'none' || hasFillEntity || glowWidth > 0 || shadowEnabled;
+  const useAdvancedFeatures = finalOutlineMode !== 'none' || hasFillEntity || fillValue > 0 || glowWidth > 0 || shadowEnabled;
 
   return (
     <div style={style}>
