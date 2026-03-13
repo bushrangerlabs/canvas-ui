@@ -54,6 +54,7 @@ export const GaugeWidgetMetadata: WidgetMetadata = {
       ]
     },
     { name: 'pointerColor', type: 'color', label: 'Needle Color', default: '#ffffff', category: 'style' },
+    { name: 'pointerBaseColor', type: 'color', label: 'Center Dot Color', default: '', category: 'style', description: 'Color of the pivot circle at the needle base (leave empty to match needle color)' },
     { name: 'pointerLength', type: 'number', label: 'Needle Length', default: 0.7, min: 0.3, max: 1, step: 0.05, category: 'style' },
     { name: 'pointerWidth', type: 'number', label: 'Needle Width', default: 15, min: 5, max: 30, category: 'style' },
     { name: 'pointerElastic', type: 'checkbox', label: 'Elastic Animation', default: true, category: 'style' },
@@ -86,6 +87,7 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
     needleOnly = false,
     pointerType = 'needle',
     pointerColor = '#ffffff',
+    pointerBaseColor = '',
     pointerLength = 0.7,
     pointerWidth = 15,
     pointerElastic = true,
@@ -175,6 +177,7 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
           elastic: pointerElastic,
           animationDelay: 0,
           color: pointerColor,
+          ...(pointerBaseColor ? { baseColor: pointerBaseColor } : {}),
           length: pointerLength,
           width: pointerWidth,
         }}
