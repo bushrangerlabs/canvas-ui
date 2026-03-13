@@ -163,11 +163,13 @@ export function applyUniversalStyles(
     if (backgroundRepeat) universalCSS.backgroundRepeat = backgroundRepeat;
   } else {
     // Only color or only image (or neither)
-    if (backgroundColor) {
+    if (finalBackgroundColor) {
       if (backgroundOpacity !== undefined && backgroundOpacity !== 1) {
-        const colorWithOpacity = applyColorOpacity(backgroundColor, backgroundOpacity);
-        universalCSS.backgroundColor = colorWithOpacity || backgroundColor;
-      } else {
+        // Apply opacity to the resolved color (whether it came from universal style or widget's own field)
+        const colorWithOpacity = applyColorOpacity(finalBackgroundColor, backgroundOpacity);
+        universalCSS.backgroundColor = colorWithOpacity || finalBackgroundColor;
+      } else if (backgroundColor) {
+        // Universal style explicitly sets a new color (no opacity change)
         universalCSS.backgroundColor = backgroundColor;
       }
     }
