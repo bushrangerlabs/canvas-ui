@@ -453,7 +453,6 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     justifyContent: 'center',
     padding: '8px 16px',
     boxSizing: 'border-box',
-    opacity: isEditMode ? 0.7 : 1,
     pointerEvents: isEditMode ? 'none' : 'auto',
     transition: `all ${feedbackDuration}ms ease-out`,
     transform: feedbackTransform,
