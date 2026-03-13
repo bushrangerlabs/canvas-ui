@@ -10,7 +10,7 @@ import { useConfigStore } from '../../shared/stores/useConfigStore';
 import type { ExportedView } from '../../shared/utils/viewExportImport';
 import { getCopilotProxyClient, type CopilotProxyMessage } from './CopilotProxyClient';
 import { getGitHubClient, type GitHubMessage } from './GitHubClient';
-import { getGroqClient, type GroqMessage } from './GroqClient';
+import { getGroqClient } from './GroqClient';
 import { ollamaClient, type OllamaMessage } from './OllamaClient';
 import { getOpenAIClient, type OpenAIMessage, type VisionContent } from './OpenAIClient';
 import { getOpenWebUIClient, type OpenWebUIMessage } from './OpenWebUIClient';
@@ -112,13 +112,6 @@ export class ConversationService {
   private copilotProxyToken: string = '';
   private copilotProxyUrl: string = 'http://localhost:3100/v1';
   
-  // Conversation context (separate per provider)
-  private ollamaMessages: OllamaMessage[] = [];
-  private openAIMessages: OpenAIMessage[] = [];
-  private gitHubMessages: GitHubMessage[] = [];
-  private groqMessages: GroqMessage[] = [];
-  private openWebUIMessages: OpenWebUIMessage[] = [];
-  private copilotProxyMessages: CopilotProxyMessage[] = [];
   private pendingImageDataUrl?: string; // Pending image for vision AI request
 
   // Chat history (for display)
@@ -395,8 +388,6 @@ export class ConversationService {
         const base64 = imageDataUrl.replace(/^data:image\/[^;]+;base64,/, '');
         ollamaUserMsg.images = [base64];
       }
-      this.ollamaMessages.push(ollamaUserMsg);
-
       console.group('🤖 [Ollama Request]');
       console.log('Model:', this.model);
       console.log('Timeout:', `${timeoutMs / 1000}s`);
@@ -406,7 +397,7 @@ export class ConversationService {
       const response = await Promise.race([
         ollamaClient.chat({
           model: this.model,
-          messages: this.ollamaMessages,
+          messages: [ollamaUserMsg],
           temperature: 0.7,
           stream: false,
         }),
@@ -416,7 +407,6 @@ export class ConversationService {
       ]);
 
       const content = response.message.content;
-      this.ollamaMessages.push({ role: 'assistant', content });
 
       console.group('🤖 [Ollama Response]');
       console.log('\n📥 RESPONSE:\n', content);
@@ -440,15 +430,12 @@ export class ConversationService {
       }
       const imageDataUrl = this.pendingImageDataUrl;
       this.pendingImageDataUrl = undefined;
-      if (imageDataUrl) {
-        const visionContent: VisionContent[] = [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: imageDataUrl } },
-        ];
-        this.openAIMessages.push({ role: 'user', content: visionContent });
-      } else {
-        this.openAIMessages.push({ role: 'user', content: prompt });
-      }
+      const messages: OpenAIMessage[] = imageDataUrl
+        ? [{ role: 'user', content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageDataUrl } },
+          ] as VisionContent[] }]
+        : [{ role: 'user', content: prompt }];
 
       console.group('🤖 [OpenAI Request]');
       console.log('Model:', this.model);
@@ -459,7 +446,7 @@ export class ConversationService {
       const response = await Promise.race([
         client.chat({
           model: this.model,
-          messages: this.openAIMessages,
+          messages: messages,
           temperature: 0.7,
         }),
         new Promise<never>((_, reject) =>
@@ -468,7 +455,6 @@ export class ConversationService {
       ]);
 
       const content = response.choices[0].message.content || '';
-      this.openAIMessages.push({ role: 'assistant', content });
 
       console.group('🤖 [OpenAI Response]');
       console.log('\n📥 RESPONSE:\n', content);
@@ -492,15 +478,12 @@ export class ConversationService {
       }
       const imageDataUrl = this.pendingImageDataUrl;
       this.pendingImageDataUrl = undefined;
-      if (imageDataUrl) {
-        const visionContent: VisionContent[] = [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: imageDataUrl } },
-        ];
-        this.gitHubMessages.push({ role: 'user', content: visionContent });
-      } else {
-        this.gitHubMessages.push({ role: 'user', content: prompt });
-      }
+      const messages: GitHubMessage[] = imageDataUrl
+        ? [{ role: 'user', content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageDataUrl } },
+          ] as VisionContent[] }]
+        : [{ role: 'user', content: prompt }];
 
       console.group('🤖 [GitHub Request]');
       console.log('Model:', this.model);
@@ -511,7 +494,7 @@ export class ConversationService {
       const response = await Promise.race([
         client.chat({
           model: this.model,
-          messages: this.gitHubMessages,
+          messages: messages,
           temperature: 0.7,
         }),
         new Promise<never>((_, reject) =>
@@ -520,7 +503,6 @@ export class ConversationService {
       ]);
 
       const content = response.choices[0].message.content || '';
-      this.gitHubMessages.push({ role: 'assistant', content });
 
       console.group('🤖 [GitHub Response]');
       console.log('\n📥 RESPONSE:\n', content);
@@ -546,8 +528,6 @@ export class ConversationService {
         console.warn('[callGroq] Image attached but Groq does not support vision; sending text only');
         this.pendingImageDataUrl = undefined;
       }
-      this.groqMessages.push({ role: 'user', content: prompt });
-
       console.group('🤖 [Groq Request]');
       console.log('Model:', this.model);
       console.log('Timeout:', `${timeoutMs / 1000}s`);
@@ -557,7 +537,7 @@ export class ConversationService {
       const response = await Promise.race([
         client.chat({
           model: this.model,
-          messages: this.groqMessages,
+          messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
         }),
         new Promise<never>((_, reject) =>
@@ -566,7 +546,6 @@ export class ConversationService {
       ]);
 
       const content = response.choices[0].message.content || '';
-      this.groqMessages.push({ role: 'assistant', content });
 
       console.group('🤖 [Groq Response]');
       console.log('\n📥 RESPONSE:\n', content);
@@ -622,15 +601,12 @@ export class ConversationService {
 
       const imageDataUrl = this.pendingImageDataUrl;
       this.pendingImageDataUrl = undefined;
-      if (imageDataUrl) {
-        const visionContent: VisionContent[] = [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: imageDataUrl } },
-        ];
-        this.openWebUIMessages.push({ role: 'user', content: visionContent });
-      } else {
-        this.openWebUIMessages.push({ role: 'user', content: prompt });
-      }
+      const messages: OpenWebUIMessage[] = imageDataUrl
+        ? [{ role: 'user', content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageDataUrl } },
+          ] as VisionContent[] }]
+        : [{ role: 'user', content: prompt }];
 
       console.group('🤖 [Open WebUI Request]');
       console.log('URL:', this.openWebUIUrl);
@@ -643,7 +619,7 @@ export class ConversationService {
       const response = await Promise.race([
         client.chat({
           model: this.model,
-          messages: this.openWebUIMessages,
+          messages: messages,
           temperature: 0.7,
           fileIds: [fileId], // Attach widget documentation
         }),
@@ -653,7 +629,6 @@ export class ConversationService {
       ]);
 
       const content = response.choices[0].message.content || '';
-      this.openWebUIMessages.push({ role: 'assistant', content });
 
       console.group('🤖 [Open WebUI Response]');
       console.log('\n📥 RESPONSE:\n', content);
@@ -678,51 +653,12 @@ export class ConversationService {
       const imageDataUrl = this.pendingImageDataUrl;
       this.pendingImageDataUrl = undefined;
 
-      // For the actual API call, include the image in the message
-      // But store only text in history — images must NOT persist across turns (re-sent every call → 413)
-      if (imageDataUrl) {
-        const visionContent: VisionContent[] = [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: imageDataUrl } },
-        ];
-        // History entry: text only (no image blob)
-        this.copilotProxyMessages.push({ role: 'user', content: prompt });
-        // Build the messages array for this request with image on the last user turn
-        const messagesWithImage = [
-          ...this.copilotProxyMessages.slice(0, -1),
-          { role: 'user' as const, content: visionContent },
-        ];
-
-        console.group('🤖 [Copilot Proxy Request]');
-        console.log('Model:', this.model);
-        console.log('Proxy URL:', this.copilotProxyUrl);
-        console.log('Timeout:', `${timeoutMs / 1000}s`);
-        console.log('\n📤 PROMPT:\n', prompt);
-        console.groupEnd();
-
-        const response = await Promise.race([
-          client.chat({
-            model: this.model,
-            messages: messagesWithImage,
-            temperature: 0.7,
-            max_tokens: 16000,
-          }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`Timeout after ${timeoutMs / 1000}s`)), timeoutMs)
-          ),
-        ]);
-
-        const content = response.choices[0].message.content || '';
-        this.copilotProxyMessages.push({ role: 'assistant', content });
-
-        console.group('🤖 [Copilot Proxy Response]');
-        console.log('\n📥 RESPONSE:\n', content);
-        console.groupEnd();
-
-        return content;
-      } else {
-        this.copilotProxyMessages.push({ role: 'user', content: prompt });
-      }
+      const messages: CopilotProxyMessage[] = imageDataUrl
+        ? [{ role: 'user', content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageDataUrl } },
+          ] as VisionContent[] }]
+        : [{ role: 'user', content: prompt }];
 
       console.group('🤖 [Copilot Proxy Request]');
       console.log('Model:', this.model);
@@ -734,7 +670,7 @@ export class ConversationService {
       const response = await Promise.race([
         client.chat({
           model: this.model,
-          messages: this.copilotProxyMessages,
+          messages: messages,
           temperature: 0.7,
           max_tokens: 16000,
         }),
@@ -744,7 +680,6 @@ export class ConversationService {
       ]);
 
       const content = response.choices[0].message.content || '';
-      this.copilotProxyMessages.push({ role: 'assistant', content });
 
       console.group('🤖 [Copilot Proxy Response]');
       console.log('\n📥 RESPONSE:\n', content);
@@ -1004,11 +939,6 @@ export class ConversationService {
 
   clearChatHistory(): void {
     this.chatHistory = [];
-    this.ollamaMessages = [];
-    this.openAIMessages = [];
-    this.gitHubMessages = [];
-    this.groqMessages = [];
-    this.copilotProxyMessages = [];
   }
 
   // ==================== MODEL LISTING ====================
