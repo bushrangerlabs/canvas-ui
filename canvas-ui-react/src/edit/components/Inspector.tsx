@@ -617,7 +617,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                           borderRadius: 1,
                           border: '1px solid rgba(255,255,255,0.23)',
                           backgroundColor: currentView.style.backgroundColor,
-                          backgroundImage: `url(${currentView.style.backgroundImage})`,
+                          backgroundImage: `url(${currentView.style.backgroundImage.startsWith('/config/www/') ? currentView.style.backgroundImage.replace('/config/www/', '/local/') : currentView.style.backgroundImage})`,
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
                           opacity: currentView.style.backgroundOpacity ?? 1,

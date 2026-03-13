@@ -117,6 +117,16 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
+  // Convert /config/www/ server paths to /local/ so the browser can fetch them
+  const convertPath = (path: string): string => {
+    if (!path) return path;
+    if (path.startsWith('/config/www/')) return path.replace('/config/www/', '/local/');
+    return path;
+  };
+
+  const rawBgImage = view.style?.backgroundImage;
+  const bgImageUrl = rawBgImage ? convertPath(rawBgImage) : undefined;
+
   const canvasStyle: React.CSSProperties = {
     position: 'relative',
     // Canvas uses view dimensions or fills container
@@ -124,7 +134,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     height: view.sizey ? `${view.sizey}px` : '100%',
     flexShrink: 0, // Don't shrink - trigger scrollbars instead
     backgroundColor: view.style?.backgroundColor || '#1a1a2e',
-    backgroundImage: view.style?.backgroundImage ? `url(${view.style.backgroundImage})` : undefined,
+    // Background image — may be overridden below when grid is shown to layer both together
+    backgroundImage: bgImageUrl ? `url(${bgImageUrl})` : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     // Only apply transform if zoom is not 100% (prevents CSS cascade issues)
@@ -132,14 +143,26 @@ export const Canvas: React.FC<CanvasProps> = ({
       transform: `scale(${zoom / 100})`,
       transformOrigin: 'top left',
     }),
-    ...(showGrid && {
-      backgroundImage: `
-        linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
-      `,
-      backgroundSize: `${gridSize}px ${gridSize}px`,
-      backgroundPosition: '0px 0px', // Must be 0,0 so lines align with snap positions
-    }),
+    ...(showGrid && (() => {
+      const gridLines = [
+        'linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px)',
+        'linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)',
+      ];
+      return {
+        // Layer grid on top of background image (if any)
+        backgroundImage: bgImageUrl
+          ? `${gridLines.join(', ')}, url(${bgImageUrl})`
+          : gridLines.join(', '),
+        // Grid tiles first, then cover for the image layer
+        backgroundSize: bgImageUrl
+          ? `${gridSize}px ${gridSize}px, ${gridSize}px ${gridSize}px, cover`
+          : `${gridSize}px ${gridSize}px`,
+        // Grid must start at 0,0; image centers
+        backgroundPosition: bgImageUrl
+          ? `0px 0px, 0px 0px, center`
+          : '0px 0px',
+      };
+    })()),
   };
 
   // DEBUG: Log canvas sizing and browser metrics
