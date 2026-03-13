@@ -84,11 +84,15 @@ export interface CanvasToolbarProps {
   showGrid: boolean;
   gridSize: number;
   gridColor: string;
+  gridLineWidth: number;
+  gridBrightness: number;
   zoom: number;
   onToggleGridSnap: () => void;
   onToggleShowGrid: () => void;
   onGridSizeChange: (size: number) => void;
   onGridColorChange: (color: string) => void;
+  onGridLineWidthChange: (width: number) => void;
+  onGridBrightnessChange: (brightness: number) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
@@ -137,11 +141,15 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
   showGrid,
   gridSize,
   gridColor,
+  gridLineWidth,
+  gridBrightness,
   zoom,
   onToggleGridSnap,
   onToggleShowGrid,
   onGridSizeChange,
   onGridColorChange,
+  onGridLineWidthChange,
+  onGridBrightnessChange,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -507,8 +515,60 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
                     '.MuiSvgIcon-root': { color: 'inherit' },
                   }}
                 >
-                  {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map(s => (
+                  {[1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map(s => (
                     <MenuItem key={s} value={s} sx={{ fontSize: '0.8rem' }}>{s}px</MenuItem>
+                  ))}
+                </Select>
+              </Tooltip>
+            ),
+          },
+          {
+            type: 'custom' as const,
+            render: () => (
+              <Tooltip title="Grid Line Width">
+                <Select
+                  value={gridLineWidth}
+                  onChange={(e) => onGridLineWidthChange(Number(e.target.value))}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontSize: '0.75rem',
+                    height: 24,
+                    minWidth: 54,
+                    color: 'inherit',
+                    '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.6)' },
+                    '.MuiSvgIcon-root': { color: 'inherit' },
+                  }}
+                >
+                  {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map(w => (
+                    <MenuItem key={w} value={w} sx={{ fontSize: '0.8rem' }}>{w}px</MenuItem>
+                  ))}
+                </Select>
+              </Tooltip>
+            ),
+          },
+          {
+            type: 'custom' as const,
+            render: () => (
+              <Tooltip title="Grid Brightness">
+                <Select
+                  value={gridBrightness}
+                  onChange={(e) => onGridBrightnessChange(Number(e.target.value))}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontSize: '0.75rem',
+                    height: 24,
+                    minWidth: 54,
+                    color: 'inherit',
+                    '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.6)' },
+                    '.MuiSvgIcon-root': { color: 'inherit' },
+                  }}
+                >
+                  {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map(b => (
+                    <MenuItem key={b} value={b} sx={{ fontSize: '0.8rem' }}>{Math.round(b * 100)}%</MenuItem>
                   ))}
                 </Select>
               </Tooltip>
@@ -577,8 +637,8 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
     return baseGroups;
   }, [
     currentViewName, onViewsClick, onCloneView, onDeleteView, onExportView, onImportView, onFileManagerClick, onVariablesClick, onFlowsClick, onPromptTemplatesClick, mode, onModeChange, handleOpenKiosk, onAddWidget, canUndo, canRedo, onUndo, onRedo,
-    selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, gridSize, gridColor, zoom,
-    onToggleGridSnap, onToggleShowGrid, onGridSizeChange, onGridColorChange, onZoomIn, onZoomOut, onZoomReset,
+    selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, gridSize, gridColor, gridLineWidth, gridBrightness, zoom,
+    onToggleGridSnap, onToggleShowGrid, onGridSizeChange, onGridColorChange, onGridLineWidthChange, onGridBrightnessChange, onZoomIn, onZoomOut, onZoomReset,
     onAlignLeft, onAlignRight, onAlignTop, onAlignBottom, onAlignCenterH, onAlignCenterV, onAlignToViewCenterH, onAlignToViewCenterV,
     onDistributeH, onDistributeV,
   ]);

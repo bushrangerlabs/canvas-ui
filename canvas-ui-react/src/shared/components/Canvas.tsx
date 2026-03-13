@@ -21,7 +21,9 @@ interface CanvasProps {
   gridSnap?: boolean;
   gridSize?: number;
   showGrid?: boolean;
-  gridColor?: string; // CSS color for grid lines, e.g. '#ffffff'
+  gridColor?: string;      // Hex color for grid lines
+  gridLineWidth?: number;  // Line width in px (0.1 – 1)
+  gridBrightness?: number; // Opacity 0–1
   zoom?: number;
 }
 
@@ -38,6 +40,8 @@ export const Canvas: React.FC<CanvasProps> = ({
   gridSize = 10,
   showGrid = false,
   gridColor = '#ffffff',
+  gridLineWidth = 1,
+  gridBrightness = 0.2,
   zoom = 100
 }) => {
   const [alignmentGuides, setAlignmentGuides] = useState<{ 
@@ -126,6 +130,18 @@ export const Canvas: React.FC<CanvasProps> = ({
     return path;
   };
 
+  // Convert hex + brightness to rgba for grid lines
+  const hexToRgba = (hex: string, alpha: number): string => {
+    const h = hex.replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  };
+
+  const gridLineColor = hexToRgba(gridColor, gridBrightness);
+
   const rawBgImage = view.style?.backgroundImage;
   const bgImageUrl = rawBgImage ? convertPath(rawBgImage) : undefined;
 
@@ -147,8 +163,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     }),
     ...(showGrid && (() => {
       const gridLines = [
-        `linear-gradient(to right, ${gridColor} 1px, transparent 1px)`,
-        `linear-gradient(to bottom, ${gridColor} 1px, transparent 1px)`,
+        `linear-gradient(to right, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px)`,
+        `linear-gradient(to bottom, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px)`,
       ];
       return {
         // Layer grid on top of background image (if any)
