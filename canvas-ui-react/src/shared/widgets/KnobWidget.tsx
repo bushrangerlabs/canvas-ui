@@ -60,6 +60,7 @@ export const KnobWidgetMetadata: WidgetMetadata = {
     { name: 'accentColor', type: 'color', label: 'Accent Color', default: '#1976d2', category: 'style' },
     
     // Position Marker
+    { name: 'scalePadding', type: 'number', label: 'Scale Padding (%)', default: 8, min: 0, max: 30, category: 'style', description: 'Distance between knob edge and surrounding numbers/ticks (% of knob size)' },
     { name: 'markerType', type: 'select', label: 'Marker Type', default: 'triangle', category: 'style', options: [
       { value: 'triangle', label: 'Triangle' },
       { value: 'rect', label: 'Rectangle Block' },
@@ -95,6 +96,7 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
     knobColor = '#2196f3',
     textColor = '#ffffff',
     accentColor = '#1976d2',
+    scalePadding = 8,
     markerType: rawMarkerType = 'triangle',
     markerWidth = 12,
     markerColor = '#ffeb3b',
@@ -250,7 +252,7 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
       const value = min + (i * dialStep);
       const angle = valueToAngle(value);
       const angleRad = (angle - 90) * (Math.PI / 180);
-      const textRadius = radius + (size * 0.08);
+      const textRadius = radius + (size * scalePadding / 100);
       const x = center + Math.cos(angleRad) * textRadius;
       const y = center + Math.sin(angleRad) * textRadius;
       
@@ -279,7 +281,7 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
       const tickAngleRad = (tickAngle - 90) * (Math.PI / 180);
       
       // Position ticks outside the knob circle with gap
-      const gapSize = size * 0.04; // Gap between circle and ticks
+      const gapSize = size * scalePadding / 100; // Gap between circle and ticks (scalePadding %)
       const innerRadius = radius + gapSize;
       const outerRadius = radius + gapSize + (size * 0.08);
       
@@ -377,7 +379,6 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
         return (
           <>
             <circle cx={center} cy={center} r={radius} fill={knobColor} stroke={accentColor} strokeWidth={2} />
-            <circle cx={center} cy={center} r={radius * 0.1} fill={accentColor} />
           </>
         );
       
@@ -417,7 +418,6 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
               strokeWidth={size / 5}
               strokeLinecap="round"
             />
-            <circle cx={center} cy={center} r={radius * 0.1} fill={accentColor} />
           </>
         );
       
@@ -425,7 +425,6 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
         return (
           <>
             <circle cx={center} cy={center} r={radius} fill={knobColor} stroke={accentColor} strokeWidth={2} />
-            <circle cx={center} cy={center} r={radius * 0.1} fill={accentColor} />
           </>
         );
       
@@ -450,7 +449,6 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
               strokeWidth={size / 6}
               strokeLinecap="round"
             />
-            <circle cx={center} cy={center} r={radius * 0.1} fill={accentColor} />
           </>
         );
       
@@ -458,7 +456,6 @@ const KnobWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }) 
         return (
           <>
             <circle cx={center} cy={center} r={radius} fill={knobColor} stroke={accentColor} strokeWidth={2} />
-            <circle cx={center} cy={center} r={radius * 0.15} fill={accentColor} />
           </>
         );
     }

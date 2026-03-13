@@ -45,6 +45,14 @@ export const SwitchWidgetMetadata: WidgetMetadata = {
     { name: 'textColor', type: 'color', label: 'Text Color', default: '#ffffff', category: 'style' },
     { name: 'fontFamily', type: 'font', label: 'Font Family', default: 'Arial, sans-serif', category: 'style' },
     { name: 'fontSize', type: 'number', label: 'Font Size', default: 14, min: 8, max: 32, category: 'style' },
+    { name: 'fontWeight', type: 'select', label: 'Font Weight', default: '500', category: 'style', options: [
+      { value: '300', label: 'Light' },
+      { value: '400', label: 'Normal' },
+      { value: '500', label: 'Medium' },
+      { value: '600', label: 'Semi-Bold' },
+      { value: '700', label: 'Bold' },
+    ]},
+    { name: 'thumbColor', type: 'color', label: 'Thumb Color', default: '#ffffff', category: 'style' },
   ],
 };
 
@@ -60,6 +68,8 @@ const SwitchWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     textColor = '#ffffff',
     fontFamily = 'Arial, sans-serif',
     fontSize = 14,
+    fontWeight = '500',
+    thumbColor = '#ffffff',
     visibilityCondition,
   } = config.config;
 
@@ -131,7 +141,7 @@ const SwitchWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     color: textColor,
     fontFamily: fontFamily,
     fontSize: `${fontSize}px`,
-    fontWeight: '500',
+    fontWeight: fontWeight,
     flex: labelPosition === 'left' || labelPosition === 'right' ? 1 : 0,
     textAlign: labelPosition === 'top' || labelPosition === 'bottom' ? 'center' : 'left',
   };
@@ -149,7 +159,7 @@ const SwitchWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   const switchThumbStyle: React.CSSProperties = {
     width: '22px',
     height: '22px',
-    backgroundColor: '#ffffff',
+    backgroundColor: thumbColor,
     borderRadius: '50%',
     position: 'absolute',
     top: '2px',
