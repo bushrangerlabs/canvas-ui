@@ -827,6 +827,38 @@ export class ConversationService {
   }
 
   /**
+   * Compress an image data URL to a max dimension / JPEG quality to keep request sizes small.
+   * Needed because raw screenshots / high-res uploads easily exceed proxy 413 limits.
+   */
+  private static async compressImageDataUrl(
+    dataUrl: string,
+    maxDimension: number = 1024,
+    quality: number = 0.8
+  ): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        const origKB = Math.round(dataUrl.length * 0.75 / 1024);
+        const newKB = Math.round(compressed.length * 0.75 / 1024);
+        console.log(`[ConversationService] Image compressed: ${origKB}KB → ${newKB}KB (${w}x${h})`);
+        resolve(compressed);
+      };
+      img.onerror = () => resolve(dataUrl); // fallback: send original
+      img.src = dataUrl;
+    });
+  }
+
+  /**
    * Legacy sendMessage method for UI compatibility
    * v19: Simplified to single-pass generation
    */
@@ -836,9 +868,9 @@ export class ConversationService {
     _awaitUserConfirmation: boolean = false,
     imageDataUrl?: string
   ): Promise<any> {
-    // Store image for vision request (cleared after use in each callXxx)
+    // Compress image before storing — prevents 413 errors from full-resolution uploads
     if (imageDataUrl) {
-      this.pendingImageDataUrl = imageDataUrl;
+      this.pendingImageDataUrl = await ConversationService.compressImageDataUrl(imageDataUrl);
     }
     try {
       // Store current widget count for validation
