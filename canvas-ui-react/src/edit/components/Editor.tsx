@@ -556,11 +556,7 @@ const Editor: React.FC = () => {
     if (!ref) return;
     const targetWidth = ref.position.width;
     widgets.forEach(widget => {
-      if (widget.id === refId) return;
-      updateWidget(currentViewId, widget.id, {
-        position: { ...widget.position, width: targetWidth },
-        config: { ...widget.config, width: targetWidth },
-      });
+      updateWidget(currentViewId, widget.id, { position: { ...widget.position, width: targetWidth } });
     });
     saveToHA();
   };
@@ -573,11 +569,7 @@ const Editor: React.FC = () => {
     if (!ref) return;
     const targetHeight = ref.position.height;
     widgets.forEach(widget => {
-      if (widget.id === refId) return;
-      updateWidget(currentViewId, widget.id, {
-        position: { ...widget.position, height: targetHeight },
-        config: { ...widget.config, height: targetHeight },
-      });
+      updateWidget(currentViewId, widget.id, { position: { ...widget.position, height: targetHeight } });
     });
     saveToHA();
   };
