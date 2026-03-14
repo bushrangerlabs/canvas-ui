@@ -93,40 +93,50 @@ export const PixabayPickerDialog: React.FC<PixabayPickerDialogProps> = ({
   const [category, setCategory] = useState('');
   const [hits, setHits] = useState<PixabayHit[]>([]);
   const [totalHits, setTotalHits] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState('');
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-    setSearching(true);
+  const PER_PAGE = 30;
+
+  const fetchPage = async (page: number, append: boolean) => {
+    if (append) setLoadingMore(true); else setSearching(true);
     setSearchError('');
-    setHits([]);
-    setTotalHits(0);
+    if (!append) { setHits([]); setTotalHits(0); }
 
     try {
       const result = await (hass as any).callService('canvas_ui', 'pixabay_search', {
         query: query.trim(),
         image_type: imageType,
         ...(category ? { category } : {}),
-        per_page: 30,
-        page: 1,
+        per_page: PER_PAGE,
+        page,
         return_response: true,
       });
       const data = result?.result?.response ?? result?.response ?? result;
       if (data?.success === false) {
         setSearchError(data.error || 'Search failed');
       } else {
-        setHits(data?.hits ?? []);
+        setHits(prev => append ? [...prev, ...(data?.hits ?? [])] : (data?.hits ?? []));
         setTotalHits(data?.totalHits ?? 0);
+        setCurrentPage(page);
       }
     } catch (err: any) {
       setSearchError(err?.message ?? String(err));
     } finally {
-      setSearching(false);
+      if (append) setLoadingMore(false); else setSearching(false);
     }
   };
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    fetchPage(1, false);
+  };
+
+  const handleLoadMore = () => fetchPage(currentPage + 1, true);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSearch();
@@ -242,72 +252,89 @@ export const PixabayPickerDialog: React.FC<PixabayPickerDialogProps> = ({
         {/* Results count */}
         {totalHits > 0 && (
           <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-            {totalHits.toLocaleString()} results — showing {hits.length}
+            Showing {hits.length} of {totalHits.toLocaleString()} results
           </Typography>
         )}
 
         {/* Grid of thumbnails */}
         {hits.length > 0 && (
-          <Grid container spacing={1} sx={{ maxHeight: '55vh', overflowY: 'auto', pr: 0.5 }}>
-            {hits.map((hit) => (
-              <Grid key={hit.id} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
-                <Box
-                  sx={{
-                    position: 'relative',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    border: '2px solid transparent',
-                    '&:hover': { border: '2px solid', borderColor: 'primary.main' },
-                    '&:hover .download-overlay': { opacity: 1 },
-                    bgcolor: 'action.hover',
-                  }}
-                  onClick={() => handleDownload(hit)}
-                >
+          <>
+            <Grid container spacing={1} sx={{ maxHeight: '52vh', overflowY: 'auto', pr: 0.5 }}>
+              {hits.map((hit) => (
+                <Grid key={hit.id} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
                   <Box
-                    component="img"
-                    src={hit.previewURL}
-                    alt={hit.tags}
                     sx={{
-                      width: '100%',
-                      aspectRatio: '4/3',
-                      objectFit: 'cover',
-                      display: 'block',
+                      position: 'relative',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: '2px solid transparent',
+                      '&:hover': { border: '2px solid', borderColor: 'primary.main' },
+                      '&:hover .download-overlay': { opacity: 1 },
+                      bgcolor: 'action.hover',
                     }}
-                  />
-                  {/* Download overlay */}
-                  <Box
-                    className="download-overlay"
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      bgcolor: 'rgba(0,0,0,0.45)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0,
-                      transition: 'opacity 0.15s',
-                    }}
+                    onClick={() => handleDownload(hit)}
                   >
-                    {downloadingId === hit.id ? (
-                      <CircularProgress size={24} sx={{ color: '#fff' }} />
-                    ) : (
-                      <Tooltip title="Download & use">
-                        <DownloadIcon sx={{ color: '#fff', fontSize: 28 }} />
-                      </Tooltip>
-                    )}
+                    <Box
+                      component="img"
+                      src={hit.previewURL}
+                      alt={hit.tags}
+                      sx={{
+                        width: '100%',
+                        aspectRatio: '4/3',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                    {/* Download overlay */}
+                    <Box
+                      className="download-overlay"
+                      sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        bgcolor: 'rgba(0,0,0,0.45)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0,
+                        transition: 'opacity 0.15s',
+                      }}
+                    >
+                      {downloadingId === hit.id ? (
+                        <CircularProgress size={24} sx={{ color: '#fff' }} />
+                      ) : (
+                        <Tooltip title="Download & use">
+                          <DownloadIcon sx={{ color: '#fff', fontSize: 28 }} />
+                        </Tooltip>
+                      )}
+                    </Box>
                   </Box>
-                </Box>
-                <Typography
-                  variant="caption"
-                  noWrap
-                  sx={{ display: 'block', px: 0.5, color: 'text.secondary', mt: 0.25 }}
+                  <Typography
+                    variant="caption"
+                    noWrap
+                    sx={{ display: 'block', px: 0.5, color: 'text.secondary', mt: 0.25 }}
+                  >
+                    {hit.user}
+                  </Typography>
+                </Grid>
+              ))}
+            </Grid>
+
+            {/* Load More */}
+            {hits.length < totalHits && (
+              <Box sx={{ textAlign: 'center', mt: 1.5 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  startIcon={loadingMore ? <CircularProgress size={14} color="inherit" /> : undefined}
                 >
-                  {hit.user}
-                </Typography>
-              </Grid>
-            ))}
-          </Grid>
+                  {loadingMore ? 'Loading…' : `Load more (${hits.length} / ${totalHits.toLocaleString()})`}
+                </Button>
+              </Box>
+            )}
+          </>
         )}
 
         {/* Empty state */}
