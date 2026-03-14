@@ -54,7 +54,7 @@ export const ButtonWidgetMetadata: WidgetMetadata = {
     { name: 'serviceData', type: 'text', label: 'Service Data (JSON)', default: '{}', category: 'behavior', description: 'Additional service parameters as JSON', visibleWhen: { field: 'actionType', value: 'custom' } },
     
     // Navigation
-    { name: 'targetView', type: 'text', label: 'Target View ID', default: '', category: 'behavior', description: 'View to navigate to', visibleWhen: { field: 'actionType', value: 'navigation' } },
+    { name: 'targetView', type: 'text', label: 'Target View', default: '', category: 'behavior', description: 'View name to navigate to (spaces or hyphens both work, e.g. "My View" or "my-view")', visibleWhen: { field: 'actionType', value: 'navigation' } },
     
     // URL
     { name: 'url', type: 'text', label: 'URL', default: '', category: 'behavior', description: 'URL to open (e.g. https://example.com)', visibleWhen: { field: 'actionType', value: 'url' } },
