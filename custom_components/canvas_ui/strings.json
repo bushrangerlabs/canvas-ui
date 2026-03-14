@@ -5,8 +5,7 @@
         "title": "Setup Canvas UI",
         "description": "Configure Canvas UI Dashboard Builder",
         "data": {
-          "name": "Dashboard Name",
-          "pixabay_api_key": "Pixabay API Key"
+          "name": "Dashboard Name"
         }
       }
     },
@@ -21,8 +20,7 @@
         "description": "Configure Canvas UI settings",
         "data": {
           "enable_editor": "Enable Dashboard Editor",
-          "auto_register_resources": "Auto-register Lovelace Resources",
-          "pixabay_api_key": "Pixabay API Key"
+          "auto_register_resources": "Auto-register Lovelace Resources"
         }
       }
     }

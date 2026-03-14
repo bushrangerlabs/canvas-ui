@@ -14,7 +14,7 @@ from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import file as file_util
 
-from .const import CONF_PIXABAY_API_KEY, DOMAIN, PIXABAY_IMAGES_DIR, PIXABAY_LOCAL_URL_PREFIX
+from .const import CANVAS_UI_SETTINGS_FILE, CONF_PIXABAY_API_KEY, DOMAIN, PIXABAY_IMAGES_DIR, PIXABAY_LOCAL_URL_PREFIX
 from .file_operations import create_folder
 from .file_operations import delete_file as delete_file_op
 from .file_operations import download_file, get_file_info
@@ -120,6 +120,15 @@ PIXABAY_DOWNLOAD_IMAGE_SCHEMA = vol.Schema(
         vol.Required("url"): cv.string,
         vol.Optional("filename", default=""): cv.string,
     }
+)
+
+GET_SETTINGS_SCHEMA = vol.Schema({})
+
+SAVE_SETTINGS_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_PIXABAY_API_KEY, default=""): cv.string,
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 
@@ -652,10 +661,57 @@ def setup_services(hass: HomeAssistant) -> None:
         supports_response=SupportsResponse.ONLY,
     )
 
+    async def handle_get_settings(call: ServiceCall) -> dict[str, Any]:
+        """Return current Canvas UI settings (API keys etc.)."""
+        settings_path = hass.config.path(CANVAS_UI_SETTINGS_FILE)
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r") as f:
+                    return {"success": True, "settings": json.load(f)}
+            except Exception as e:
+                return {"success": False, "error": str(e), "settings": {}}
+        return {"success": True, "settings": {}}
+
+    async def handle_save_settings(call: ServiceCall) -> dict[str, Any]:
+        """Persist Canvas UI settings to disk."""
+        settings_path = hass.config.path(CANVAS_UI_SETTINGS_FILE)
+        os.makedirs(os.path.dirname(settings_path), exist_ok=True)
+        # Merge with existing to preserve unknown keys
+        existing: dict[str, Any] = {}
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r") as f:
+                    existing = json.load(f)
+            except Exception:
+                pass
+        existing.update(dict(call.data))
+        try:
+            with open(settings_path, "w") as f:
+                json.dump(existing, f, indent=2)
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    hass.services.async_register(
+        DOMAIN,
+        "get_settings",
+        handle_get_settings,
+        schema=GET_SETTINGS_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "save_settings",
+        handle_save_settings,
+        schema=SAVE_SETTINGS_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
     _LOGGER.info(
         "[Canvas UI] Services registered: write_file, read_file, delete_file, list_files, "
         "list_files_op, get_file_info, create_folder, upload_file, download_file, rename_file, "
-        "delete_file_op, cache_icon, pixabay_search, pixabay_download_image"
+        "delete_file_op, cache_icon, pixabay_search, pixabay_download_image, get_settings, save_settings"
     )
 
 
@@ -674,7 +730,18 @@ def _is_safe_path(hass: HomeAssistant, filepath: str) -> bool:
 
 
 def _get_pixabay_key(hass: HomeAssistant) -> str:
-    """Return the Pixabay API key from the first configured Canvas UI entry that has one."""
+    """Return the Pixabay API key from the settings file (or legacy config entry fallback)."""
+    settings_path = hass.config.path(CANVAS_UI_SETTINGS_FILE)
+    if os.path.exists(settings_path):
+        try:
+            with open(settings_path, "r") as f:
+                data = json.load(f)
+                key = data.get(CONF_PIXABAY_API_KEY, "")
+                if key:
+                    return key
+        except Exception:
+            pass
+    # Legacy fallback: config entry
     entries = hass.config_entries.async_entries(DOMAIN)
     for entry in entries:
         key = entry.options.get(CONF_PIXABAY_API_KEY, "") or entry.data.get(CONF_PIXABAY_API_KEY, "")

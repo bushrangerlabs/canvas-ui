@@ -15,6 +15,7 @@ import { WIDGET_REGISTRY } from '../../shared/registry/widgetRegistry';
 import { getViewFromURL, useConfigStore } from '../../shared/stores/useConfigStore';
 import type { WidgetConfig } from '../../shared/types';
 import { AISettingsDialog } from './AISettingsDialog';
+import { CanvasSettingsDialog } from './CanvasSettingsDialog';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CloneViewDialog } from './CloneViewDialog';
 import { DeleteViewDialog } from './DeleteViewDialog';
@@ -78,6 +79,7 @@ const Editor: React.FC = () => {
   const [variablesManagerOpen, setVariablesManagerOpen] = useState(false); // Phase 2
   const [flowBuilderOpen, setFlowBuilderOpen] = useState(false); // Phase 3
   const [aiSettingsOpen, setAISettingsOpen] = useState(false); // AI Settings (Provider + Prompts)
+  const [canvasSettingsOpen, setCanvasSettingsOpen] = useState(false); // Canvas UI Settings (API keys)
   const [widgetNameDialogOpen, setWidgetNameDialogOpen] = useState(false); // Widget naming dialog
   const [pendingWidgetType, setPendingWidgetType] = useState<string | null>(null); // Type of widget being added
   
@@ -823,6 +825,7 @@ const Editor: React.FC = () => {
           onVariablesClick={() => setVariablesManagerOpen(true)} // Phase 2
           onFlowsClick={() => setFlowBuilderOpen(true)} // Phase 3
           onPromptTemplatesClick={() => setAISettingsOpen(true)} // AI Settings
+          onSettingsClick={() => setCanvasSettingsOpen(true)} // Canvas UI Settings
           onAddWidget={() => setWidgetLibraryOpen(true)}
           canUndo={canUndo()}
           canRedo={canRedo()}
@@ -1105,6 +1108,12 @@ const Editor: React.FC = () => {
           }}
         />
       )}
+
+      {/* Canvas UI Settings Dialog */}
+      <CanvasSettingsDialog
+        open={canvasSettingsOpen}
+        onClose={() => setCanvasSettingsOpen(false)}
+      />
 
       {/* Clone View Dialog */}
       {mode === 'edit' && currentView && (

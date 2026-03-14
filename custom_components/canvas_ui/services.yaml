@@ -113,3 +113,19 @@ pixabay_download_image:
       selector:
         text:
 
+get_settings:
+  name: Get Canvas UI Settings
+  description: Retrieve persisted Canvas UI settings (API keys, etc.).
+  fields: {}
+
+save_settings:
+  name: Save Canvas UI Settings
+  description: Persist Canvas UI settings (API keys, etc.) to the HA server.
+  fields:
+    pixabay_api_key:
+      name: Pixabay API Key
+      description: API key for Pixabay image search
+      required: false
+      example: "12345678-abcdef0123456789abcdef01"
+      selector:
+        text:

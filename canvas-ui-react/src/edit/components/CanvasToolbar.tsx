@@ -34,7 +34,8 @@ import {
     Visibility as ViewsIcon,
     ZoomIn as ZoomInIcon,
     ZoomOut as ZoomOutIcon,
-    RestartAlt as ZoomResetIcon
+    RestartAlt as ZoomResetIcon,
+    Settings as SettingsIcon
 } from '@mui/icons-material';
 import { AppBar, Box, Button, ButtonGroup, Divider, IconButton, MenuItem, Select, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -55,6 +56,7 @@ export interface CanvasToolbarProps {
   onVariablesClick?: () => void; // Phase 2 - Canvas Variables
   onFlowsClick?: () => void; // Phase 3 - Flow Builder
   onPromptTemplatesClick?: () => void; // AI Settings (Provider + Prompts)
+  onSettingsClick?: () => void; // Canvas UI Settings (API keys etc.)
   
   // Mode switching
   mode: ViewMode;
@@ -125,6 +127,7 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
   onVariablesClick,
   onFlowsClick,
   onPromptTemplatesClick,
+  onSettingsClick,
   mode,
   onModeChange,
   onAddWidget,
@@ -291,6 +294,14 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
               icon: <AddCommentIcon />,
               onAction: onPromptTemplatesClick,
               tooltip: 'AI Settings',
+            },
+          ]] : []),
+          ...(onSettingsClick ? [[
+            {
+              type: 'icon-button' as const,
+              icon: <SettingsIcon />,
+              onAction: onSettingsClick,
+              tooltip: 'Canvas UI Settings',
             },
           ]] : []),
         ],
@@ -636,7 +647,7 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
     
     return baseGroups;
   }, [
-    currentViewName, onViewsClick, onCloneView, onDeleteView, onExportView, onImportView, onFileManagerClick, onVariablesClick, onFlowsClick, onPromptTemplatesClick, mode, onModeChange, handleOpenKiosk, onAddWidget, canUndo, canRedo, onUndo, onRedo,
+    currentViewName, onViewsClick, onCloneView, onDeleteView, onExportView, onImportView, onFileManagerClick, onVariablesClick, onFlowsClick, onPromptTemplatesClick, onSettingsClick, mode, onModeChange, handleOpenKiosk, onAddWidget, canUndo, canRedo, onUndo, onRedo,
     selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, gridSize, gridColor, gridLineWidth, gridBrightness, zoom,
     onToggleGridSnap, onToggleShowGrid, onGridSizeChange, onGridColorChange, onGridLineWidthChange, onGridBrightnessChange, onZoomIn, onZoomOut, onZoomReset,
     onAlignLeft, onAlignRight, onAlignTop, onAlignBottom, onAlignCenterH, onAlignCenterV, onAlignToViewCenterH, onAlignToViewCenterV,
