@@ -125,12 +125,10 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
   const rawValue = isEntityConfigured ? (entityState || 0) : (gaugeValue || 0);
   const value = typeof rawValue === 'number' ? rawValue : parseFloat(String(rawValue)) || 0;
 
-  // Adjust showArc based on needleOnly mode
-  const finalShowArc = needleOnly ? false : showArc;
-
   // Calculate zone limits based on min/max range
   const zone1Value = (max - min) * (zone1Limit / 100) + min;
   const zone2Value = (max - min) * (zone2Limit / 100) + min;
+  const finalShowArc = needleOnly ? false : showArc;
 
   const containerStyle: React.CSSProperties = {
     width: '100%',
@@ -138,15 +136,72 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: needleOnly ? 'transparent' : undefined,
   };
-
-  // Apply universal styles
   const finalStyle = applyUniversalStyles(universalStyle, containerStyle);
 
-  // Don't render if visibility condition is false
   if (!isVisible) return null;
 
+  // ------------------------------------------------------------------
+  // Needle-only mode: custom SVG with pivot ALWAYS at widget center
+  // ------------------------------------------------------------------
+  if (needleOnly) {
+    const w = config.position.width;
+    const h = config.position.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const halfMin = Math.min(w, h) / 2;
+    const radius = halfMin * pointerLength;
+    const tailLen = radius * 0.18;
+    const halfW = Math.max(1.5, pointerWidth / 4);
+    const dotR = Math.max(3, pointerWidth / 2.5);
+
+    // Clamp value and map to angle (D3 convention: 0=top, CW=positive)
+    const pct = (max - min) > 0 ? Math.max(0, Math.min(1, (value - min) / (max - min))) : 0;
+    const angleDeg = needleStartAngle + pct * (needleEndAngle - needleStartAngle);
+
+    const needleColor = pointerColor || '#ffffff';
+    const dotColor = pointerBaseColor || needleColor;
+    // Needle: diamond shape — tip at (0, -radius), tail at (0, tailLen), widest at pivot
+    const needlePath = `M 0 ${-radius} L ${-halfW} 0 L 0 ${tailLen} L ${halfW} 0 Z`;
+    const transition = pointerElastic ? 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)' : 'transform 0.3s ease-out';
+
+    return (
+      <div style={{ ...finalStyle, position: 'relative' }}>
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${w} ${h}`}
+          style={{ overflow: 'visible', position: 'absolute', top: 0, left: 0 }}
+        >
+          <g
+            transform={`translate(${cx}, ${cy}) rotate(${angleDeg})`}
+            style={{ transition }}
+          >
+            <path d={needlePath} fill={needleColor} />
+          </g>
+          {/* Pivot dot — not rotated, always at exact center */}
+          <circle cx={cx} cy={cy} r={dotR} fill={dotColor} />
+          {showValue && (
+            <text
+              x={cx}
+              y={cy + dotR + 14}
+              textAnchor="middle"
+              dominantBaseline="hanging"
+              fill={textColor}
+              fontSize={valueSize * 0.6}
+              fontFamily="inherit"
+            >
+              {value}{unit}
+            </text>
+          )}
+        </svg>
+      </div>
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Standard mode: use react-gauge-component
+  // ------------------------------------------------------------------
   return (
     <div style={finalStyle}>
       <GaugeComponent
@@ -154,7 +209,6 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
         minValue={min}
         maxValue={max}
         type={gaugeType as any}
-        {...(needleOnly ? { startAngle: needleStartAngle, endAngle: needleEndAngle } : {})}
         arc={finalShowArc ? {
           width: arcWidth,
           padding: 0.005,
