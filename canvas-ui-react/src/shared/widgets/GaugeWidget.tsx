@@ -44,6 +44,12 @@ export const GaugeWidgetMetadata: WidgetMetadata = {
       ]
     },
     { name: 'needleOnly', type: 'checkbox', label: 'Needle Only Mode', default: false, category: 'style', description: 'Show only needle (for custom gauge overlays)' },
+    { name: 'needleStartAngle', type: 'number', label: 'Needle Start Angle (°)', default: -90, min: -180, max: 180, category: 'style',
+      description: 'Start angle of needle sweep in degrees (-90 = bottom-left for radial)',
+      visibleWhen: { field: 'needleOnly', value: true } },
+    { name: 'needleEndAngle', type: 'number', label: 'Needle End Angle (°)', default: 90, min: -180, max: 180, category: 'style',
+      description: 'End angle of needle sweep in degrees (90 = bottom-right for radial)',
+      visibleWhen: { field: 'needleOnly', value: true } },
     
     // Needle/Pointer
     { name: 'pointerType', type: 'select', label: 'Needle Type', default: 'needle', category: 'style',
@@ -85,6 +91,8 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
     value: gaugeValue = 0,
     gaugeType = 'radial',
     needleOnly = false,
+    needleStartAngle = -90,
+    needleEndAngle = 90,
     pointerType = 'needle',
     pointerColor = '#ffffff',
     pointerBaseColor = '',
@@ -146,6 +154,7 @@ const GaugeWidget: React.FC<WidgetProps> = ({ config }) => {
         minValue={min}
         maxValue={max}
         type={gaugeType as any}
+        {...(needleOnly ? { startAngle: needleStartAngle, endAngle: needleEndAngle } : {})}
         arc={finalShowArc ? {
           width: arcWidth,
           padding: 0.005,
