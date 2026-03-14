@@ -30,6 +30,7 @@ import {
     Tab,
     Tabs,
     TextField,
+    Tooltip,
     Typography
 } from '@mui/material';
 import React, { useState } from 'react';
@@ -45,6 +46,7 @@ import { EntityBrowser } from './EntityBrowser';
 import { FilePicker } from './FilePicker';
 import { IconPicker } from './IconPicker';
 import { FontPicker } from './Inspector/FontPicker';
+import { PixabayPickerDialog } from './PixabayPickerDialog';
 
 interface InspectorProps {
   widget: WidgetConfig | null;
@@ -97,6 +99,10 @@ export const Inspector: React.FC<InspectorProps> = ({
   const [codeEditorField, setCodeEditorField] = useState<string>('');
   const [codeEditorValue, setCodeEditorValue] = useState<string>('');
   const [codeEditorLabel, setCodeEditorLabel] = useState<string>('');
+
+  // Pixabay picker state
+  const [pixabayOpen, setPixabayOpen] = useState(false);
+  const [pixabayTargetField, setPixabayTargetField] = useState<string>('');
 
   const handleAccordionChange = (group: string) => (_: React.SyntheticEvent, isExpanded: boolean) => {
     setExpandedGroups(prev => ({ ...prev, [group]: isExpanded }));
@@ -256,6 +262,32 @@ export const Inspector: React.FC<InspectorProps> = ({
 
       case 'text':
       case 'textarea':
+        // Image widget "src" field — show a Pixabay browse button
+        if (field.name === 'src' && widget?.type === 'image') {
+          return (
+            <Box key={field.name} sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                <TextField
+                  fullWidth
+                  label={field.label}
+                  value={value}
+                  onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                  helperText={field.description}
+                  size="small"
+                />
+                <Tooltip title="Search Pixabay for free images">
+                  <IconButton
+                    size="small"
+                    onClick={() => { setPixabayTargetField(field.name); setPixabayOpen(true); }}
+                    sx={{ mt: 0.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1 }}
+                  >
+                    <MuiIcons.ImageSearchOutlined fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          );
+        }
         return (
           <TextField
             key={field.name}
@@ -1430,6 +1462,16 @@ export const Inspector: React.FC<InspectorProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Pixabay Image Picker */}
+      <PixabayPickerDialog
+        open={pixabayOpen}
+        onClose={() => setPixabayOpen(false)}
+        onSelect={(localPath) => {
+          handleFieldChange(pixabayTargetField, localPath);
+          setPixabayOpen(false);
+        }}
+      />
     </Box>
   );
 };

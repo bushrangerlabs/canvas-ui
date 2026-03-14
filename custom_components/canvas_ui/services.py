@@ -3,15 +3,18 @@
 import json
 import logging
 import os
+import re
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import file as file_util
 
-from .const import DOMAIN
+from .const import CONF_PIXABAY_API_KEY, DOMAIN, PIXABAY_IMAGES_DIR, PIXABAY_LOCAL_URL_PREFIX
 from .file_operations import create_folder
 from .file_operations import delete_file as delete_file_op
 from .file_operations import download_file, get_file_info
@@ -99,6 +102,23 @@ CACHE_ICON_SCHEMA = vol.Schema(
     {
         vol.Required("icon_name"): cv.string,
         vol.Required("icon_data"): dict,
+    }
+)
+
+PIXABAY_SEARCH_SCHEMA = vol.Schema(
+    {
+        vol.Required("query"): cv.string,
+        vol.Optional("image_type", default="all"): cv.string,
+        vol.Optional("category", default=""): cv.string,
+        vol.Optional("per_page", default=20): vol.All(int, vol.Range(min=3, max=200)),
+        vol.Optional("page", default=1): vol.All(int, vol.Range(min=1)),
+    }
+)
+
+PIXABAY_DOWNLOAD_IMAGE_SCHEMA = vol.Schema(
+    {
+        vol.Required("url"): cv.string,
+        vol.Optional("filename", default=""): cv.string,
     }
 )
 
@@ -541,9 +561,101 @@ def setup_services(hass: HomeAssistant) -> None:
         supports_response=SupportsResponse.ONLY,
     )
 
+    async def handle_pixabay_search(call: ServiceCall) -> dict[str, Any]:
+        """Handle pixabay_search service call — query Pixabay image API."""
+        query = call.data["query"]
+        image_type = call.data.get("image_type", "all")
+        category = call.data.get("category", "")
+        per_page = call.data.get("per_page", 20)
+        page = call.data.get("page", 1)
+
+        api_key = _get_pixabay_key(hass)
+        if not api_key:
+            return {"success": False, "error": "Pixabay API key not configured. Set it in Canvas UI integration options."}
+
+        params: dict[str, Any] = {
+            "key": api_key,
+            "q": query,
+            "image_type": image_type,
+            "per_page": per_page,
+            "page": page,
+            "safesearch": "true",
+        }
+        if category:
+            params["category"] = category
+
+        try:
+            session = aiohttp_client.async_get_clientsession(hass)
+            async with session.get("https://pixabay.com/api/", params=params) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    return {"success": False, "error": f"Pixabay API error {resp.status}: {text[:200]}"}
+                data = await resp.json()
+            return {
+                "success": True,
+                "hits": data.get("hits", []),
+                "total": data.get("total", 0),
+                "totalHits": data.get("totalHits", 0),
+            }
+        except Exception as e:
+            _LOGGER.error(f"[Canvas UI] Pixabay search failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def handle_pixabay_download_image(call: ServiceCall) -> dict[str, Any]:
+        """Handle pixabay_download_image — download a Pixabay image to local storage."""
+        import uuid
+
+        url = call.data["url"]
+        filename = call.data.get("filename", "")
+
+        if not filename:
+            url_filename = url.split("/")[-1].split("?")[0]
+            filename = url_filename if url_filename else f"pixabay_{uuid.uuid4().hex[:8]}.jpg"
+
+        # Sanitize filename
+        filename = re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
+
+        images_dir = hass.config.path(PIXABAY_IMAGES_DIR)
+        os.makedirs(images_dir, exist_ok=True)
+        local_file = os.path.join(images_dir, filename)
+
+        try:
+            session = aiohttp_client.async_get_clientsession(hass)
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    return {"success": False, "error": f"Download failed with HTTP {resp.status}"}
+                content = await resp.read()
+
+            with open(local_file, "wb") as f:
+                f.write(content)
+
+            local_path = f"{PIXABAY_LOCAL_URL_PREFIX}/{filename}"
+            _LOGGER.info(f"[Canvas UI] Downloaded Pixabay image: {local_path}")
+            return {"success": True, "local_path": local_path, "filename": filename}
+        except Exception as e:
+            _LOGGER.error(f"[Canvas UI] Pixabay download failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    hass.services.async_register(
+        DOMAIN,
+        "pixabay_search",
+        handle_pixabay_search,
+        schema=PIXABAY_SEARCH_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "pixabay_download_image",
+        handle_pixabay_download_image,
+        schema=PIXABAY_DOWNLOAD_IMAGE_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
     _LOGGER.info(
         "[Canvas UI] Services registered: write_file, read_file, delete_file, list_files, "
-        "list_files_op, get_file_info, create_folder, upload_file, download_file, rename_file, delete_file_op, cache_icon"
+        "list_files_op, get_file_info, create_folder, upload_file, download_file, rename_file, "
+        "delete_file_op, cache_icon, pixabay_search, pixabay_download_image"
     )
 
 
@@ -559,3 +671,13 @@ def _is_safe_path(hass: HomeAssistant, filepath: str) -> bool:
 
     except Exception:
         return False
+
+
+def _get_pixabay_key(hass: HomeAssistant) -> str:
+    """Return the Pixabay API key from the first configured Canvas UI entry that has one."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    for entry in entries:
+        key = entry.options.get(CONF_PIXABAY_API_KEY, "") or entry.data.get(CONF_PIXABAY_API_KEY, "")
+        if key:
+            return key
+    return ""

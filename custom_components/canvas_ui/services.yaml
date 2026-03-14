@@ -49,3 +49,67 @@ list_files:
   name: List Files
   description: List all files in the Canvas UI directory.
   fields: {}
+
+pixabay_search:
+  name: Pixabay Search
+  description: Search for images on Pixabay and return a list of results.
+  fields:
+    query:
+      name: Query
+      description: Search terms (e.g., "sunset mountains")
+      required: true
+      example: "sunset mountains"
+      selector:
+        text:
+    image_type:
+      name: Image Type
+      description: "Filter by type: all, photo, illustration, vector"
+      required: false
+      example: "photo"
+      selector:
+        select:
+          options: ["all", "photo", "illustration", "vector"]
+    category:
+      name: Category
+      description: "Optional category filter (e.g., nature, travel, animals)"
+      required: false
+      example: "nature"
+      selector:
+        text:
+    per_page:
+      name: Results per page
+      description: Number of results to return (3–200)
+      required: false
+      example: 20
+      selector:
+        number:
+          min: 3
+          max: 200
+    page:
+      name: Page
+      description: Results page number (for pagination)
+      required: false
+      example: 1
+      selector:
+        number:
+          min: 1
+
+pixabay_download_image:
+  name: Pixabay Download Image
+  description: Download an image from a URL and save it to local HA storage, returning the local path.
+  fields:
+    url:
+      name: Image URL
+      description: Direct URL to the image to download
+      required: true
+      example: "https://pixabay.com/get/..."
+      selector:
+        text:
+    filename:
+      name: Filename
+      description: Optional filename to save as. Auto-detected from URL if not specified.
+      required: false
+      example: "sunset.jpg"
+      selector:
+        text:
+
