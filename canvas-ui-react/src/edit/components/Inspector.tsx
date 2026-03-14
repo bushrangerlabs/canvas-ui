@@ -262,8 +262,8 @@ export const Inspector: React.FC<InspectorProps> = ({
 
       case 'text':
       case 'textarea':
-        // Image widget "src" field — show a Pixabay browse button
-        if (field.name === 'src' && widget?.type === 'image') {
+        // Image widget URL field — show a Pixabay browse button
+        if (field.name === 'imageUrl' && widget?.type === 'image') {
           return (
             <Box key={field.name} sx={{ mb: 2 }}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
