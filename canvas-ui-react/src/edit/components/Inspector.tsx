@@ -33,7 +33,7 @@ import {
     Tooltip,
     Typography
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useWebSocket } from '../../shared/providers/WebSocketProvider';
 import { WIDGET_REGISTRY } from '../../shared/registry/widgetRegistry';
 import type { ViewConfig, WidgetConfig } from '../../shared/types';
@@ -102,7 +102,11 @@ export const Inspector: React.FC<InspectorProps> = ({
 
   // Pixabay picker state
   const [pixabayOpen, setPixabayOpen] = useState(false);
-  const [pixabayTargetField, setPixabayTargetField] = useState<string>('');
+  const pixabayCallback = useRef<((path: string) => void) | null>(null);
+  const openPixabay = (onSelect: (path: string) => void) => {
+    pixabayCallback.current = onSelect;
+    setPixabayOpen(true);
+  };
 
   const handleAccordionChange = (group: string) => (_: React.SyntheticEvent, isExpanded: boolean) => {
     setExpandedGroups(prev => ({ ...prev, [group]: isExpanded }));
@@ -278,7 +282,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 <Tooltip title="Search Pixabay for free images">
                   <IconButton
                     size="small"
-                    onClick={() => { setPixabayTargetField(field.name); setPixabayOpen(true); }}
+                    onClick={() => openPixabay((path) => handleFieldChange(field.name, path))}
                     sx={{ mt: 0.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1 }}
                   >
                     <MuiIcons.ImageSearchOutlined fontSize="small" />
@@ -555,16 +559,29 @@ export const Inspector: React.FC<InspectorProps> = ({
                   </Box>
 
                   {/* Background Image */}
-                  <FilePicker
-                    label="Background Image"
-                    value={currentView.style.backgroundImage || ''}
-                    onChange={(filePath) => {
-                      onUpdateView(currentView.id, {
-                        style: { ...currentView.style, backgroundImage: filePath }
-                      });
-                    }}
-                    description="Browse images from server or enter URL"
-                  />
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 2 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <FilePicker
+                        label="Background Image"
+                        value={currentView.style.backgroundImage || ''}
+                        onChange={(filePath) => {
+                          onUpdateView(currentView.id, {
+                            style: { ...currentView.style, backgroundImage: filePath }
+                          });
+                        }}
+                        description="Browse images from server or enter URL"
+                      />
+                    </Box>
+                    <Tooltip title="Search Pixabay for free images">
+                      <IconButton
+                        size="small"
+                        onClick={() => openPixabay((path) => onUpdateView(currentView.id, { style: { ...currentView.style, backgroundImage: path } }))}
+                        sx={{ mt: 0.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1, flexShrink: 0 }}
+                      >
+                        <MuiIcons.ImageSearchOutlined fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
 
                   {/* View Resolution */}
                   <Box sx={{ mb: 2 }}>
@@ -829,12 +846,25 @@ export const Inspector: React.FC<InspectorProps> = ({
                         value={styleWidget?.config.style?.backgroundColor ?? '#ffffff'}
                         onChange={(color) => applyStyleUpdate({ backgroundColor: color })}
                       />
-                      <FilePicker
-                        label="Background Image"
-                        value={styleWidget?.config.style?.backgroundImage ?? ''}
-                        onChange={(filePath) => applyStyleUpdate({ backgroundImage: filePath })}
-                        description="Select image from server or enter URL"
-                      />
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <FilePicker
+                            label="Background Image"
+                            value={styleWidget?.config.style?.backgroundImage ?? ''}
+                            onChange={(filePath) => applyStyleUpdate({ backgroundImage: filePath })}
+                            description="Select image from server or enter URL"
+                          />
+                        </Box>
+                        <Tooltip title="Search Pixabay for free images">
+                          <IconButton
+                            size="small"
+                            onClick={() => openPixabay((path) => applyStyleUpdate({ backgroundImage: path }))}
+                            sx={{ mt: 0.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1, flexShrink: 0 }}
+                          >
+                            <MuiIcons.ImageSearchOutlined fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                       <TextField
                         fullWidth
                         type="number"
@@ -1468,7 +1498,7 @@ export const Inspector: React.FC<InspectorProps> = ({
         open={pixabayOpen}
         onClose={() => setPixabayOpen(false)}
         onSelect={(localPath) => {
-          handleFieldChange(pixabayTargetField, localPath);
+          pixabayCallback.current?.(localPath);
           setPixabayOpen(false);
         }}
       />
