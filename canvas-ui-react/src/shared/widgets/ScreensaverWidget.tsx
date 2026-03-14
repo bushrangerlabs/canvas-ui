@@ -28,7 +28,7 @@ const ScreensaverWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   const {
     mode             = 'dim',
     dimOpacity       = 85,
-    navigateToView   = '',
+    navigateToView   = '',  // view name, slug, or ID — resolved at runtime
     idleTimeout      = 120,
     dismissOnTouch   = true,
     dismissOnKeyboard = true,
@@ -211,7 +211,8 @@ export const screensaverWidgetMetadata: WidgetMetadata = {
     { name: 'dimOpacity',        type: 'slider',   label: 'Dim Opacity %',       default: 85,       category: 'style',
       min: 0, max: 100, step: 1,
       visibleWhen: { field: 'mode', value: 'dim' } },
-    { name: 'navigateToView',    type: 'text',     label: 'Screensaver View ID', default: '',       category: 'behavior',
+    { name: 'navigateToView',    type: 'text',     label: 'Screensaver View',    default: '',       category: 'behavior',
+      description: 'View name to navigate to (spaces or hyphens both work, e.g. "My View" or "my-view")',
       visibleWhen: { field: 'mode', value: 'navigate' } },
     { name: 'idleTimeout',       type: 'number',   label: 'Idle Timeout (s)',    default: 120,      category: 'behavior' },
     { name: 'dismissOnTouch',    type: 'checkbox', label: 'Dismiss on Touch',    default: true,     category: 'behavior' },

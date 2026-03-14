@@ -32,11 +32,32 @@ const Runtime: React.FC = () => {
   const updateActiveViewRef = React.useRef(updateActiveView);
   useEffect(() => { updateActiveViewRef.current = updateActiveView; });
 
-  // Handle canvas-navigate-view events dispatched by ScreensaverWidget
+  // Keep a stable config ref so navigate handler always sees latest views
+  const configRef = React.useRef(config);
+  useEffect(() => { configRef.current = config; }, [config]);
+
+  // Handle canvas-navigate-view events dispatched by ScreensaverWidget / flow nodes
+  // Accepts: exact view ID, exact view name, or slug (spaces → hyphens, case-insensitive)
   useEffect(() => {
     const handleNavigate = (e: Event) => {
-      const viewId = (e as CustomEvent<{ viewId: string }>).detail?.viewId;
-      if (viewId) updateActiveViewRef.current(viewId);
+      const raw = (e as CustomEvent<{ viewId: string }>).detail?.viewId;
+      if (!raw) return;
+      const cfg = configRef.current;
+      if (cfg) {
+        const normalized = raw.toLowerCase().replace(/[-_]/g, ' ');
+        const found = cfg.views.find(v =>
+          v.id === raw ||
+          v.name === raw ||
+          v.name.toLowerCase() === normalized ||
+          v.name.toLowerCase().replace(/\s+/g, '-') === raw.toLowerCase()
+        );
+        if (found) {
+          updateActiveViewRef.current(found.id);
+          return;
+        }
+      }
+      // Fallback: treat as raw ID (backward compat)
+      updateActiveViewRef.current(raw);
     };
     window.addEventListener('canvas-navigate-view', handleNavigate);
     return () => window.removeEventListener('canvas-navigate-view', handleNavigate);

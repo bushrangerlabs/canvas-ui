@@ -32,7 +32,7 @@ export const IFrameWidgetMetadata: WidgetMetadata = {
       { value: 'entity', label: 'Entity State URL' }
     ]},
     { name: 'url', type: 'text', label: 'URL', default: '', category: 'behavior', description: 'External URL to embed' },
-    { name: 'viewId', type: 'text', label: 'View ID', default: '', category: 'behavior', description: 'View to embed (for urlType=view)' },
+    { name: 'viewId', type: 'text', label: 'View Name', default: '', category: 'behavior', description: 'View name to embed (spaces or hyphens both work, e.g. "My View" or "my-view")' },
     { name: 'entity_id', type: 'entity', label: 'URL Entity', default: '', category: 'behavior', description: 'Entity containing URL (for urlType=entity)' },
     { name: 'allowFullscreen', type: 'checkbox', label: 'Allow Fullscreen', default: true, category: 'behavior' },
     { name: 'sandbox', type: 'text', label: 'Sandbox', default: '', category: 'behavior', description: 'Security sandbox flags (e.g., allow-scripts allow-same-origin)' },
