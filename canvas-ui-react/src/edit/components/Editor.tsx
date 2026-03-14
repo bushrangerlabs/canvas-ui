@@ -546,6 +546,42 @@ const Editor: React.FC = () => {
     saveToHA();
   };
 
+  // Same size functions
+  const makeSameWidth = () => {
+    if (selectedWidgets.length < 2 || !currentView || !currentViewId) return;
+    const widgets = currentView.widgets.filter(w => selectedWidgets.includes(w.id));
+    // Use the first selected widget (in selection order) as the reference
+    const refId = selectedWidgets[0];
+    const ref = widgets.find(w => w.id === refId);
+    if (!ref) return;
+    const targetWidth = ref.position.width;
+    widgets.forEach(widget => {
+      if (widget.id === refId) return;
+      updateWidget(currentViewId, widget.id, {
+        position: { ...widget.position, width: targetWidth },
+        config: { ...widget.config, width: targetWidth },
+      });
+    });
+    saveToHA();
+  };
+
+  const makeSameHeight = () => {
+    if (selectedWidgets.length < 2 || !currentView || !currentViewId) return;
+    const widgets = currentView.widgets.filter(w => selectedWidgets.includes(w.id));
+    const refId = selectedWidgets[0];
+    const ref = widgets.find(w => w.id === refId);
+    if (!ref) return;
+    const targetHeight = ref.position.height;
+    widgets.forEach(widget => {
+      if (widget.id === refId) return;
+      updateWidget(currentViewId, widget.id, {
+        position: { ...widget.position, height: targetHeight },
+        config: { ...widget.config, height: targetHeight },
+      });
+    });
+    saveToHA();
+  };
+
   // Distribution functions
   const distributeHorizontal = () => {
     if (selectedWidgets.length < 3 || !currentView || !currentViewId) return;
@@ -871,6 +907,8 @@ const Editor: React.FC = () => {
           onAlignToViewCenterV={alignToViewCenterV}
           onDistributeH={distributeHorizontal}
           onDistributeV={distributeVertical}
+          onMakeSameWidth={makeSameWidth}
+          onMakeSameHeight={makeSameHeight}
           mode={mode}
           onModeChange={setMode}
         />

@@ -35,7 +35,8 @@ import {
     ZoomIn as ZoomInIcon,
     ZoomOut as ZoomOutIcon,
     RestartAlt as ZoomResetIcon,
-    Settings as SettingsIcon
+    Settings as SettingsIcon,
+    Height as HeightIcon
 } from '@mui/icons-material';
 import { AppBar, Box, Button, ButtonGroup, Divider, IconButton, MenuItem, Select, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -114,6 +115,9 @@ export interface CanvasToolbarProps {
   // Distribution
   onDistributeH: () => void;
   onDistributeV: () => void;
+  // Same size
+  onMakeSameWidth: () => void;
+  onMakeSameHeight: () => void;
 }
 
 export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
@@ -168,6 +172,8 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
   onAlignToViewCenterV,
   onDistributeH,
   onDistributeV,
+  onMakeSameWidth,
+  onMakeSameHeight,
 }) => {
   
   // Track sidebar width for dynamic positioning
@@ -484,6 +490,22 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
             tooltip: 'Distribute Vertical',
           },
         ],
+        [
+          {
+            type: 'icon-button' as const,
+            icon: <HeightIcon sx={{ transform: 'rotate(90deg)' }} />,
+            onAction: onMakeSameWidth,
+            disabled: selectedCount < 2,
+            tooltip: 'Make Same Width (matches first selected)',
+          },
+          {
+            type: 'icon-button' as const,
+            icon: <HeightIcon />,
+            onAction: onMakeSameHeight,
+            disabled: selectedCount < 2,
+            tooltip: 'Make Same Height (matches first selected)',
+          },
+        ],
       ],
     },
     // Grid section
@@ -647,7 +669,7 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
     
     return baseGroups;
   }, [
-    currentViewName, onViewsClick, onCloneView, onDeleteView, onExportView, onImportView, onFileManagerClick, onVariablesClick, onFlowsClick, onPromptTemplatesClick, onSettingsClick, mode, onModeChange, handleOpenKiosk, onAddWidget, canUndo, canRedo, onUndo, onRedo,
+    currentViewName, onViewsClick, onCloneView, onDeleteView, onExportView, onImportView, onFileManagerClick, onVariablesClick, onFlowsClick, onPromptTemplatesClick, onSettingsClick, mode, onModeChange, handleOpenKiosk, onAddWidget, canUndo, canRedo, onUndo, onRedo, onMakeSameWidth, onMakeSameHeight,
     selectedCount, onDelete, onDeleteAllWidgets, widgetCount, gridSnap, showGrid, gridSize, gridColor, gridLineWidth, gridBrightness, zoom,
     onToggleGridSnap, onToggleShowGrid, onGridSizeChange, onGridColorChange, onGridLineWidthChange, onGridBrightnessChange, onZoomIn, onZoomOut, onZoomReset,
     onAlignLeft, onAlignRight, onAlignTop, onAlignBottom, onAlignCenterH, onAlignCenterV, onAlignToViewCenterH, onAlignToViewCenterV,
