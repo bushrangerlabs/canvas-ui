@@ -52,9 +52,14 @@ const ScreensaverWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     setActive(true);
 
     if (mode === 'navigate' && navigateToView) {
-      originViewRef.current = useConfigStore.getState().currentViewId || null;
+      const originViewId = useConfigStore.getState().currentViewId || '';
+      originViewRef.current = originViewId;
+      // Dispatch to Runtime which owns both forward AND return navigation,
+      // surviving this widget's unmount when the view changes.
       window.dispatchEvent(
-        new CustomEvent('canvas-navigate-view', { detail: { viewId: navigateToView } })
+        new CustomEvent('canvas-screensaver-navigate', {
+          detail: { targetViewId: navigateToView, originViewId },
+        })
       );
     }
   }, [mode, navigateToView]);
@@ -64,10 +69,9 @@ const ScreensaverWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     activeRef.current = false;
     setActive(false);
 
-    if (mode === 'navigate' && originViewRef.current) {
-      window.dispatchEvent(
-        new CustomEvent('canvas-navigate-view', { detail: { viewId: originViewRef.current } })
-      );
+    if (mode === 'navigate') {
+      // Programmatic dismiss (flow node) — tell Runtime to return
+      window.dispatchEvent(new CustomEvent('canvas-screensaver-dismiss'));
       originViewRef.current = null;
     }
   }, [mode]);

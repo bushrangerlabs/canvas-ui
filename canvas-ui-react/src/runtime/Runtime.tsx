@@ -32,35 +32,94 @@ const Runtime: React.FC = () => {
   const updateActiveViewRef = React.useRef(updateActiveView);
   useEffect(() => { updateActiveViewRef.current = updateActiveView; });
 
-  // Keep a stable config ref so navigate handler always sees latest views
-  const configRef = React.useRef(config);
-  useEffect(() => { configRef.current = config; }, [config]);
+  // Helper: resolve a name/slug/id to a real view id using always-fresh store config
+  const resolveViewId = (raw: string): string | null => {
+    const cfg = useConfigStore.getState().config;
+    if (!cfg) return null;
+    const normalized = raw.toLowerCase().replace(/[-_]/g, ' ');
+    const found = cfg.views.find(v =>
+      v.id === raw ||
+      v.name === raw ||
+      v.name.toLowerCase() === normalized ||
+      v.name.toLowerCase().replace(/\s+/g, '-') === raw.toLowerCase()
+    );
+    return found ? found.id : null;
+  };
 
-  // Handle canvas-navigate-view events dispatched by ScreensaverWidget / flow nodes
-  // Accepts: exact view ID, exact view name, or slug (spaces → hyphens, case-insensitive)
+  // Handle canvas-navigate-view (generic view navigation from buttons, iframes, flows, etc.)
   useEffect(() => {
     const handleNavigate = (e: Event) => {
       const raw = (e as CustomEvent<{ viewId: string }>).detail?.viewId;
       if (!raw) return;
-      const cfg = configRef.current;
-      if (cfg) {
-        const normalized = raw.toLowerCase().replace(/[-_]/g, ' ');
-        const found = cfg.views.find(v =>
-          v.id === raw ||
-          v.name === raw ||
-          v.name.toLowerCase() === normalized ||
-          v.name.toLowerCase().replace(/\s+/g, '-') === raw.toLowerCase()
-        );
-        if (found) {
-          updateActiveViewRef.current(found.id);
-          return;
-        }
-      }
-      // Fallback: treat as raw ID (backward compat)
-      updateActiveViewRef.current(raw);
+      const resolved = resolveViewId(raw);
+      updateActiveViewRef.current(resolved ?? raw);
     };
     window.addEventListener('canvas-navigate-view', handleNavigate);
     return () => window.removeEventListener('canvas-navigate-view', handleNavigate);
+  }, []);
+
+  // Screensaver navigate mode: owns BOTH forward AND return navigation so the
+  // screensaver widget can unmount without breaking the return trip.
+  const screensaverOriginRef = React.useRef<string | null>(null);
+  const screensaverActivityHandlerRef = React.useRef<(() => void) | null>(null);
+
+  const clearScreensaverReturn = () => {
+    if (screensaverActivityHandlerRef.current) {
+      const events = ['mousedown', 'touchstart', 'keydown'] as const;
+      events.forEach(e => document.removeEventListener(e, screensaverActivityHandlerRef.current!));
+      screensaverActivityHandlerRef.current = null;
+    }
+    screensaverOriginRef.current = null;
+  };
+
+  useEffect(() => {
+    // canvas-screensaver-navigate: { targetViewId, originViewId }
+    const handleScreensaverNavigate = (e: Event) => {
+      const { targetViewId, originViewId } = (e as CustomEvent<{ targetViewId: string; originViewId: string }>).detail || {};
+      if (!targetViewId) return;
+
+      // Clear any previous screensaver return handler
+      clearScreensaverReturn();
+
+      // Navigate forward
+      const resolvedTarget = resolveViewId(targetViewId);
+      if (!resolvedTarget) return; // target view not found — abort
+      updateActiveViewRef.current(resolvedTarget);
+
+      // Store origin and wire up return-on-activity
+      screensaverOriginRef.current = originViewId || null;
+      if (originViewId) {
+        const returnHandler = () => {
+          clearScreensaverReturn();
+          const resolvedOrigin = resolveViewId(originViewId) ?? originViewId;
+          updateActiveViewRef.current(resolvedOrigin);
+        };
+        screensaverActivityHandlerRef.current = returnHandler;
+        const events = ['mousedown', 'touchstart', 'keydown'] as const;
+        // Small delay so the navigation itself doesn't immediately dismiss
+        setTimeout(() => {
+          if (screensaverActivityHandlerRef.current === returnHandler) {
+            events.forEach(e => document.addEventListener(e, returnHandler, { once: true, passive: true }));
+          }
+        }, 500);
+      }
+    };
+
+    // canvas-screensaver-dismiss: programmatic dismiss (flow node, etc.)
+    const handleScreensaverDismiss = () => {
+      if (!screensaverOriginRef.current) return;
+      const origin = screensaverOriginRef.current;
+      clearScreensaverReturn();
+      const resolvedOrigin = resolveViewId(origin) ?? origin;
+      updateActiveViewRef.current(resolvedOrigin);
+    };
+
+    window.addEventListener('canvas-screensaver-navigate', handleScreensaverNavigate);
+    window.addEventListener('canvas-screensaver-dismiss', handleScreensaverDismiss);
+    return () => {
+      window.removeEventListener('canvas-screensaver-navigate', handleScreensaverNavigate);
+      window.removeEventListener('canvas-screensaver-dismiss', handleScreensaverDismiss);
+    };
   }, []);
 
   // Expose hass to window for Lovelace cards in kiosk/view mode
