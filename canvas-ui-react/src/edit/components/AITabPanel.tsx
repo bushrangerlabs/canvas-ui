@@ -244,7 +244,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
             } else if (provider === 'groq') {
               setError('No Groq models available. Check your API key in AI Settings.');
             } else if (provider === 'copilotproxy') {
-              setError('No Copilot Proxy models available. Is the proxy server running? Start with: cd copilot-proxy && npm start');
+              setError('No Coxy proxy models available. Is the server running? Start with: pnpx coxy');
             } else {
               setError('No Ollama models available. Please install models (e.g., ollama pull qwen2.5-coder:14b)');
             }
@@ -256,7 +256,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
           } else if (provider === 'groq') {
             setError('Failed to connect to Groq. Check your API key in AI Settings.');
           } else if (provider === 'copilotproxy') {
-            setError('Failed to connect to Copilot Proxy. Is the server running at http://localhost:3100?');
+            setError('Failed to connect to Coxy proxy. Is it running at http://localhost:3000?');
           } else {
             setError('Failed to connect to Ollama. Check that Ollama is running at http://192.168.1.204:11434');
           }

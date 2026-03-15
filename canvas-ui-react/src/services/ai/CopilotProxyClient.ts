@@ -1,13 +1,13 @@
 /**
  * CopilotProxyClient - GitHub Copilot Proxy integration
  * 
- * Connects to local Copilot Proxy server which provides access to:
- * - Claude 3.5 Sonnet (via GitHub Copilot Pro subscription)
- * - GPT-4, GPT-5, Gemini
+ * Connects to a Coxy proxy server (https://github.com/coxy-proxy/coxy) which
+ * exposes GitHub Copilot as OpenAI-compatible APIs:
+ * - GPT-4, GPT-4.1, GPT-4o, Claude models
  * - All other GitHub Copilot models
  * 
- * Proxy server: /home/spetchal/Code/HADD/copilot-proxy/
- * Start with: cd copilot-proxy && npm start
+ * Start Coxy with: pnpx coxy  (then open http://localhost:3000 to get a token)
+ * API base URL: http://localhost:3000/api
  */
 
 export type VisionContent =
@@ -69,7 +69,7 @@ export class CopilotProxyClient {
 
   constructor(
     token: string, 
-    baseUrl: string = 'http://localhost:3100/v1'
+    baseUrl: string = 'http://localhost:3000/api'
   ) {
     this.token = token;
     this.baseUrl = baseUrl;
@@ -107,8 +107,8 @@ export class CopilotProxyClient {
         // Provide helpful error messages
         if (response.status === 0 || response.status === 504) {
           throw new Error(
-            `Copilot Proxy server not reachable at ${this.baseUrl}. ` +
-            `Is the server running? Start with: cd copilot-proxy && npm start`
+            `Coxy proxy server not reachable at ${this.baseUrl}. ` +
+            `Is the server running? Start with: pnpx coxy`
           );
         }
         
@@ -124,8 +124,8 @@ export class CopilotProxyClient {
     } catch (error: unknown) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error(
-          `Cannot connect to Copilot Proxy at ${this.baseUrl}. ` +
-          `Make sure the proxy server is running (npm start in copilot-proxy folder).`
+          `Cannot connect to Coxy proxy at ${this.baseUrl}. ` +
+          `Make sure the proxy server is running (pnpx coxy).`
         );
       }
       console.error('[CopilotProxyClient] Chat request failed:', error);
@@ -151,7 +151,7 @@ export class CopilotProxyClient {
       if (!response.ok) {
         if (response.status === 0 || response.status === 504) {
           throw new Error(
-            `Copilot Proxy server not running. Start with: cd copilot-proxy && npm start`
+            `Coxy proxy server not running. Start with: pnpx coxy`
           );
         }
         throw new Error(`Failed to fetch models: ${response.status}`);
@@ -180,7 +180,7 @@ export class CopilotProxyClient {
 
   /**
    * Set base URL for proxy server
-   * @param baseUrl - Base URL (default: http://localhost:3100/v1)
+   * @param baseUrl - Base URL (default: http://localhost:3000/api)
    */
   setBaseUrl(baseUrl: string): void {
     this.baseUrl = baseUrl;
@@ -200,7 +200,7 @@ export const getCopilotProxyClient = (
         (baseUrl && copilotProxyClientInstance['baseUrl'] !== baseUrl)) {
       copilotProxyClientInstance = new CopilotProxyClient(
         token, 
-        baseUrl || 'http://localhost:3100/v1'
+        baseUrl || 'http://localhost:3000/api'
       );
     }
   }

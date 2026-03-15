@@ -223,7 +223,7 @@ Canvas UI includes a built-in AI assistant that can generate complete views from
 
 **Supported AI backends** (configured in AI Settings within Canvas UI):
 
-- **GitHub Copilot Proxy** - Use a self-hosted [copilot-proxy](https://github.com/nicholasgasior/copilot-proxy) with your GitHub Copilot subscription
+- **GitHub Copilot Proxy** - Use a self-hosted [Coxy](https://github.com/coxy-proxy/coxy) proxy with your GitHub Copilot subscription
 - **Open WebUI** - Connect to a running [Open WebUI](https://github.com/open-webui/open-webui) instance
 - **Ollama** - Connect to a local [Ollama](https://ollama.com/) instance
 - **Groq** - Use Groq's cloud API for fast inference

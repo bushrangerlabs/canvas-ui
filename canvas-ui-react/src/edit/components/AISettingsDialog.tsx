@@ -104,7 +104,7 @@ export const AISettingsDialog: React.FC<Props> = ({
   openWebUIUrl: externalOpenWebUIUrl = 'http://localhost:3000',
   openWebUIApiKey: externalOpenWebUIApiKey = '',
   copilotProxyToken: externalCopilotProxyToken = '',
-  copilotProxyUrl: externalCopilotProxyUrl = 'http://localhost:3100/v1',
+  copilotProxyUrl: externalCopilotProxyUrl = 'http://localhost:3000/api',
   onProviderChange,
   onApiKeyChange,
   onGitHubTokenChange,
@@ -576,8 +576,8 @@ export const AISettingsDialog: React.FC<Props> = ({
                       label="Proxy Server URL"
                       value={localCopilotProxyUrl}
                       onChange={handleCopilotProxyUrlChangeLocal}
-                      placeholder="http://localhost:3100/v1"
-                      helperText="URL of your local Copilot Proxy server (default: http://localhost:3100/v1)"
+                      placeholder="http://localhost:3000/api"
+                      helperText="URL of your running Coxy proxy server (default: http://localhost:3000/api)"
                       InputProps={{
                         startAdornment: (
                           <Box sx={{ mr: 1, display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
@@ -592,7 +592,7 @@ export const AISettingsDialog: React.FC<Props> = ({
                       <strong>Setup Required:</strong>
                     </Typography>
                     <Typography variant="caption" component="div" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                      {'# 1. Authenticate with GitHub Copilot Pro\ngh auth login\n\n# 2. Install Copilot extension\ngh extension install github/gh-copilot\n\n# 3. Start proxy server\ncd /home/spetchal/Code/HADD/copilot-proxy\nnpm start'}
+                      {'# 1. Start Coxy proxy server\npnpx coxy\n# (or: npx coxy, or Docker: docker run -p 3000:3000 ghcr.io/coxy-proxy/coxy:latest)\n\n# 2. Open http://localhost:3000 and log in with GitHub\n# 3. Generate an API token in the dashboard\n# 4. Paste it in the GitHub Token field above'}
                     </Typography>
                   </Box>
                 </>

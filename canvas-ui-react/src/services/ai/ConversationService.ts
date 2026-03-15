@@ -110,7 +110,7 @@ export class ConversationService {
   private openWebUIUrl: string = 'http://localhost:3000';
   private openWebUIApiKey: string = '';
   private copilotProxyToken: string = '';
-  private copilotProxyUrl: string = 'http://localhost:3100/v1';
+  private copilotProxyUrl: string = 'http://localhost:3000/api';
   
   private pendingImageDataUrl?: string; // Pending image for vision AI request
 

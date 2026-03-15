@@ -107,7 +107,7 @@ const Editor: React.FC = () => {
     return localStorage.getItem('canvasui_copilotproxy_token') || '';
   });
   const [aiCopilotProxyUrl, setAICopilotProxyUrl] = useState<string>(() => {
-    return localStorage.getItem('canvasui_copilotproxy_url') || 'http://localhost:3100/v1';
+    return localStorage.getItem('canvasui_copilotproxy_url') || 'http://localhost:3000/api';
   });
   
   // Advanced editor features
