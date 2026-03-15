@@ -19,6 +19,8 @@ const Runtime: React.FC = () => {
   const [loading, setLoading] = useState(true);
   // Track active view locally (don't use store's currentViewId to avoid URL sync)
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  // Track whether we've set an initial view (for hash handler's "no hash" fallback)
+  const viewInitializedRef = React.useRef(false);
   
   // Helper to update both local state and store without triggering URL sync
   const updateActiveView = (viewId: string) => {
@@ -218,13 +220,15 @@ const Runtime: React.FC = () => {
         });
         if (view) {
           console.log('[Runtime] Found matching view:', view.name, '(id:', view.id, ')');
+          viewInitializedRef.current = true;
           updateActiveView(view.id);
         } else {
           console.warn('[Runtime] No matching view found for hash:', hash);
         }
-      } else if (config && !activeViewId && config.views.length > 0) {
-        // Only set default view if no hash and no active view
+      } else if (config && !viewInitializedRef.current && config.views.length > 0) {
+        // Only set default view once (no hash present)
         console.log('[Runtime] No hash, setting default view:', config.views[0].name);
+        viewInitializedRef.current = true;
         updateActiveView(config.views[0].id);
       }
     };
@@ -233,7 +237,7 @@ const Runtime: React.FC = () => {
     handleHashChange(); // Initial load
 
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [config, activeViewId]);
+  }, [config]);
 
   if (loading) {
     return (
