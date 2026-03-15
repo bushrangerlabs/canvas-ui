@@ -1,17 +1,14 @@
-> [!CAUTION]
-> **This repository is under active development and not yet ready for general use.** Features may be incomplete or change without notice. Please check back soon for the first stable release.
-
 > [!WARNING]
-> **Canvas UI is a public beta.** While it is designed to be non-destructive and will not modify your existing Home Assistant configuration or dashboards, you should exercise caution. Install on a test instance first if possible. Please report any issues on [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues).
+> **Canvas UI is a public beta (v1.0.0).** It is designed to be non-destructive and will not modify your existing Home Assistant configuration or dashboards. Install on a test instance first if possible, and please report any issues on [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues).
 
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
-Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powerful React-based interface featuring 27 widgets, AI-assisted view generation, and professional dashboard creation tools.
+Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powerful React-based interface featuring 28 widgets, AI-assisted view generation, and professional dashboard creation tools.
 
 ## ✨ Features
 
 - 🎨 **Visual Drag-and-Drop Editor** - Intuitive canvas-based layout system
-- 🧩 **27 Professional Widgets** - Buttons, gauges, sliders, charts, weather, and more
+- 🧩 **28 Professional Widgets** - Buttons, gauges, sliders, charts, weather, screensaver, and more
 - 🃏 **Lovelace Card Widget** - Embed any Lovelace card and freely drag and place it anywhere on the canvas
 - 🤖 **AI View Generator** - Create entire dashboards from natural language prompts
 - 📱 **Kiosk Mode** - Full-screen display mode for wall panels and tablets
@@ -93,7 +90,8 @@ If you want to build locally:
 ```bash
 cd canvas-ui-react
 npm install
-./build.sh  # builds and copies output to custom_components/canvas_ui/frontend/
+cd ..
+./build.sh  # builds HACS version and copies to custom_components/canvas_ui/frontend/
 ```
 
 ## ⚙️ Configuration
@@ -238,8 +236,10 @@ All AI configuration is done inside Canvas UI — no changes to `configuration.y
 Access any view in fullscreen kiosk mode:
 
 ```
-http://your-ha-ip:8123/canvas-kiosk?view=viewname
+http://your-ha-ip:8123/canvas-kiosk#viewname
 ```
+
+Replace `viewname` with your view's name or ID (spaces and hyphens both work, e.g. `My View` → `#My%20View` or `#my-view`).
 
 Perfect for wall-mounted tablets and dedicated displays.
 
@@ -250,12 +250,11 @@ Perfect for wall-mounted tablets and dedicated displays.
 ```bash
 cd canvas-ui-react
 npm install
-npm run build:hacs
+cd ..
+./build.sh          # builds and copies to custom_components/canvas_ui/frontend/
+./deploy.sh         # build + SCP directly to HA server (requires .env with HA_HOST/HA_USER/HA_PASS)
+./release.sh 1.x.x  # build + tag + GitHub release (from main branch only)
 ```
-
-Output is in `canvas-ui-react/dist-hacs/` and automatically copied to `custom_components/canvas_ui/frontend/` by `./build.sh`.
-
-Then commit and push to GitHub, and reload via HACS.
 
 ## 📝 Configuration Storage
 
