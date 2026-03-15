@@ -48,19 +48,44 @@ cd /home/spetchal/Code/canvas-ui-hacs
 # NOTE: frontend/ is gitignored — built assets are NOT committed to git
 ```
 
-### Release via GitHub (HACS update method)
+### Branching model
+
+| Branch | Purpose |
+|---|---|
+| `main` | Stable releases only — what HACS users get |
+| `dev` | All active development — commits go here freely |
+
+**Day-to-day workflow:**
+- Do all work on `dev`
+- Quick iteration: `./deploy.sh` (SCP direct to HA, no git needed)
+- Test via HACS: `./release-beta.sh` from `dev` (pre-release, only visible with HACS beta enabled)
+- Ship to users: merge `dev → main` locally, then `./release.sh` from `main`
+
+### Stable release (from `main` only)
 
 ```bash
-cd /home/spetchal/Code/canvas-ui-hacs
-./release.sh 0.7.0 "Brief release notes here"
+git checkout main
+git merge dev          # bring in batched work
+./release.sh 1.0.1 "Brief release notes here"
+# Guards: exits if not on main branch
 # What it does:
-#   1. Bumps version in BOTH custom_components/canvas_ui/manifest.json AND manifest.json (repo root)
+#   1. Bumps version in BOTH manifest.json files (repo root AND custom_components/canvas_ui/)
 #   2. Runs build:hacs
-#   3. Zips contents of custom_components/canvas_ui/ with files AT zip root (no canvas_ui/ wrapper)
-#   4. Commits version bump, tags v0.7.0, pushes main + tag
+#   3. Zips contents of custom_components/canvas_ui/ with files AT zip root
+#   4. Commits version bump, tags v1.0.1, pushes main + tag
 #   5. Creates GitHub release, uploads canvas_ui.zip as release asset
 #   6. Deletes local zip
 # User then: HACS → Canvas UI → Update → Restart HA
+```
+
+### Beta release (from `dev` only)
+
+```bash
+git checkout dev
+./release-beta.sh 1.0.1-beta.1 "Testing new feature"
+# Guards: exits if not on dev branch
+# Creates a GitHub PRE-RELEASE — only visible to users with HACS beta versions enabled
+# To enable on your HA: HACS → Canvas UI → ⋮ → Enable pre-releases
 ```
 
 **HACS zip_release mode — CRITICAL details:**
