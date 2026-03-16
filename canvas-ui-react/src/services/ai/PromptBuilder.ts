@@ -171,6 +171,7 @@ CURRENT WIDGETS ON CANVAS:
 \`\`\`
 
 The user wants to make changes to this dashboard. Return the COMPLETE updated view with ALL widgets (including unchanged ones).
+IMPORTANT: Copy each widget's "id" field exactly as shown above — do NOT generate new IDs.
 `
     : '';
 

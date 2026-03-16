@@ -15,7 +15,7 @@ export interface PromptTemplates {
   outputFormat: string;
 }
 
-const TEMPLATE_VERSION = 31;  // Increment this when changing default templates
+const TEMPLATE_VERSION = 32;  // Increment this when changing default templates
 
 // Lazy generation - only create when first accessed
 let cachedCatalog: string | null = null;
@@ -60,6 +60,7 @@ Respond with ONLY the JSON - no explanations, no examples, no text.`.trim();
 3. When the user asks to modify ONE thing, keep EVERYTHING ELSE unchanged
 4. Return the COMPLETE updated view with ALL widgets (unchanged + modified + new)
 5. NEVER return partial responses - you must include every single widget
+6. PRESERVE existing widget IDs exactly — copy the "id" field from CURRENT WIDGETS unchanged; do NOT generate new IDs
 
 EXAMPLE EDIT REQUEST:
 User: "change the border radius to 30"
