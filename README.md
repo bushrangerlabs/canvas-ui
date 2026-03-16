@@ -3,7 +3,7 @@
 
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
-Canvas UI brings ioBroker.vis-style visual editing to Home Assistant with a powerful React-based interface featuring 28 widgets, AI-assisted view generation, and professional dashboard creation tools.
+Canvas UI brings Drag-and-Drop visual editing to Home Assistant with a powerful React-based interface featuring 28 widgets, AI-assisted view generation, and professional dashboard creation tools.
 
 ## ✨ Features
 
@@ -223,7 +223,7 @@ Canvas UI includes a built-in AI assistant that can generate complete views from
 
 **Supported AI backends** (configured in AI Settings within Canvas UI):
 
-- **GitHub Copilot Proxy** - Use a self-hosted [Coxy](https://github.com/coxy-proxy/coxy) proxy with your GitHub Copilot subscription
+- **Coxy - GitHub Copilot Proxy** - Use a self-hosted [Coxy](https://github.com/coxy-proxy/coxy) with your GitHub Copilot subscription
 - **Open WebUI** - Connect to a running [Open WebUI](https://github.com/open-webui/open-webui) instance
 - **Ollama** - Connect to a local [Ollama](https://ollama.com/) instance
 - **Groq** - Use Groq's cloud API for fast inference
