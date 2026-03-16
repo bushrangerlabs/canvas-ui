@@ -138,8 +138,11 @@ export function buildGenerationPrompt(
   const timestamp = new Date().toISOString();
   const isEditMode = currentWidgets.length > 0;
 
-  // Extract key requirements from user request
-  const taskBreakdown = buildTaskBreakdown(userRequest);
+  // Extract key requirements from user request (CREATE mode only — in EDIT mode
+  // the current widgets JSON is the authoritative context; the regex-based task
+  // breakdown can pollute the prompt by matching unrelated words, e.g.
+  // "border" in "border radius" triggers a hardcoded BORDER WIDGET template)
+  const taskBreakdown = isEditMode ? '' : buildTaskBreakdown(userRequest);
 
   // Choose system prompt based on mode
   const systemPrompt = isEditMode 

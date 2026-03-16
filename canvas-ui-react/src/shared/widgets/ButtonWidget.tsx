@@ -165,8 +165,13 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     fontSize = 16,
     fontWeight = 'normal',
     cornerRadius, // AI sometimes uses 'cornerRadius' (Lovelace card terminology)
+    // AI sometimes generates flat per-corner fields — normalise them here
+    cornerRadiusTopLeft,
+    cornerRadiusTopRight,
+    cornerRadiusBottomLeft,
+    cornerRadiusBottomRight,
     visibilityCondition,
-  } = config.config;
+  } = config.config as any;
 
   // Universal style from the inspector's Style tab
   const universalStyle = useResolvedUniversalStyle(config.config.style || {} as any);
@@ -439,10 +444,21 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     // Don't set border here - let universal styles handle it unless we're overriding during click feedback
     ...(feedbackBorderOverride ? { border: feedbackBorderOverride } : {}),
     // borderRadius applied by applyUniversalStyles via config.style.borderRadius
-    // cornerRadius fallback for AI-generated configs
-    ...(cornerRadius !== undefined ? { borderRadius: typeof cornerRadius === 'object'
-      ? `${(cornerRadius as any).topLeft||0}px ${(cornerRadius as any).topRight||0}px ${(cornerRadius as any).bottomRight||0}px ${(cornerRadius as any).bottomLeft||0}px`
-      : `${cornerRadius}px` } : {}),
+    // cornerRadius fallback for AI-generated configs (supports both number and object form)
+    // Also support flat aliases: cornerRadiusTopLeft/TopRight/BottomLeft/BottomRight
+    ...((() => {
+      // Flat per-corner aliases take precedence if any are set
+      const hasFlat = cornerRadiusTopLeft !== undefined || cornerRadiusTopRight !== undefined ||
+                      cornerRadiusBottomLeft !== undefined || cornerRadiusBottomRight !== undefined;
+      const effective = hasFlat
+        ? { topLeft: cornerRadiusTopLeft ?? 0, topRight: cornerRadiusTopRight ?? 0,
+            bottomRight: cornerRadiusBottomRight ?? 0, bottomLeft: cornerRadiusBottomLeft ?? 0 }
+        : cornerRadius;
+      if (effective === undefined) return {};
+      return { borderRadius: typeof effective === 'object'
+        ? `${(effective as any).topLeft||0}px ${(effective as any).topRight||0}px ${(effective as any).bottomRight||0}px ${(effective as any).bottomLeft||0}px`
+        : `${effective}px` };
+    })()),
     fontFamily,
     fontSize: `${fontSize}px`,
     fontWeight,

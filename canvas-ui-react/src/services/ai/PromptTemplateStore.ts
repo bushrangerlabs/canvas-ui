@@ -15,7 +15,7 @@ export interface PromptTemplates {
   outputFormat: string;
 }
 
-const TEMPLATE_VERSION = 30;  // Increment this when changing default templates
+const TEMPLATE_VERSION = 31;  // Increment this when changing default templates
 
 // Lazy generation - only create when first accessed
 let cachedCatalog: string | null = null;
@@ -45,6 +45,11 @@ CIRCULAR WIDGETS: To make a widget circular/round:
 - Make it square: width = height (e.g., 200x200)
 - Example: "round button" → {"width": 200, "height": 200, "cornerRadius": 360}
 
+PER-CORNER BORDER RADIUS: To set different corner radii, use config.style.borderRadius:
+- "style": {"borderRadius": {"topLeft": 30, "topRight": 30, "bottomRight": 0, "bottomLeft": 0}}
+- Example: "top rounded button" → {"config": {"style": {"borderRadius": {"topLeft": 30, "topRight": 30, "bottomRight": 0, "bottomLeft": 0}}}}
+- DO NOT use flat fields like cornerRadiusTopLeft — they are not supported.
+
 Respond with ONLY the JSON - no explanations, no examples, no text.`.trim();
 
   const editPrompt = `You are a Home Assistant dashboard expert EDITING an EXISTING dashboard.
@@ -73,6 +78,11 @@ CIRCULAR WIDGETS: To make a widget circular/round:
 - Set cornerRadius: 360 (all corners)
 - Make it square: width = height (e.g., 200x200)
 - Example: "round button" → {"width": 200, "height": 200, "cornerRadius": 360}
+
+PER-CORNER BORDER RADIUS: To set different corner radii, use config.style.borderRadius:
+- "style": {"borderRadius": {"topLeft": 30, "topRight": 30, "bottomRight": 0, "bottomLeft": 0}}
+- Example: "top rounded button" → {"config": {"style": {"borderRadius": {"topLeft": 30, "topRight": 30, "bottomRight": 0, "bottomLeft": 0}}}}
+- DO NOT use flat fields like cornerRadiusTopLeft — they are not supported.
 
 Respond with ONLY the JSON - no explanations, no examples, no text.`.trim();
   
