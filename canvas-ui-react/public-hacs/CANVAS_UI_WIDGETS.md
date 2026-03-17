@@ -1128,13 +1128,14 @@ Brightness, volume, temperature sliders
   },
   "config": {
     "text": "Breaking news...",
-    "entity_id": "sensor.ticker",
+    "entity_id": "",
     "scrollSpeed": 50,
     "pauseOnHover": true,
     "separator": "  •  ",
     "textColor": "#ffffff",
-    "backgroundColor": "#2196f3",
+    "backgroundColor": "transparent",
     "fontSize": 18,
+    "fontFamily": "Arial, sans-serif",
     "fontWeight": "normal"
   },
   "bindings": {}
@@ -1143,11 +1144,18 @@ Brightness, volume, temperature sliders
 
 **Properties:**
 
-- `text`, `entity_id`, `scrollSpeed` (pixels/sec, 10-200)
+- `text` (string) — static text to display
+- `entity_id` (string) — entity whose state replaces `text` when set
+- `scrollSpeed` (number, 10-200) — pixels per second
+- `pauseOnHover` (boolean) — stop scrolling on mouse hover
+- `separator` (string) — text inserted between repeated content, e.g. `"  •  "`
+- `textColor` (color) — text color, e.g. `"#ffffff"`
+- `backgroundColor` (color) — background fill, use `"transparent"` for no background
+- `fontSize` (number, 10-72) — font size in px
+- `fontFamily` (string) — CSS font family, e.g. `"Arial, sans-serif"`, `"Orbitron, sans-serif"`
+- `fontWeight` — `"normal"`, `"bold"`, `"300"` (light), `"500"` (medium)
 
 **Bindings:** `text` accepts `{...}` binding expressions. `entity_id` populates `text` from live entity state automatically. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
-- `pauseOnHover`, `separator`
-- `textColor`, `backgroundColor`, `fontSize`, `fontFamily`, `fontWeight`
 
 #### 26. keyboard - Virtual Keyboard
 
