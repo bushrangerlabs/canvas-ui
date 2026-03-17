@@ -137,11 +137,18 @@ export class OpenAIClient {
 
 // Singleton instance (will be initialized when API key is provided)
 let openAIClientInstance: OpenAIClient | null = null;
+let openAIClientBaseUrl: string = 'https://api.openai.com/v1';
 
-export const getOpenAIClient = (apiKey?: string): OpenAIClient | null => {
+export const getOpenAIClient = (apiKey?: string, baseUrl?: string): OpenAIClient | null => {
+  const resolvedBaseUrl = baseUrl || openAIClientBaseUrl;
   if (apiKey) {
-    if (!openAIClientInstance || openAIClientInstance['apiKey'] !== apiKey) {
-      openAIClientInstance = new OpenAIClient(apiKey);
+    if (
+      !openAIClientInstance ||
+      openAIClientInstance['apiKey'] !== apiKey ||
+      openAIClientInstance['baseUrl'] !== resolvedBaseUrl
+    ) {
+      openAIClientBaseUrl = resolvedBaseUrl;
+      openAIClientInstance = new OpenAIClient(apiKey, resolvedBaseUrl);
     }
   }
   return openAIClientInstance;

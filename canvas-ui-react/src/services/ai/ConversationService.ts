@@ -105,6 +105,7 @@ export class ConversationService {
   private provider: AIProvider = 'ollama';
   private model: string = 'qwen2.5-coder:14b';
   private openAIApiKey: string = '';
+  private openaiBaseUrl: string = 'https://api.openai.com/v1';
   private gitHubToken: string = '';
   private groqApiKey: string = '';
   private openWebUIUrl: string = 'http://localhost:3000';
@@ -158,6 +159,10 @@ export class ConversationService {
       const savedGroqApiKey = localStorage.getItem('canvasui_groq_apikey');
       const savedOpenWebUIUrl = localStorage.getItem('canvasui_openwebui_url');
       const savedOpenWebUIApiKey = localStorage.getItem('canvasui_openwebui_apikey');
+      const savedOpenAIBaseUrl = localStorage.getItem('canvasui_openai_baseurl');
+      if (savedOpenAIBaseUrl) {
+        this.openaiBaseUrl = savedOpenAIBaseUrl;
+      }
 
       if (savedModel) {
         this.model = savedModel;
@@ -171,7 +176,7 @@ export class ConversationService {
 
       if (savedApiKey) {
         this.openAIApiKey = savedApiKey;
-        getOpenAIClient(savedApiKey);
+        getOpenAIClient(savedApiKey, this.openaiBaseUrl);
         console.log('[ConversationService] Loaded OpenAI API key');
       }
 
@@ -239,11 +244,23 @@ export class ConversationService {
   setOpenAIApiKey(apiKey: string): void {
     this.openAIApiKey = apiKey;
     localStorage.setItem('canvasui_openai_apikey', apiKey);
-    getOpenAIClient(apiKey);
+    getOpenAIClient(apiKey, this.openaiBaseUrl);
   }
 
   getOpenAIApiKey(): string {
     return this.openAIApiKey;
+  }
+
+  setOpenAIBaseUrl(url: string): void {
+    this.openaiBaseUrl = url || 'https://api.openai.com/v1';
+    localStorage.setItem('canvasui_openai_baseurl', this.openaiBaseUrl);
+    if (this.openAIApiKey) {
+      getOpenAIClient(this.openAIApiKey, this.openaiBaseUrl);
+    }
+  }
+
+  getOpenAIBaseUrl(): string {
+    return this.openaiBaseUrl;
   }
 
   setGitHubToken(token: string): void {
@@ -424,7 +441,7 @@ export class ConversationService {
    */
   private async callOpenAI(prompt: string, timeoutMs: number = 180000): Promise<string> {
     try {
-      const client = getOpenAIClient(this.openAIApiKey);
+      const client = getOpenAIClient(this.openAIApiKey, this.openaiBaseUrl);
       if (!client) {
         throw new Error('OpenAI API key not configured');
       }
@@ -948,22 +965,27 @@ export class ConversationService {
    */
   async fetchOpenAIModels(): Promise<string[]> {
     try {
-      const client = getOpenAIClient(this.openAIApiKey);
+      const client = getOpenAIClient(this.openAIApiKey, this.openaiBaseUrl);
       if (!client) {
         throw new Error('OpenAI API key not configured');
       }
 
       console.log('[ConversationService] Fetching OpenAI models...');
       const models = await client.listModels();
-      const chatModels = models
-        .filter((m: any) => {
-          const id = m.id.toLowerCase();
-          if (!id.includes('gpt')) return false;
-          if (id.includes('realtime') || id.includes('audio') || id.includes('tts') || id.includes('whisper') || id.includes('dall-e')) return false;
-          return true;
-        })
-        .map((m: any) => m.id)
-        .sort();
+      // When using default openai.com, filter to chat models only.
+      // When using a custom base URL (e.g. OpenRouter), return all models.
+      const isDefaultOpenAI = this.openaiBaseUrl === 'https://api.openai.com/v1';
+      const chatModels = isDefaultOpenAI
+        ? models
+            .filter((m: any) => {
+              const id = m.id.toLowerCase();
+              if (!id.includes('gpt')) return false;
+              if (id.includes('realtime') || id.includes('audio') || id.includes('tts') || id.includes('whisper') || id.includes('dall-e')) return false;
+              return true;
+            })
+            .map((m: any) => m.id)
+            .sort()
+        : models.map((m: any) => m.id).sort();
 
       console.log('[ConversationService] Available models:', chatModels);
       return chatModels;

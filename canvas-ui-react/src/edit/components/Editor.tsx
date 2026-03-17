@@ -109,6 +109,9 @@ const Editor: React.FC = () => {
   const [aiCopilotProxyUrl, setAICopilotProxyUrl] = useState<string>(() => {
     return localStorage.getItem('canvasui_copilotproxy_url') || 'http://localhost:3000/api';
   });
+  const [aiOpenAIBaseUrl, setAIOpenAIBaseUrl] = useState<string>(() => {
+    return localStorage.getItem('canvasui_openai_baseurl') || 'https://api.openai.com/v1';
+  });
   
   // Advanced editor features
   const [gridSnap, setGridSnap] = useState(false);
@@ -1088,6 +1091,7 @@ const Editor: React.FC = () => {
           openWebUIApiKey={aiOpenWebUIApiKey}
           copilotProxyToken={aiCopilotProxyToken}
           copilotProxyUrl={aiCopilotProxyUrl}
+          openaiBaseUrl={aiOpenAIBaseUrl}
           onProviderChange={(provider) => {
             setAIProvider(provider);
             localStorage.setItem('canvasui_ai_provider', provider);
@@ -1133,6 +1137,12 @@ const Editor: React.FC = () => {
           onCopilotProxyUrlChange={(url) => {
             setAICopilotProxyUrl(url);
             localStorage.setItem('canvasui_copilotproxy_url', url);
+            // Trigger event for AITabPanel to reload
+            window.dispatchEvent(new CustomEvent('ai-settings-changed'));
+          }}
+          onOpenAIBaseUrlChange={(url) => {
+            setAIOpenAIBaseUrl(url);
+            localStorage.setItem('canvasui_openai_baseurl', url);
             // Trigger event for AITabPanel to reload
             window.dispatchEvent(new CustomEvent('ai-settings-changed'));
           }}

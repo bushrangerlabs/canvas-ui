@@ -44,6 +44,7 @@ interface Props {
   openWebUIApiKey?: string;
   copilotProxyToken?: string;
   copilotProxyUrl?: string;
+  openaiBaseUrl?: string;
   onProviderChange: (provider: AIProvider) => void;
   onApiKeyChange: (apiKey: string) => void;
   onGitHubTokenChange?: (token: string) => void;
@@ -52,6 +53,7 @@ interface Props {
   onOpenWebUIApiKeyChange?: (key: string) => void;
   onCopilotProxyTokenChange?: (token: string) => void;
   onCopilotProxyUrlChange?: (url: string) => void;
+  onOpenAIBaseUrlChange?: (url: string) => void;
 }
 
 interface TemplateSection {
@@ -105,6 +107,7 @@ export const AISettingsDialog: React.FC<Props> = ({
   openWebUIApiKey: externalOpenWebUIApiKey = '',
   copilotProxyToken: externalCopilotProxyToken = '',
   copilotProxyUrl: externalCopilotProxyUrl = 'http://localhost:3000/api',
+  openaiBaseUrl: externalOpenAIBaseUrl = 'https://api.openai.com/v1',
   onProviderChange,
   onApiKeyChange,
   onGitHubTokenChange,
@@ -112,7 +115,8 @@ export const AISettingsDialog: React.FC<Props> = ({
   onOpenWebUIUrlChange,
   onOpenWebUIApiKeyChange,
   onCopilotProxyTokenChange,
-  onCopilotProxyUrlChange
+  onCopilotProxyUrlChange,
+  onOpenAIBaseUrlChange,
 }) => {
   const [mainTab, setMainTab] = useState(0); // 0 = Settings, 1 = Prompts
   const [categoryTab, setCategoryTab] = useState(0); // Stage category (System, Stage 1, etc.)
@@ -140,6 +144,7 @@ export const AISettingsDialog: React.FC<Props> = ({
   const [localOpenWebUIApiKey, setLocalOpenWebUIApiKey] = useState(externalOpenWebUIApiKey);
   const [localCopilotProxyToken, setLocalCopilotProxyToken] = useState(externalCopilotProxyToken);
   const [localCopilotProxyUrl, setLocalCopilotProxyUrl] = useState(externalCopilotProxyUrl);
+  const [localOpenAIBaseUrl, setLocalOpenAIBaseUrl] = useState(externalOpenAIBaseUrl);
 
   // Reset state when dialog opens
   React.useEffect(() => {
@@ -157,6 +162,7 @@ export const AISettingsDialog: React.FC<Props> = ({
       setLocalOpenWebUIApiKey(externalOpenWebUIApiKey);
       setLocalCopilotProxyToken(externalCopilotProxyToken);
       setLocalCopilotProxyUrl(externalCopilotProxyUrl);
+      setLocalOpenAIBaseUrl(externalOpenAIBaseUrl);
       
       // Reset all templates to locked state
       const resetLocked: Record<string, boolean> = {};
@@ -167,7 +173,7 @@ export const AISettingsDialog: React.FC<Props> = ({
       });
       setLockedTemplates(resetLocked);
     }
-  }, [open, externalProvider, externalApiKey, externalGitHubToken, externalGroqApiKey, externalOpenWebUIUrl, externalOpenWebUIApiKey, externalCopilotProxyToken, externalCopilotProxyUrl]);
+  }, [open, externalProvider, externalApiKey, externalGitHubToken, externalGroqApiKey, externalOpenWebUIUrl, externalOpenWebUIApiKey, externalCopilotProxyToken, externalCopilotProxyUrl, externalOpenAIBaseUrl]);
 
   const handleSavePrompts = () => {
     promptTemplateStore.saveTemplates(templates);
@@ -249,6 +255,9 @@ export const AISettingsDialog: React.FC<Props> = ({
     }
     if (onCopilotProxyUrlChange) {
       onCopilotProxyUrlChange(localCopilotProxyUrl);
+    }
+    if (onOpenAIBaseUrlChange) {
+      onOpenAIBaseUrlChange(localOpenAIBaseUrl);
     }
     onClose();
   };
@@ -410,7 +419,7 @@ export const AISettingsDialog: React.FC<Props> = ({
                 </RadioGroup>
               </FormControl>
 
-              {/* OpenAI API Key */}
+              {/* OpenAI API Key + Base URL */}
               {localProvider === 'openai' && (
                 <Box sx={{ mb: 3 }}>
                   <TextField
@@ -421,6 +430,7 @@ export const AISettingsDialog: React.FC<Props> = ({
                     onChange={handleApiKeyChangeLocal}
                     placeholder="sk-..."
                     helperText="Your API key is stored locally and never sent to the server"
+                    sx={{ mb: 2 }}
                     InputProps={{
                       startAdornment: (
                         <Box sx={{ mr: 1, display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
@@ -428,6 +438,18 @@ export const AISettingsDialog: React.FC<Props> = ({
                         </Box>
                       ),
                     }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="API Base URL"
+                    value={localOpenAIBaseUrl}
+                    onChange={(e) => setLocalOpenAIBaseUrl(e.target.value)}
+                    placeholder="https://api.openai.com/v1"
+                    helperText={
+                      <span>
+                        Change to use OpenRouter (<code>https://openrouter.ai/api/v1</code>) or any OpenAI-compatible endpoint
+                      </span>
+                    }
                   />
                 </Box>
               )}
