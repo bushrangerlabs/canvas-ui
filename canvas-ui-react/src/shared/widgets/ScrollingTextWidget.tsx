@@ -35,7 +35,7 @@ export const ScrollingTextWidgetMetadata: WidgetMetadata = {
     
     // Style
     { name: 'textColor', type: 'color', label: 'Text Color', default: '#ffffff', category: 'style' },
-    { name: 'backgroundColor', type: 'color', label: 'Background Color', default: '#2196f3', category: 'style' },
+    { name: 'backgroundColor', type: 'color', label: 'Background Color', default: 'transparent', category: 'style' },
     { name: 'fontSize', type: 'number', label: 'Font Size', default: 18, min: 10, max: 72, category: 'style' },
     { name: 'fontFamily', type: 'font', label: 'Font Family', default: 'Arial, sans-serif', category: 'style' },
     { name: 'fontWeight', type: 'select', label: 'Font Weight', default: 'normal', category: 'style', options: [
@@ -60,7 +60,7 @@ const ScrollingTextWidget: React.FC<WidgetProps> = ({ config }) => {
     pauseOnHover = true,
     separator = '  •  ',
     textColor = '#ffffff',
-    backgroundColor = '#2196f3',
+    backgroundColor = 'transparent',
     fontSize = 18,
     fontFamily = 'Arial, sans-serif',
     fontWeight = 'normal',
