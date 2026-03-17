@@ -528,8 +528,27 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     height: tempSize ? tempSize.height : widget.position.height,
     zIndex: widget.config.style?.zIndex ?? widget.position.zIndex ?? 1,
     cursor: isEditMode && !isSelected ? 'pointer' : 'default',
-    // Apply border-radius to container for clipping children to shape
-    borderRadius: widget.config.style?.borderRadius ? (typeof widget.config.style.borderRadius === 'number' ? `${widget.config.style.borderRadius}px` : undefined) : undefined,
+    // Apply border-radius to container so box-shadow follows rounded corners.
+    // Priority: config.style.borderRadius (universal) > config.cornerRadius (widget-own field e.g. ButtonWidget)
+    borderRadius: (() => {
+      const styleRadius = widget.config.style?.borderRadius;
+      if (styleRadius !== undefined) {
+        if (typeof styleRadius === 'number') return `${styleRadius}px`;
+        if (typeof styleRadius === 'object') {
+          const r = styleRadius as any;
+          return `${r.topLeft ?? 0}px ${r.topRight ?? 0}px ${r.bottomRight ?? 0}px ${r.bottomLeft ?? 0}px`;
+        }
+      }
+      // Fallback: widget's own cornerRadius field (e.g. ButtonWidget stores radius here)
+      const cr = (widget.config as any).cornerRadius;
+      if (cr !== undefined) {
+        if (typeof cr === 'number') return `${cr}px`;
+        if (typeof cr === 'object') {
+          return `${cr.topLeft ?? 0}px ${cr.topRight ?? 0}px ${cr.bottomRight ?? 0}px ${cr.bottomLeft ?? 0}px`;
+        }
+      }
+      return undefined;
+    })(),
     // Selection border in edit mode
     border: isEditMode && isSelected ? '2px solid #2196f3' : isEditMode ? '1px dashed rgba(255, 255, 255, 0.3)' : 'none',
     // Only apply opacity during resize (backgroundOpacity is now handled in styleBuilder via rgba)
