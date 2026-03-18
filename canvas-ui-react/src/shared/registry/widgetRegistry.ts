@@ -27,6 +27,7 @@ import { RadioButtonWidgetMetadata } from '../widgets/RadioButtonWidget';
 import { resolutionWidgetMetadata } from '../widgets/ResolutionWidget';
 import { screensaverWidgetMetadata } from '../widgets/ScreensaverWidget';
 import { ScrollingTextWidgetMetadata } from '../widgets/ScrollingTextWidget';
+import { ShapeWidgetMetadata } from '../widgets/ShapeWidget';
 import { SliderWidgetMetadata } from '../widgets/SliderWidget';
 import { SwitchWidgetMetadata } from '../widgets/SwitchWidget';
 import { TextWidgetMetadata } from '../widgets/TextWidget';
@@ -67,6 +68,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetMetadata> = {
   graph: GraphWidgetMetadata,
   calendar: CalendarWidgetMetadata,
   scrollingtext: ScrollingTextWidgetMetadata,
+  shape: ShapeWidgetMetadata,
   screensaver: screensaverWidgetMetadata,
 };
 

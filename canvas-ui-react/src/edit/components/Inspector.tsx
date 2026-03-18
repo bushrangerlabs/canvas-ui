@@ -47,6 +47,9 @@ import { FilePicker } from './FilePicker';
 import { IconPicker } from './IconPicker';
 import { FontPicker } from './Inspector/FontPicker';
 import { PixabayPickerDialog } from './PixabayPickerDialog';
+import { ShapeEditorDialog } from './ShapeEditorDialog';
+import { SHAPE_PRESETS } from '../../shared/utils/buildSVGPath';
+import type { VertexPoint } from '../../shared/utils/buildSVGPath';
 
 interface InspectorProps {
   widget: WidgetConfig | null;
@@ -99,6 +102,9 @@ export const Inspector: React.FC<InspectorProps> = ({
   const [codeEditorField, setCodeEditorField] = useState<string>('');
   const [codeEditorValue, setCodeEditorValue] = useState<string>('');
   const [codeEditorLabel, setCodeEditorLabel] = useState<string>('');
+
+  // Shape editor state
+  const [shapeEditorOpen, setShapeEditorOpen] = useState(false);
 
   // Pixabay picker state
   const [pixabayOpen, setPixabayOpen] = useState(false);
@@ -711,6 +717,34 @@ export const Inspector: React.FC<InspectorProps> = ({
                     {widget.id}
                   </Typography>
                 </Box>
+
+                {/* Shape widget — Edit Shape button */}
+                {widget?.type === 'shape' && (
+                  <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<MuiIcons.PolylineOutlined />}
+                      onClick={() => setShapeEditorOpen(true)}
+                      sx={{ borderColor: 'rgba(0,212,255,0.5)', color: '#00d4ff', '&:hover': { borderColor: '#00d4ff', background: 'rgba(0,212,255,0.05)' } }}
+                    >
+                      Edit Shape
+                    </Button>
+                    <ShapeEditorDialog
+                      open={shapeEditorOpen}
+                      onClose={() => setShapeEditorOpen(false)}
+                      points={(widget.config?.points as VertexPoint[]) ?? SHAPE_PRESETS.rectangle}
+                      fillColor={widget.config?.fillColor as string}
+                      fillOpacity={widget.config?.fillOpacity as number}
+                      strokeColor={widget.config?.strokeColor as string}
+                      strokeWidth={widget.config?.strokeWidth as number}
+                      onApply={(newPoints) => {
+                        handleFieldChange('points', newPoints);
+                        setShapeEditorOpen(false);
+                      }}
+                    />
+                  </Box>
+                )}
 
                 {/* Widget Name Field (Foundation for Flow System) */}
                 <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(33, 150, 243, 0.05)' }}>

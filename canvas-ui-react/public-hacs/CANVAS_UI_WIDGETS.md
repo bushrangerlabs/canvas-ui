@@ -1227,7 +1227,72 @@ Brightness, volume, temperature sliders
 
 **Bindings:** Reference-only widget displaying canvas dimensions — no entity bindings. Also supports universal style bindings: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
----
+#### 28. shape - Custom Polygon Shape
+
+A decorative shape widget defined by a polygon with per-vertex corner modes. Useful for creating sci-fi panels, T-shapes, L-shapes, chamfered boxes, arrows, and any custom irregular outline.
+
+```json
+{
+  "id": "panel_1",
+  "type": "shape",
+  "position": {
+    "x": 50,
+    "y": 50,
+    "width": 300,
+    "height": 200,
+    "zIndex": 1
+  },
+  "config": {
+    "points": [
+      { "x": 0.15, "y": 0,    "corner": "sharp" },
+      { "x": 1,    "y": 0,    "corner": "chamfer", "radius": 24 },
+      { "x": 1,    "y": 1,    "corner": "sharp" },
+      { "x": 0,    "y": 1,    "corner": "chamfer", "radius": 24 },
+      { "x": 0,    "y": 0.18, "corner": "sharp" }
+    ],
+    "fillColor": "rgba(0,20,40,0.7)",
+    "fillOpacity": 1,
+    "strokeColor": "#00d4ff",
+    "strokeWidth": 2,
+    "strokeDashArray": "",
+    "glowColor": "#00d4ff",
+    "glowBlur": 8
+  },
+  "bindings": {}
+}
+```
+
+**Properties:**
+
+- `points` (array) — list of vertices defining the polygon shape:
+  - `x` (number 0–1) — horizontal position as fraction of widget width
+  - `y` (number 0–1) — vertical position as fraction of widget height
+  - `corner` — `"sharp"` | `"rounded"` | `"chamfer"`
+  - `radius` (number, px) — arc/cut size for rounded or chamfer modes; not needed for sharp
+- `fillColor` (color) — shape fill, use `"transparent"` for outline-only
+- `fillOpacity` (number 0–1) — fill transparency
+- `strokeColor` (color) — border line color
+- `strokeWidth` (number) — border line width in px (0 = no border)
+- `strokeDashArray` (string) — `"8 4"` = dashed, `"2 4"` = dotted, `""` = solid
+- `glowColor` (color) — color of the glow filter
+- `glowBlur` (number) — 0 = no glow, higher = stronger glow effect
+
+**Corner modes:**
+- `"sharp"` — hard vertex point (default)
+- `"rounded"` — smooth bezier arc of the given radius
+- `"chamfer"` — straight diagonal cut (angled edge) of the given depth
+
+**Preset shapes** (listed for AI reference, use as `points` arrays):
+- Rectangle: 4 sharp corners at `[0,0]`, `[1,0]`, `[1,1]`, `[0,1]`
+- Chamfered box: 4 chamfer corners, radius 24
+- T-shape: 8 points forming a T
+- L-shape: 6 points forming an L
+- Diamond: 4 points at top/right/bottom/left midpoints
+- Arrow right: 7 points
+
+**Note:** Use the visual editor (Inspector → Edit Shape button) to design the shape interactively. The AI can generate the `points` array directly from a description.
+
+**Bindings:** No entity bindings — pure decoration widget.
 
 ## Complete Example
 
