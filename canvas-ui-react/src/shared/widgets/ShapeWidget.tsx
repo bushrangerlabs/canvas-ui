@@ -74,6 +74,7 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
         strokeDasharray={strokeDashArray}
         strokeLinejoin="round"
         strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
       />
     </svg>
   );
