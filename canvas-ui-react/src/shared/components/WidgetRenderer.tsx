@@ -567,6 +567,11 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
       return undefined;
     })(),
     // NOTE: overflow is on the inner content div so shadow is never clipped
+    transform: (() => {
+      const rotation = widget.config.style?.rotation;
+      if (rotation !== undefined && rotation !== 0) return `rotate(${rotation}deg)`;
+      return undefined;
+    })(),
   };
 
   // Convert /config/www/ paths to /local/ for browser access
