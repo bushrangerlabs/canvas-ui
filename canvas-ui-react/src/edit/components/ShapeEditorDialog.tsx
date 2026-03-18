@@ -20,7 +20,6 @@ import {
   ToggleButtonGroup,
   TextField,
   Tooltip,
-  IconButton,
 } from '@mui/material';
 import * as MuiIcons from '@mui/icons-material';
 import { buildSVGPath, SHAPE_PRESETS, PRESET_LABELS, type VertexPoint } from '../../shared/utils/buildSVGPath';
