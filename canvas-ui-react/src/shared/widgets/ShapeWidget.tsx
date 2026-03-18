@@ -27,32 +27,27 @@ export const ShapeWidgetMetadata: WidgetMetadata = {
     { name: 'y',      type: 'number', label: 'Y Position', default: 0,   category: 'layout' },
     { name: 'width',  type: 'number', label: 'Width',      default: 200, min: 30, category: 'layout' },
     { name: 'height', type: 'number', label: 'Height',     default: 200, min: 30, category: 'layout' },
-
-    // Style
-    { name: 'fillColor',      type: 'color',  label: 'Fill Color',   default: 'transparent', category: 'style' },
-    { name: 'fillOpacity',    type: 'slider', label: 'Fill Opacity', default: 1,   min: 0, max: 1, step: 0.05, category: 'style' },
-    { name: 'strokeColor',    type: 'color',  label: 'Border Color', default: '#00d4ff', category: 'style' },
-    { name: 'strokeWidth',    type: 'number', label: 'Border Width', default: 2,   min: 0, max: 30, category: 'style' },
-    { name: 'strokeDashArray',type: 'text',   label: 'Dash Pattern', default: '',  category: 'style',
-      description: '"8 4" = dashed, "2 4" = dotted, empty = solid' },
-    { name: 'glowColor',      type: 'color',  label: 'Glow Color',   default: '#00d4ff', category: 'style' },
-    { name: 'glowBlur',       type: 'number', label: 'Glow Blur',    default: 0,   min: 0, max: 40, category: 'style',
-      description: '0 = no glow' },
+    // Fill, stroke, and shadow are controlled by the universal Background/Border/Shadow tabs.
   ],
 };
 
 const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
-  const {
-    fillColor       = 'transparent',
-    fillOpacity     = 1,
-    strokeColor     = '#00d4ff',
-    strokeWidth     = 2,
-    strokeDashArray = '',
-    glowBlur        = 0,
-    visibilityCondition,
-  } = config.config;
+  const style = config.config.style || {};
+  // Fill — from universal Background tab
+  const fillColor    = style.backgroundColor ?? 'transparent';
+  const fillOpacity  = style.backgroundOpacity ?? 1;
+  // Stroke — from universal Border tab
+  const strokeColor  = style.borderColor ?? '#00d4ff';
+  const strokeWidth  = typeof style.borderWidth === 'number' ? style.borderWidth : 2;
+  const strokeDashArray = (() => {
+    switch (style.borderStyle) {
+      case 'dashed': return '8 4';
+      case 'dotted': return '2 4';
+      default: return undefined;
+    }
+  })();
 
-  const isVisible = useVisibility(visibilityCondition);
+  const isVisible = useVisibility(config.config.visibilityCondition);
   if (!isVisible) return null;
 
   const points: VertexPoint[] = config.config.points ?? DEFAULT_POINTS;
@@ -60,7 +55,6 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
   const h = config.position?.height ?? 200;
 
   const pathD = buildSVGPath(points, w, h);
-  const filterId = `shape-glow-${config.id}`;
 
   return (
     <svg
@@ -71,27 +65,15 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
       overflow="visible"
       style={{ display: 'block' }}
     >
-      {glowBlur > 0 && (
-        <defs>
-          <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation={glowBlur / 2} result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-      )}
       <path
         d={pathD}
         fill={fillColor}
         fillOpacity={fillOpacity}
         stroke={strokeColor}
         strokeWidth={strokeWidth}
-        strokeDasharray={strokeDashArray || undefined}
+        strokeDasharray={strokeDashArray}
         strokeLinejoin="round"
         strokeLinecap="round"
-        filter={glowBlur > 0 ? `url(#${filterId})` : undefined}
       />
     </svg>
   );

@@ -734,10 +734,10 @@ export const Inspector: React.FC<InspectorProps> = ({
                       open={shapeEditorOpen}
                       onClose={() => setShapeEditorOpen(false)}
                       points={(widget.config?.points as VertexPoint[]) ?? SHAPE_PRESETS.rectangle}
-                      fillColor={widget.config?.fillColor as string}
-                      fillOpacity={widget.config?.fillOpacity as number}
-                      strokeColor={widget.config?.strokeColor as string}
-                      strokeWidth={widget.config?.strokeWidth as number}
+                      fillColor={widget.config?.style?.backgroundColor as string}
+                      fillOpacity={widget.config?.style?.backgroundOpacity as number}
+                      strokeColor={widget.config?.style?.borderColor as string}
+                      strokeWidth={typeof widget.config?.style?.borderWidth === 'number' ? widget.config.style.borderWidth : undefined}
                       onApply={(newPoints) => {
                         handleFieldChange('points', newPoints);
                         setShapeEditorOpen(false);
