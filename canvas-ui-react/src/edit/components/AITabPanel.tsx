@@ -3,7 +3,7 @@
  * Single Qwen 2.5 Coder 14B Model - 4-Stage Self-Validating Pipeline
  */
 
-import { AttachFile as AttachFileIcon, Cancel as CancelIcon, CheckCircle as CheckCircleIcon, ClearAll as ClearAllIcon, Close as CloseIcon, FormatListBulleted as EntitiesIcon, FormatListBulleted, Send as SendIcon } from '@mui/icons-material';
+import { Cancel as CancelIcon, CheckCircle as CheckCircleIcon, ClearAll as ClearAllIcon, FormatListBulleted as EntitiesIcon, FormatListBulleted, Send as SendIcon } from '@mui/icons-material';
 import {
     Badge,
     Box,
@@ -64,10 +64,6 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
   
   // NEW: Validation progress state
   const [validationAttempt, setValidationAttempt] = useState(0);
-  const [maxIterations, setMaxIterations] = useState(() => {
-    const saved = localStorage.getItem('ai-max-iterations');
-    return saved ? parseInt(saved, 10) : 10;
-  });
   const [lastScore, setLastScore] = useState<number | null>(null);
   // Store validation issues for future UI display (unused for now)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -96,10 +92,6 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Image attachment state
-  const [attachedImage, setAttachedImage] = useState<string | null>(null);
 
   // Listen for AI settings changes from the settings dialog
   useEffect(() => {
@@ -107,16 +99,23 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
       const newProvider = (localStorage.getItem('canvasui_ai_provider') as AIProvider) || 'ollama';
       const newApiKey = localStorage.getItem('canvasui_openai_apikey') || '';
       const newGitHubToken = localStorage.getItem('canvasui_github_token') || '';
+      const newOpenAIBaseUrl = localStorage.getItem('canvasui_openai_baseurl') || 'https://api.openai.com/v1';
       setProvider(newProvider);
       setApiKey(newApiKey);
       
       // Update service
       if (conversationServiceInstance) {
         conversationServiceInstance.setProvider(newProvider);
-        if (newProvider === 'openai' && newApiKey) {
-          conversationServiceInstance.setOpenAIApiKey(newApiKey);
+        if (newProvider === 'openai') {
+          if (newOpenAIBaseUrl) conversationServiceInstance.setOpenAIBaseUrl(newOpenAIBaseUrl);
+          if (newApiKey) conversationServiceInstance.setOpenAIApiKey(newApiKey);
         } else if (newProvider === 'github' && newGitHubToken) {
           conversationServiceInstance.setGitHubToken(newGitHubToken);
+        }
+        const savedTimeout = localStorage.getItem('canvasui_ai_timeout');
+        if (savedTimeout) {
+          const parsed = parseInt(savedTimeout, 10);
+          if (!isNaN(parsed) && parsed > 0) conversationServiceInstance.setRequestTimeout(parsed);
         }
       }
       
@@ -142,9 +141,6 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
     }
 
     const service = conversationServiceInstance;
-    
-    // Set max iterations from state
-    service.setMaxIterations(maxIterations);
     
     // Set provider and credentials from state
     service.setProvider(provider);
@@ -265,7 +261,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
       
       loadModels();
     }
-  }, [hass, agents.length, messages.length, selectedEntities.length, maxIterations, provider, apiKey]);
+  }, [hass, agents.length, messages.length, selectedEntities.length, provider, apiKey]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -387,7 +383,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
 
   const handleSendMessage = async () => {
     const service = conversationServiceInstance;
-    if ((!inputText.trim() && !attachedImage) || !service || !selectedAgent || !config || !currentViewId) return;
+    if (!inputText.trim() || !service || !selectedAgent || !config || !currentViewId) return;
 
     // Check if this is the first message and canvas is blank
     const isFirstMessage = messages.length === 0;
@@ -415,20 +411,18 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
 
     const userMessage: ChatMessage = {
       role: 'user',
-      content: inputText + (attachedImage ? '\n\n[Image attached]' : ''),
+      content: inputText,
       timestamp: Date.now(),
     };
 
-    const imageToSend = attachedImage;
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
-    setAttachedImage(null);
     setLoading(true);
     setError('');
     setLoadingMessage('Understanding your request...');
 
     try {
-      await handleAutomaticMode(service, inputText, imageToSend || undefined);
+      await handleAutomaticMode(service, inputText);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to get response from AI');
       console.error('AI chat error:', err);
@@ -440,13 +434,12 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
   };
 
   // Handle Automatic Mode (existing flow)
-  const handleAutomaticMode = async (service: any, userPrompt: string, imageDataUrl?: string) => {
+  const handleAutomaticMode = async (service: any, userPrompt: string) => {
     // NEW: Run Stage 1 (understanding) with user confirmation
     const result = await service.sendMessage(
       userPrompt,
       'replace', // Default mode
-      true, // awaitUserConfirmation
-      imageDataUrl // Vision image (optional)
+      true // awaitUserConfirmation
     );
 
     // Check if waiting for user confirmation
@@ -637,18 +630,6 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
   };
 
   // NEW: Handle user clicking "No, let me clarify"
-  const handleMaxIterationsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(event.target.value, 10);
-    if (value >= 1 && value <= 100) {
-      setMaxIterations(value);
-      localStorage.setItem('ai-max-iterations', value.toString());
-      const service = conversationServiceInstance;
-      if (service) {
-        service.setMaxIterations(value);
-      }
-    }
-  };
-
   const handleConfirmNo = () => {
     setShowConfirmation(false);
     
@@ -841,23 +822,6 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
               <EntitiesIcon fontSize="small" />
             </Badge>
           </IconButton>
-        </Tooltip>
-        <Tooltip title="Max validation iterations (1-100)">
-          <TextField
-            type="number"
-            value={maxIterations}
-            onChange={handleMaxIterationsChange}
-            disabled={loading}
-            size="small"
-            inputProps={{ min: 1, max: 100, step: 1 }}
-            sx={{ 
-              width: 110,
-              '& input': {
-                textAlign: 'center',
-                fontWeight: 'bold',
-              },
-            }}
-          />
         </Tooltip>
         <Tooltip title="Clear chat history">
           <span>
@@ -1071,7 +1035,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
               <Box flex={1}>
                 <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                  🔄 Attempt {validationAttempt}/{maxIterations}
+                  🔄 Generating...
                 </Typography>
                 <Typography variant="body2">
                   {progressMessage || 'AI is validating the generated widgets...'}
@@ -1101,8 +1065,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
               </Button>
             </Box>
             <LinearProgress 
-              variant="determinate" 
-              value={(validationAttempt / maxIterations) * 100}
+              variant="indeterminate"
               sx={{
                 height: 8,
                 borderRadius: 1,
@@ -1128,38 +1091,6 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
       </Box>
 
       {/* Input Field */}
-      {/* Hidden file input for image attachment */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-            setAttachedImage(evt.target?.result as string);
-          };
-          reader.readAsDataURL(file);
-          // Reset input so the same file can be re-selected
-          e.target.value = '';
-        }}
-      />
-      {/* Attached image thumbnail strip */}
-      {attachedImage && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, p: 0.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-          <img
-            src={attachedImage}
-            alt="attached"
-            style={{ height: 48, maxWidth: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.15)' }}
-          />
-          <Typography variant="caption" sx={{ flex: 1, color: 'text.secondary' }}>Image attached</Typography>
-          <IconButton size="small" onClick={() => setAttachedImage(null)} sx={{ color: 'error.main' }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      )}
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Tooltip title={selectedWidgetIds.length === 0 ? 'Select widgets on canvas first' : `Add ${selectedWidgetIds.length} selected widget${selectedWidgetIds.length === 1 ? '' : 's'} to message`}>
           <span>
@@ -1184,24 +1115,6 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Attach image — AI will describe/replicate what it sees">
-          <span>
-            <IconButton
-              size="small"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading || !selectedAgent || agents.length === 0}
-              sx={{
-                bgcolor: attachedImage ? 'success.dark' : 'action.disabledBackground',
-                color: attachedImage ? 'success.contrastText' : 'action.active',
-                '&:hover': { bgcolor: attachedImage ? 'success.main' : 'action.hover' },
-                minWidth: 40,
-                height: 40,
-              }}
-            >
-              <AttachFileIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
         <TextField
           fullWidth
           size="small"
@@ -1217,7 +1130,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
         <IconButton
           color="primary"
           onClick={handleSendMessage}
-          disabled={loading || (!inputText.trim() && !attachedImage) || !selectedAgent}
+          disabled={loading || !inputText.trim() || !selectedAgent}
           sx={{
             bgcolor: 'primary.main',
             color: 'primary.contrastText',
