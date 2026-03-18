@@ -48,7 +48,6 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
     strokeColor     = '#00d4ff',
     strokeWidth     = 2,
     strokeDashArray = '',
-    glowColor       = '#00d4ff',
     glowBlur        = 0,
     visibilityCondition,
   } = config.config;
@@ -57,8 +56,8 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
   if (!isVisible) return null;
 
   const points: VertexPoint[] = config.config.points ?? DEFAULT_POINTS;
-  const w = config.width  ?? 200;
-  const h = config.height ?? 200;
+  const w = config.position?.width  ?? 200;
+  const h = config.position?.height ?? 200;
 
   const pathD = buildSVGPath(points, w, h);
   const filterId = `shape-glow-${config.id}`;

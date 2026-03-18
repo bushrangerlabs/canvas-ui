@@ -164,7 +164,7 @@ export const ShapeEditorDialog: React.FC<Props> = ({
   }, []);
 
   // ── Corner cycling on click (no drag) ─────────────────────────────────────
-  const handleVertexClick = useCallback((e: React.MouseEvent, idx: number) => {
+  const handleVertexClick = useCallback((_e: React.MouseEvent, idx: number) => {
     const drag = dragRef.current;
     if (drag?.hasMoved) return; // was a drag, not a click
     setSelectedIdx(idx);
