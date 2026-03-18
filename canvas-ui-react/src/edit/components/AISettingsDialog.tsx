@@ -45,6 +45,7 @@ interface Props {
   copilotProxyToken?: string;
   copilotProxyUrl?: string;
   openaiBaseUrl?: string;
+  requestTimeout?: number;
   onProviderChange: (provider: AIProvider) => void;
   onApiKeyChange: (apiKey: string) => void;
   onGitHubTokenChange?: (token: string) => void;
@@ -54,6 +55,7 @@ interface Props {
   onCopilotProxyTokenChange?: (token: string) => void;
   onCopilotProxyUrlChange?: (url: string) => void;
   onOpenAIBaseUrlChange?: (url: string) => void;
+  onRequestTimeoutChange?: (ms: number) => void;
 }
 
 interface TemplateSection {
@@ -108,6 +110,7 @@ export const AISettingsDialog: React.FC<Props> = ({
   copilotProxyToken: externalCopilotProxyToken = '',
   copilotProxyUrl: externalCopilotProxyUrl = 'http://localhost:3000/api',
   openaiBaseUrl: externalOpenAIBaseUrl = 'https://api.openai.com/v1',
+  requestTimeout: externalRequestTimeout = 300000,
   onProviderChange,
   onApiKeyChange,
   onGitHubTokenChange,
@@ -117,6 +120,7 @@ export const AISettingsDialog: React.FC<Props> = ({
   onCopilotProxyTokenChange,
   onCopilotProxyUrlChange,
   onOpenAIBaseUrlChange,
+  onRequestTimeoutChange,
 }) => {
   const [mainTab, setMainTab] = useState(0); // 0 = Settings, 1 = Prompts
   const [categoryTab, setCategoryTab] = useState(0); // Stage category (System, Stage 1, etc.)
@@ -145,6 +149,7 @@ export const AISettingsDialog: React.FC<Props> = ({
   const [localCopilotProxyToken, setLocalCopilotProxyToken] = useState(externalCopilotProxyToken);
   const [localCopilotProxyUrl, setLocalCopilotProxyUrl] = useState(externalCopilotProxyUrl);
   const [localOpenAIBaseUrl, setLocalOpenAIBaseUrl] = useState(externalOpenAIBaseUrl);
+  const [localRequestTimeout, setLocalRequestTimeout] = useState(Math.round(externalRequestTimeout / 1000));
 
   // Reset state when dialog opens
   React.useEffect(() => {
@@ -163,6 +168,7 @@ export const AISettingsDialog: React.FC<Props> = ({
       setLocalCopilotProxyToken(externalCopilotProxyToken);
       setLocalCopilotProxyUrl(externalCopilotProxyUrl);
       setLocalOpenAIBaseUrl(externalOpenAIBaseUrl);
+      setLocalRequestTimeout(Math.round(externalRequestTimeout / 1000));
       
       // Reset all templates to locked state
       const resetLocked: Record<string, boolean> = {};
@@ -173,7 +179,7 @@ export const AISettingsDialog: React.FC<Props> = ({
       });
       setLockedTemplates(resetLocked);
     }
-  }, [open, externalProvider, externalApiKey, externalGitHubToken, externalGroqApiKey, externalOpenWebUIUrl, externalOpenWebUIApiKey, externalCopilotProxyToken, externalCopilotProxyUrl, externalOpenAIBaseUrl]);
+  }, [open, externalProvider, externalApiKey, externalGitHubToken, externalGroqApiKey, externalOpenWebUIUrl, externalOpenWebUIApiKey, externalCopilotProxyToken, externalCopilotProxyUrl, externalOpenAIBaseUrl, externalRequestTimeout]);
 
   const handleSavePrompts = () => {
     promptTemplateStore.saveTemplates(templates);
@@ -259,6 +265,9 @@ export const AISettingsDialog: React.FC<Props> = ({
     if (onOpenAIBaseUrlChange) {
       onOpenAIBaseUrlChange(localOpenAIBaseUrl);
     }
+    if (onRequestTimeoutChange) {
+      onRequestTimeoutChange(localRequestTimeout * 1000);
+    }
     onClose();
   };
 
@@ -284,7 +293,8 @@ export const AISettingsDialog: React.FC<Props> = ({
     localOpenWebUIUrl !== externalOpenWebUIUrl ||
     localOpenWebUIApiKey !== externalOpenWebUIApiKey ||
     localCopilotProxyToken !== externalCopilotProxyToken ||
-    localCopilotProxyUrl !== externalCopilotProxyUrl;
+    localCopilotProxyUrl !== externalCopilotProxyUrl ||
+    localRequestTimeout * 1000 !== externalRequestTimeout;
 
   return (
     <Dialog 
@@ -619,6 +629,22 @@ export const AISettingsDialog: React.FC<Props> = ({
                   </Box>
                 </>
               )}
+
+              {/* Request Timeout — general setting for all providers */}
+              <Box sx={{ mb: 3 }}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Request Timeout (seconds)"
+                  value={localRequestTimeout}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (!isNaN(v) && v > 0) setLocalRequestTimeout(v);
+                  }}
+                  inputProps={{ min: 30, max: 3600, step: 30 }}
+                  helperText="How long to wait for the AI to respond before giving up. Increase if you see timeout errors (default: 300s = 5 minutes)."
+                />
+              </Box>
 
               <Box sx={{ p: 2, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
                 <Typography variant="body2">

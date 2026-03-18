@@ -112,6 +112,9 @@ const Editor: React.FC = () => {
   const [aiOpenAIBaseUrl, setAIOpenAIBaseUrl] = useState<string>(() => {
     return localStorage.getItem('canvasui_openai_baseurl') || 'https://api.openai.com/v1';
   });
+  const [aiRequestTimeout, setAIRequestTimeout] = useState<number>(() => {
+    return parseInt(localStorage.getItem('canvasui_ai_timeout') || '300000', 10);
+  });
   
   // Advanced editor features
   const [gridSnap, setGridSnap] = useState(false);
@@ -1092,6 +1095,7 @@ const Editor: React.FC = () => {
           copilotProxyToken={aiCopilotProxyToken}
           copilotProxyUrl={aiCopilotProxyUrl}
           openaiBaseUrl={aiOpenAIBaseUrl}
+          requestTimeout={aiRequestTimeout}
           onProviderChange={(provider) => {
             setAIProvider(provider);
             localStorage.setItem('canvasui_ai_provider', provider);
@@ -1143,6 +1147,12 @@ const Editor: React.FC = () => {
           onOpenAIBaseUrlChange={(url) => {
             setAIOpenAIBaseUrl(url);
             localStorage.setItem('canvasui_openai_baseurl', url);
+            // Trigger event for AITabPanel to reload
+            window.dispatchEvent(new CustomEvent('ai-settings-changed'));
+          }}
+          onRequestTimeoutChange={(ms) => {
+            setAIRequestTimeout(ms);
+            localStorage.setItem('canvasui_ai_timeout', ms.toString());
             // Trigger event for AITabPanel to reload
             window.dispatchEvent(new CustomEvent('ai-settings-changed'));
           }}

@@ -112,6 +112,7 @@ export class ConversationService {
   private openWebUIApiKey: string = '';
   private copilotProxyToken: string = '';
   private copilotProxyUrl: string = 'http://localhost:3000/api';
+  private requestTimeoutMs: number = 300000; // 5 minute default
   
   private pendingImageDataUrl?: string; // Pending image for vision AI request
 
@@ -215,6 +216,15 @@ export class ConversationService {
       if (savedCopilotProxyUrl) {
         this.copilotProxyUrl = savedCopilotProxyUrl;
         console.log('[ConversationService] Loaded Copilot Proxy URL');
+      }
+
+      const savedTimeout = localStorage.getItem('canvasui_ai_timeout');
+      if (savedTimeout) {
+        const parsed = parseInt(savedTimeout, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          this.requestTimeoutMs = parsed;
+          console.log('[ConversationService] Loaded request timeout:', parsed, 'ms');
+        }
       }
     } catch (error) {
       console.error('[ConversationService] Failed to load settings:', error);
@@ -328,6 +338,15 @@ export class ConversationService {
   
   setMaxIterations(_maxIterations: number): void {
     // No-op - v19 doesn't use iterations
+  }
+
+  setRequestTimeout(ms: number): void {
+    this.requestTimeoutMs = ms;
+    localStorage.setItem('canvasui_ai_timeout', ms.toString());
+  }
+
+  getRequestTimeout(): number {
+    return this.requestTimeoutMs;
   }
 
   getMessages(): ChatMessage[] {
@@ -776,7 +795,7 @@ export class ConversationService {
       console.log('[generateView] Current widgets:', currentWidgets.length);
 
       // Single AI call
-      const aiResponse = await this.callAI(prompt, 180000);
+      const aiResponse = await this.callAI(prompt, this.requestTimeoutMs);
 
       // Add AI response to chat history
       this.chatHistory.push({
