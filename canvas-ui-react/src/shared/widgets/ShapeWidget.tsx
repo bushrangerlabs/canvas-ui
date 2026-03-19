@@ -3,7 +3,7 @@
  * Pure decoration/layout widget (no entity binding)
  */
 
-import React, { useId } from 'react';
+import React, { useId, useEffect, useState } from 'react';
 import { useVisibility } from '../../hooks/useVisibility';
 import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
@@ -63,6 +63,15 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
     return 'xMidYMid slice';                               // cover (default)
   })();
 
+  // Measure natural image size for tiling — falls back to 100×100 until loaded
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number }>({ w: 100, h: 100 });
+  useEffect(() => {
+    if (!imageUrl || !isTile) return;
+    const img = new window.Image();
+    img.onload = () => setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = imageUrl;
+  }, [imageUrl, isTile]);
+
   // Stroke — from universal Border tab
   const strokeColor     = style.borderColor ?? '#00d4ff';
   const strokeWidth     = typeof style.borderWidth === 'number' ? style.borderWidth : 2;
@@ -82,9 +91,9 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
   const h = config.position?.height ?? 200;
   const pathD = buildSVGPath(points, w, h);
 
-  // Tile size — use half the widget dimensions so the pattern is visible
-  const tileW = Math.max(w / 3, 20);
-  const tileH = Math.max(h / 3, 20);
+  // Tile cell = natural image size (preserves original pixel dimensions)
+  const tileW = naturalSize.w;
+  const tileH = naturalSize.h;
 
   return (
     <svg
@@ -102,9 +111,10 @@ const ShapeWidget: React.FC<WidgetProps> = ({ config }) => {
         </clipPath>
         {/* Pattern used for tile modes */}
         {imageUrl && isTile && (
-          <pattern id={patId} patternUnits="userSpaceOnUse" width={tileW} height={tileH}
-            patternTransform={bgRepeat === 'repeat-x' ? `scale(1,${h})` : bgRepeat === 'repeat-y' ? `scale(${w},1)` : ''}>
-            <image href={imageUrl} x="0" y="0" width={tileW} height={tileH} preserveAspectRatio="xMidYMid slice" />
+          <pattern id={patId} patternUnits="userSpaceOnUse"
+            width={bgRepeat === 'repeat-y' ? w : tileW}
+            height={bgRepeat === 'repeat-x' ? h : tileH}>
+            <image href={imageUrl} x="0" y="0" width={tileW} height={tileH} preserveAspectRatio="none" />
           </pattern>
         )}
       </defs>
