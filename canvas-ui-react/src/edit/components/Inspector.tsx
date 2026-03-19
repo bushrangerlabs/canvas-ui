@@ -912,6 +912,46 @@ export const Inspector: React.FC<InspectorProps> = ({
                         size="small"
                         sx={{ mb: 2 }}
                       />
+                      {/* Image Fit — only relevant when a background image is set */}
+                      {styleWidget?.config.style?.backgroundImage && (
+                        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                          <InputLabel>Image Fit</InputLabel>
+                          <Select
+                            value={(() => {
+                              const sz = styleWidget?.config.style?.backgroundSize;
+                              const rp = styleWidget?.config.style?.backgroundRepeat;
+                              if (rp === 'repeat')   return 'tile';
+                              if (rp === 'repeat-x') return 'tile-x';
+                              if (rp === 'repeat-y') return 'tile-y';
+                              if (sz === 'contain')     return 'contain';
+                              if (sz === '100% 100%')   return 'stretch';
+                              if (sz === 'auto' && (!rp || rp === 'no-repeat')) return 'auto';
+                              return 'cover';
+                            })()}
+                            onChange={(e) => {
+                              const fits: Record<string, object> = {
+                                cover:   { backgroundSize: 'cover',     backgroundRepeat: 'no-repeat' },
+                                contain: { backgroundSize: 'contain',   backgroundRepeat: 'no-repeat' },
+                                stretch: { backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' },
+                                auto:    { backgroundSize: 'auto',      backgroundRepeat: 'no-repeat' },
+                                tile:    { backgroundSize: 'auto',      backgroundRepeat: 'repeat' },
+                                'tile-x':{ backgroundSize: 'auto',      backgroundRepeat: 'repeat-x' },
+                                'tile-y':{ backgroundSize: 'auto',      backgroundRepeat: 'repeat-y' },
+                              };
+                              applyStyleUpdate(fits[e.target.value] ?? fits.cover);
+                            }}
+                            label="Image Fit"
+                          >
+                            <MenuItem value="cover">Cover (fill, crop to fit)</MenuItem>
+                            <MenuItem value="contain">Contain (fit inside)</MenuItem>
+                            <MenuItem value="stretch">Stretch (fill, distort)</MenuItem>
+                            <MenuItem value="auto">Original size</MenuItem>
+                            <MenuItem value="tile">Tile (repeat)</MenuItem>
+                            <MenuItem value="tile-x">Tile horizontal</MenuItem>
+                            <MenuItem value="tile-y">Tile vertical</MenuItem>
+                          </Select>
+                        </FormControl>
+                      )}
                     </AccordionDetails>
                   </Accordion>
 

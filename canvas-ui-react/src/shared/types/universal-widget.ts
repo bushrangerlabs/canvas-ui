@@ -48,7 +48,7 @@ export interface UniversalStyle {
   backgroundColor?: string;
   backgroundImage?: string; // URL or data URI
   backgroundOpacity?: number; // 0-1
-  backgroundSize?: 'cover' | 'contain' | 'auto';
+  backgroundSize?: string; // 'cover' | 'contain' | 'auto' | '100% 100%' etc.
   backgroundPosition?: string; // e.g., 'center', 'top left'
   backgroundRepeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
   

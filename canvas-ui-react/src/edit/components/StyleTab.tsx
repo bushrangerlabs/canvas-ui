@@ -9,6 +9,10 @@ import {
     AccordionDetails,
     AccordionSummary,
     Box,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Select,
     TextField,
     Typography,
 } from '@mui/material';
@@ -144,6 +148,47 @@ export const StyleTab: React.FC<StyleTabProps> = ({ widget, onUpdate }) => {
             size="small"
             sx={{ mb: 2 }}
           />
+
+          {style.backgroundImage && (
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+              <InputLabel>Image Fit</InputLabel>
+              <Select
+                value={(() => {
+                  const sz = style.backgroundSize;
+                  const rp = style.backgroundRepeat;
+                  if (rp === 'repeat')   return 'tile';
+                  if (rp === 'repeat-x') return 'tile-x';
+                  if (rp === 'repeat-y') return 'tile-y';
+                  if (sz === 'contain')     return 'contain';
+                  if (sz === '100% 100%')   return 'stretch';
+                  if (sz === 'auto' && (!rp || rp === 'no-repeat')) return 'auto';
+                  return 'cover';
+                })()}
+                onChange={(e) => {
+                  const fits: Record<string, object> = {
+                    cover:   { backgroundSize: 'cover',     backgroundRepeat: 'no-repeat' },
+                    contain: { backgroundSize: 'contain',   backgroundRepeat: 'no-repeat' },
+                    stretch: { backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' },
+                    auto:    { backgroundSize: 'auto',      backgroundRepeat: 'no-repeat' },
+                    tile:    { backgroundSize: 'auto',      backgroundRepeat: 'repeat' },
+                    'tile-x':{ backgroundSize: 'auto',      backgroundRepeat: 'repeat-x' },
+                    'tile-y':{ backgroundSize: 'auto',      backgroundRepeat: 'repeat-y' },
+                  };
+                  const preset = fits[e.target.value as string] as Record<string, string> ?? fits.cover as Record<string, string>;
+                  Object.entries(preset).forEach(([k, v]) => handleStyleChange(k as keyof UniversalStyle, v));
+                }}
+                label="Image Fit"
+              >
+                <MenuItem value="cover">Cover (fill, crop to fit)</MenuItem>
+                <MenuItem value="contain">Contain (fit inside)</MenuItem>
+                <MenuItem value="stretch">Stretch (fill, distort)</MenuItem>
+                <MenuItem value="auto">Original size</MenuItem>
+                <MenuItem value="tile">Tile (repeat)</MenuItem>
+                <MenuItem value="tile-x">Tile horizontal</MenuItem>
+                <MenuItem value="tile-y">Tile vertical</MenuItem>
+              </Select>
+            </FormControl>
+          )}
 
           <TextField
             fullWidth
