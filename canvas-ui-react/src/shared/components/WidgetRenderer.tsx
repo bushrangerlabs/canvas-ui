@@ -564,6 +564,34 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     };
   })();
 
+  // When chamfer clip-path is active, CSS border on the inner div can't draw along the diagonal cut.
+  // Render an SVG overlay that draws only the diagonal stroke segments so the border is complete.
+  const _chamferBorderOverlay = (() => {
+    if (!_cornerStyles.clipPath) return null;
+    const r = widget.config.style?.borderRadius;
+    if (!r || typeof r !== 'object') return null;
+    const bWidth = typeof widget.config.style?.borderWidth === 'number' ? widget.config.style.borderWidth : 0;
+    if (!bWidth || bWidth <= 0) return null;
+    const bColor = widget.config.style?.borderColor ?? 'currentColor';
+    const bStyle = widget.config.style?.borderStyle ?? 'solid';
+    const tl2 = (r as any).topLeftStyle    === 'chamfer' ? ((r as any).topLeft    ?? 0) : 0;
+    const tr2 = (r as any).topRightStyle   === 'chamfer' ? ((r as any).topRight   ?? 0) : 0;
+    const br2 = (r as any).bottomRightStyle === 'chamfer' ? ((r as any).bottomRight ?? 0) : 0;
+    const bl2 = (r as any).bottomLeftStyle  === 'chamfer' ? ((r as any).bottomLeft  ?? 0) : 0;
+    const pw = (tempSize || widget.position).width;
+    const ph = (tempSize || widget.position).height;
+    const segs: string[] = [];
+    if (tl2 > 0) segs.push(`M 0 ${tl2} L ${tl2} 0`);
+    if (tr2 > 0) segs.push(`M ${pw - tr2} 0 L ${pw} ${tr2}`);
+    if (br2 > 0) segs.push(`M ${pw} ${ph - br2} L ${pw - br2} ${ph}`);
+    if (bl2 > 0) segs.push(`M ${bl2} ${ph} L 0 ${ph - bl2}`);
+    if (segs.length === 0) return null;
+    let dasharray: string | undefined;
+    if (bStyle === 'dashed') dasharray = `${bWidth * 4} ${bWidth * 2}`;
+    else if (bStyle === 'dotted') dasharray = `${bWidth} ${bWidth}`;
+    return { d: segs.join(' '), stroke: bColor, strokeWidth: bWidth * 2, dasharray, pw, ph };
+  })();
+
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
     left: tempSize ? tempSize.x : (tempPosition ? tempPosition.x : widget.position.x),
@@ -689,6 +717,23 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         </>
       )}
       
+      {/* Chamfer border overlay — SVG strokes for the diagonal cuts that CSS border can't reach */}
+      {_chamferBorderOverlay && (
+        <svg
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 50, overflow: 'visible' }}
+          viewBox={`0 0 ${_chamferBorderOverlay.pw} ${_chamferBorderOverlay.ph}`}
+          preserveAspectRatio="none"
+        >
+          <path
+            d={_chamferBorderOverlay.d}
+            fill="none"
+            stroke={_chamferBorderOverlay.stroke}
+            strokeWidth={_chamferBorderOverlay.strokeWidth}
+            strokeDasharray={_chamferBorderOverlay.dasharray}
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      )}
       {/* Widget content layer - overflow:hidden here (not on container) so box-shadow is never clipped */}
       <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', overflow: 'hidden', borderRadius: 'inherit' }}>
         <Suspense fallback={<div style={{ color: '#666' }}>Loading...</div>}>
