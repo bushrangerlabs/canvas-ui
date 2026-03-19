@@ -521,6 +521,49 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     };
   }, [isDraggingManually, dragStart, dragStartPosition, onUpdate, allWidgets, onAlignmentGuides, tempPosition, widget.position, widget.id, onDragEnd, zoom, gridSnap, gridSize, viewBoundaries]);
 
+  // Compute corner styles.
+  // Rounded corners → CSS border-radius.
+  // Chamfered corners → CSS clip-path polygon (45° angled cut). Mixed mode: clip-path handles
+  // chamfered corners; border-radius simultaneously handles any remaining rounded corners.
+  const _cornerStyles: Pick<React.CSSProperties, 'borderRadius' | 'clipPath'> = (() => {
+    const styleRadius = widget.config.style?.borderRadius;
+    if (styleRadius === undefined) {
+      // Fallback: widget's own cornerRadius field (e.g. ButtonWidget stores radius here)
+      const cr = (widget.config as any).cornerRadius;
+      if (cr !== undefined) {
+        if (typeof cr === 'number') return { borderRadius: `${cr}px` };
+        if (typeof cr === 'object') {
+          return { borderRadius: `${cr.topLeft ?? 0}px ${cr.topRight ?? 0}px ${cr.bottomRight ?? 0}px ${cr.bottomLeft ?? 0}px` };
+        }
+      }
+      return {};
+    }
+    if (typeof styleRadius === 'number') return { borderRadius: `${styleRadius}px` };
+    // Object form — check for chamfer
+    const r = styleRadius as any;
+    const hasChamfer = r.topLeftStyle === 'chamfer' || r.topRightStyle === 'chamfer' ||
+      r.bottomRightStyle === 'chamfer' || r.bottomLeftStyle === 'chamfer';
+    if (!hasChamfer) {
+      return { borderRadius: `${r.topLeft ?? 0}px ${r.topRight ?? 0}px ${r.bottomRight ?? 0}px ${r.bottomLeft ?? 0}px` };
+    }
+    // Chamfer sizes (only for chamfered corners; 0 means sharp corner in clip-path)
+    const tl = r.topLeftStyle    === 'chamfer' ? (r.topLeft    ?? 0) : 0;
+    const tr = r.topRightStyle   === 'chamfer' ? (r.topRight   ?? 0) : 0;
+    const br = r.bottomRightStyle === 'chamfer' ? (r.bottomRight ?? 0) : 0;
+    const bl = r.bottomLeftStyle  === 'chamfer' ? (r.bottomLeft ?? 0) : 0;
+    // Rounded radii for any non-chamfered corners
+    const roundedTl = r.topLeftStyle    !== 'chamfer' ? (r.topLeft    ?? 0) : 0;
+    const roundedTr = r.topRightStyle   !== 'chamfer' ? (r.topRight   ?? 0) : 0;
+    const roundedBr = r.bottomRightStyle !== 'chamfer' ? (r.bottomRight ?? 0) : 0;
+    const roundedBl = r.bottomLeftStyle  !== 'chamfer' ? (r.bottomLeft ?? 0) : 0;
+    const anyRounded = roundedTl > 0 || roundedTr > 0 || roundedBr > 0 || roundedBl > 0;
+    return {
+      // Clockwise polygon: TL-cut → top edge → TR-cut → right edge → BR-cut → bottom edge → BL-cut → left edge
+      clipPath: `polygon(${tl}px 0%, calc(100% - ${tr}px) 0%, 100% ${tr}px, 100% calc(100% - ${br}px), calc(100% - ${br}px) 100%, ${bl}px 100%, 0% calc(100% - ${bl}px), 0% ${tl}px)`,
+      borderRadius: anyRounded ? `${roundedTl}px ${roundedTr}px ${roundedBr}px ${roundedBl}px` : undefined,
+    };
+  })();
+
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
     left: tempSize ? tempSize.x : (tempPosition ? tempPosition.x : widget.position.x),
@@ -529,27 +572,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     height: tempSize ? tempSize.height : widget.position.height,
     zIndex: widget.config.style?.zIndex ?? widget.position.zIndex ?? 1,
     cursor: isEditMode && !isSelected ? 'pointer' : 'default',
-    // Apply border-radius to container so box-shadow follows rounded corners.
-    // Priority: config.style.borderRadius (universal) > config.cornerRadius (widget-own field e.g. ButtonWidget)
-    borderRadius: (() => {
-      const styleRadius = widget.config.style?.borderRadius;
-      if (styleRadius !== undefined) {
-        if (typeof styleRadius === 'number') return `${styleRadius}px`;
-        if (typeof styleRadius === 'object') {
-          const r = styleRadius as any;
-          return `${r.topLeft ?? 0}px ${r.topRight ?? 0}px ${r.bottomRight ?? 0}px ${r.bottomLeft ?? 0}px`;
-        }
-      }
-      // Fallback: widget's own cornerRadius field (e.g. ButtonWidget stores radius here)
-      const cr = (widget.config as any).cornerRadius;
-      if (cr !== undefined) {
-        if (typeof cr === 'number') return `${cr}px`;
-        if (typeof cr === 'object') {
-          return `${cr.topLeft ?? 0}px ${cr.topRight ?? 0}px ${cr.bottomRight ?? 0}px ${cr.bottomLeft ?? 0}px`;
-        }
-      }
-      return undefined;
-    })(),
+    ..._cornerStyles,
     // Selection border in edit mode
     border: isEditMode && isSelected ? '2px solid #2196f3' : isEditMode ? '1px dashed rgba(255, 255, 255, 0.3)' : 'none',
     // Only apply opacity during resize (backgroundOpacity is now handled in styleBuilder via rgba)

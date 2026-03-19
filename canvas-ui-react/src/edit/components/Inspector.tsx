@@ -30,6 +30,8 @@ import {
     Tab,
     Tabs,
     TextField,
+    ToggleButton,
+    ToggleButtonGroup,
     Tooltip,
     Typography
 } from '@mui/material';
@@ -1019,95 +1021,147 @@ export const Inspector: React.FC<InspectorProps> = ({
                         size="small"
                         sx={{ mb: 2 }}
                       />
-                      {/* Border Radius - All Corners */}
+                      {/* Border Radius — per corner, with rounded / chamfer style toggle */}
                       <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                        Border Radius (px)
+                        Corners
                       </Typography>
                       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
-                        <TextField
-                          type="number"
-                          label="Top Left"
-                          value={
-                            typeof styleWidget?.config.style?.borderRadius === 'object'
-                              ? (styleWidget.config.style.borderRadius.topLeft ?? '')
-                              : typeof styleWidget?.config.style?.borderRadius === 'number'
-                              ? styleWidget.config.style.borderRadius
-                              : ''
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value === '' ? undefined : parseInt(e.target.value);
-                            const current = styleWidget?.config.style?.borderRadius;
-                            const newRadius = typeof current === 'object'
-                              ? { ...current, topLeft: value }
-                              : { topLeft: value, topRight: current || 0, bottomRight: current || 0, bottomLeft: current || 0 };
-                            applyStyleUpdate({ borderRadius: newRadius });
-                          }}
-                          inputProps={{ min: 0, max: 100, step: 1 }}
-                          size="small"
-                        />
-                        <TextField
-                          type="number"
-                          label="Top Right"
-                          value={
-                            typeof styleWidget?.config.style?.borderRadius === 'object'
-                              ? (styleWidget.config.style.borderRadius.topRight ?? '')
-                              : typeof styleWidget?.config.style?.borderRadius === 'number'
-                              ? styleWidget.config.style.borderRadius
-                              : ''
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value === '' ? undefined : parseInt(e.target.value);
-                            const current = styleWidget?.config.style?.borderRadius;
-                            const newRadius = typeof current === 'object'
-                              ? { ...current, topRight: value }
-                              : { topLeft: current || 0, topRight: value, bottomRight: current || 0, bottomLeft: current || 0 };
-                            applyStyleUpdate({ borderRadius: newRadius });
-                          }}
-                          inputProps={{ min: 0, max: 100, step: 1 }}
-                          size="small"
-                        />
-                        <TextField
-                          type="number"
-                          label="Bottom Left"
-                          value={
-                            typeof styleWidget?.config.style?.borderRadius === 'object'
-                              ? (styleWidget.config.style.borderRadius.bottomLeft ?? '')
-                              : typeof styleWidget?.config.style?.borderRadius === 'number'
-                              ? styleWidget.config.style.borderRadius
-                              : ''
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value === '' ? undefined : parseInt(e.target.value);
-                            const current = styleWidget?.config.style?.borderRadius;
-                            const newRadius = typeof current === 'object'
-                              ? { ...current, bottomLeft: value }
-                              : { topLeft: current || 0, topRight: current || 0, bottomRight: current || 0, bottomLeft: value };
-                            applyStyleUpdate({ borderRadius: newRadius });
-                          }}
-                          inputProps={{ min: 0, max: 100, step: 1 }}
-                          size="small"
-                        />
-                        <TextField
-                          type="number"
-                          label="Bottom Right"
-                          value={
-                            typeof styleWidget?.config.style?.borderRadius === 'object'
-                              ? (styleWidget.config.style.borderRadius.bottomRight ?? '')
-                              : typeof styleWidget?.config.style?.borderRadius === 'number'
-                              ? styleWidget.config.style.borderRadius
-                              : ''
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value === '' ? undefined : parseInt(e.target.value);
-                            const current = styleWidget?.config.style?.borderRadius;
-                            const newRadius = typeof current === 'object'
-                              ? { ...current, bottomRight: value }
-                              : { topLeft: current || 0, topRight: current || 0, bottomRight: value, bottomLeft: current || 0 };
-                            applyStyleUpdate({ borderRadius: newRadius });
-                          }}
-                          inputProps={{ min: 0, max: 100, step: 1 }}
-                          size="small"
-                        />
+                        {/* Top Left */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="caption" color="text.secondary">Top Left</Typography>
+                            <ToggleButtonGroup
+                              exclusive
+                              size="small"
+                              value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).topLeftStyle ?? 'rounded') : 'rounded'; })()}
+                              onChange={(_, v) => {
+                                if (!v) return;
+                                const current = styleWidget?.config.style?.borderRadius;
+                                const base = typeof current === 'object' ? current : { topLeft: current || 0, topRight: current || 0, bottomRight: current || 0, bottomLeft: current || 0 };
+                                applyStyleUpdate({ borderRadius: { ...base, topLeftStyle: v } });
+                              }}
+                              sx={{ height: 22 }}
+                            >
+                              <Tooltip title="Rounded"><ToggleButton value="rounded" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>R</ToggleButton></Tooltip>
+                              <Tooltip title="Chamfered (angled cut)"><ToggleButton value="chamfer" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>C</ToggleButton></Tooltip>
+                            </ToggleButtonGroup>
+                          </Box>
+                          <TextField
+                            type="number"
+                            label="Size"
+                            value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).topLeft ?? '') : typeof r === 'number' ? r : ''; })()}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                              const current = styleWidget?.config.style?.borderRadius;
+                              const newRadius = typeof current === 'object' ? { ...current, topLeft: value } : { topLeft: value, topRight: current || 0, bottomRight: current || 0, bottomLeft: current || 0 };
+                              applyStyleUpdate({ borderRadius: newRadius });
+                            }}
+                            inputProps={{ min: 0, max: 200, step: 1 }}
+                            size="small"
+                          />
+                        </Box>
+                        {/* Top Right */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="caption" color="text.secondary">Top Right</Typography>
+                            <ToggleButtonGroup
+                              exclusive
+                              size="small"
+                              value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).topRightStyle ?? 'rounded') : 'rounded'; })()}
+                              onChange={(_, v) => {
+                                if (!v) return;
+                                const current = styleWidget?.config.style?.borderRadius;
+                                const base = typeof current === 'object' ? current : { topLeft: current || 0, topRight: current || 0, bottomRight: current || 0, bottomLeft: current || 0 };
+                                applyStyleUpdate({ borderRadius: { ...base, topRightStyle: v } });
+                              }}
+                              sx={{ height: 22 }}
+                            >
+                              <Tooltip title="Rounded"><ToggleButton value="rounded" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>R</ToggleButton></Tooltip>
+                              <Tooltip title="Chamfered (angled cut)"><ToggleButton value="chamfer" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>C</ToggleButton></Tooltip>
+                            </ToggleButtonGroup>
+                          </Box>
+                          <TextField
+                            type="number"
+                            label="Size"
+                            value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).topRight ?? '') : typeof r === 'number' ? r : ''; })()}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                              const current = styleWidget?.config.style?.borderRadius;
+                              const newRadius = typeof current === 'object' ? { ...current, topRight: value } : { topLeft: current || 0, topRight: value, bottomRight: current || 0, bottomLeft: current || 0 };
+                              applyStyleUpdate({ borderRadius: newRadius });
+                            }}
+                            inputProps={{ min: 0, max: 200, step: 1 }}
+                            size="small"
+                          />
+                        </Box>
+                        {/* Bottom Left */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="caption" color="text.secondary">Bottom Left</Typography>
+                            <ToggleButtonGroup
+                              exclusive
+                              size="small"
+                              value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).bottomLeftStyle ?? 'rounded') : 'rounded'; })()}
+                              onChange={(_, v) => {
+                                if (!v) return;
+                                const current = styleWidget?.config.style?.borderRadius;
+                                const base = typeof current === 'object' ? current : { topLeft: current || 0, topRight: current || 0, bottomRight: current || 0, bottomLeft: current || 0 };
+                                applyStyleUpdate({ borderRadius: { ...base, bottomLeftStyle: v } });
+                              }}
+                              sx={{ height: 22 }}
+                            >
+                              <Tooltip title="Rounded"><ToggleButton value="rounded" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>R</ToggleButton></Tooltip>
+                              <Tooltip title="Chamfered (angled cut)"><ToggleButton value="chamfer" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>C</ToggleButton></Tooltip>
+                            </ToggleButtonGroup>
+                          </Box>
+                          <TextField
+                            type="number"
+                            label="Size"
+                            value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).bottomLeft ?? '') : typeof r === 'number' ? r : ''; })()}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                              const current = styleWidget?.config.style?.borderRadius;
+                              const newRadius = typeof current === 'object' ? { ...current, bottomLeft: value } : { topLeft: current || 0, topRight: current || 0, bottomRight: current || 0, bottomLeft: value };
+                              applyStyleUpdate({ borderRadius: newRadius });
+                            }}
+                            inputProps={{ min: 0, max: 200, step: 1 }}
+                            size="small"
+                          />
+                        </Box>
+                        {/* Bottom Right */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="caption" color="text.secondary">Bottom Right</Typography>
+                            <ToggleButtonGroup
+                              exclusive
+                              size="small"
+                              value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).bottomRightStyle ?? 'rounded') : 'rounded'; })()}
+                              onChange={(_, v) => {
+                                if (!v) return;
+                                const current = styleWidget?.config.style?.borderRadius;
+                                const base = typeof current === 'object' ? current : { topLeft: current || 0, topRight: current || 0, bottomRight: current || 0, bottomLeft: current || 0 };
+                                applyStyleUpdate({ borderRadius: { ...base, bottomRightStyle: v } });
+                              }}
+                              sx={{ height: 22 }}
+                            >
+                              <Tooltip title="Rounded"><ToggleButton value="rounded" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>R</ToggleButton></Tooltip>
+                              <Tooltip title="Chamfered (angled cut)"><ToggleButton value="chamfer" sx={{ px: 1, fontSize: 10, lineHeight: 1 }}>C</ToggleButton></Tooltip>
+                            </ToggleButtonGroup>
+                          </Box>
+                          <TextField
+                            type="number"
+                            label="Size"
+                            value={(() => { const r = styleWidget?.config.style?.borderRadius; return (typeof r === 'object' && r !== null) ? ((r as any).bottomRight ?? '') : typeof r === 'number' ? r : ''; })()}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                              const current = styleWidget?.config.style?.borderRadius;
+                              const newRadius = typeof current === 'object' ? { ...current, bottomRight: value } : { topLeft: current || 0, topRight: current || 0, bottomRight: value, bottomLeft: current || 0 };
+                              applyStyleUpdate({ borderRadius: newRadius });
+                            }}
+                            inputProps={{ min: 0, max: 200, step: 1 }}
+                            size="small"
+                          />
+                        </Box>
                       </Box>
                     </AccordionDetails>
                   </Accordion>

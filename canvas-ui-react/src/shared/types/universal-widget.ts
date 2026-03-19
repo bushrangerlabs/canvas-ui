@@ -26,13 +26,23 @@ export type BorderWidth = number | {
 };
 
 /**
- * Border radius - can be uniform or per-corner
+ * Corner style: rounded uses CSS border-radius; chamfer cuts the corner at 45°
+ */
+export type CornerStyle = 'rounded' | 'chamfer';
+
+/**
+ * Border radius - can be uniform or per-corner (with optional per-corner chamfer style)
+ * When any corner has style 'chamfer', clip-path polygon is used for that corner.
  */
 export type BorderRadius = number | {
   topLeft?: number;
   topRight?: number;
   bottomRight?: number;
   bottomLeft?: number;
+  topLeftStyle?: CornerStyle;
+  topRightStyle?: CornerStyle;
+  bottomRightStyle?: CornerStyle;
+  bottomLeftStyle?: CornerStyle;
 };
 
 /**
