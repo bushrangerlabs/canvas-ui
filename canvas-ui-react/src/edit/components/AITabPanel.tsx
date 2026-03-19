@@ -3,7 +3,7 @@
  * Single Qwen 2.5 Coder 14B Model - 4-Stage Self-Validating Pipeline
  */
 
-import { Cancel as CancelIcon, CheckCircle as CheckCircleIcon, ClearAll as ClearAllIcon, FormatListBulleted as EntitiesIcon, FormatListBulleted, Send as SendIcon } from '@mui/icons-material';
+import { AttachFile as AttachFileIcon, Cancel as CancelIcon, CheckCircle as CheckCircleIcon, ClearAll as ClearAllIcon, Close as CloseIcon, FormatListBulleted as EntitiesIcon, FormatListBulleted, Send as SendIcon } from '@mui/icons-material';
 import {
     Badge,
     Box,
@@ -92,6 +92,10 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image attachment state
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
 
   // Listen for AI settings changes from the settings dialog
   useEffect(() => {
@@ -383,7 +387,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
 
   const handleSendMessage = async () => {
     const service = conversationServiceInstance;
-    if (!inputText.trim() || !service || !selectedAgent || !config || !currentViewId) return;
+    if ((!inputText.trim() && !attachedImage) || !service || !selectedAgent || !config || !currentViewId) return;
 
     // Check if this is the first message and canvas is blank
     const isFirstMessage = messages.length === 0;
@@ -411,18 +415,20 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
 
     const userMessage: ChatMessage = {
       role: 'user',
-      content: inputText,
+      content: inputText + (attachedImage ? '\n\n[Image attached]' : ''),
       timestamp: Date.now(),
     };
 
+    const imageToSend = attachedImage;
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
+    setAttachedImage(null);
     setLoading(true);
     setError('');
     setLoadingMessage('Understanding your request...');
 
     try {
-      await handleAutomaticMode(service, inputText);
+      await handleAutomaticMode(service, inputText, imageToSend || undefined);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to get response from AI');
       console.error('AI chat error:', err);
@@ -434,12 +440,13 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
   };
 
   // Handle Automatic Mode (existing flow)
-  const handleAutomaticMode = async (service: any, userPrompt: string) => {
+  const handleAutomaticMode = async (service: any, userPrompt: string, imageDataUrl?: string) => {
     // NEW: Run Stage 1 (understanding) with user confirmation
     const result = await service.sendMessage(
       userPrompt,
       'replace', // Default mode
-      true // awaitUserConfirmation
+      true, // awaitUserConfirmation
+      imageDataUrl // Vision image (optional)
     );
 
     // Check if waiting for user confirmation
@@ -1091,6 +1098,38 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
       </Box>
 
       {/* Input Field */}
+      {/* Hidden file input for image attachment */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            setAttachedImage(evt.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+          // Reset input so the same file can be re-selected
+          e.target.value = '';
+        }}
+      />
+      {/* Attached image thumbnail strip */}
+      {attachedImage && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, p: 0.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+          <img
+            src={attachedImage}
+            alt="attached"
+            style={{ height: 48, maxWidth: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.15)' }}
+          />
+          <Typography variant="caption" sx={{ flex: 1, color: 'text.secondary' }}>Image attached</Typography>
+          <IconButton size="small" onClick={() => setAttachedImage(null)} sx={{ color: 'error.main' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )}
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Tooltip title={selectedWidgetIds.length === 0 ? 'Select widgets on canvas first' : `Add ${selectedWidgetIds.length} selected widget${selectedWidgetIds.length === 1 ? '' : 's'} to message`}>
           <span>
@@ -1115,6 +1154,24 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
             </IconButton>
           </span>
         </Tooltip>
+        <Tooltip title="Attach image — AI will describe/replicate what it sees">
+          <span>
+            <IconButton
+              size="small"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || !selectedAgent || agents.length === 0}
+              sx={{
+                bgcolor: attachedImage ? 'success.dark' : 'action.disabledBackground',
+                color: attachedImage ? 'success.contrastText' : 'action.active',
+                '&:hover': { bgcolor: attachedImage ? 'success.main' : 'action.hover' },
+                minWidth: 40,
+                height: 40,
+              }}
+            >
+              <AttachFileIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
         <TextField
           fullWidth
           size="small"
@@ -1130,7 +1187,7 @@ export const AITabPanel: React.FC<AITabPanelProps> = ({ currentView, selectedWid
         <IconButton
           color="primary"
           onClick={handleSendMessage}
-          disabled={loading || !inputText.trim() || !selectedAgent}
+          disabled={loading || (!inputText.trim() && !attachedImage) || !selectedAgent}
           sx={{
             bgcolor: 'primary.main',
             color: 'primary.contrastText',
