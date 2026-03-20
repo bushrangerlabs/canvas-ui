@@ -12,6 +12,7 @@ import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
 import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
+import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 
 // Static metadata for inspector
 export const ButtonWidgetMetadata: WidgetMetadata = {
@@ -128,6 +129,7 @@ export const ButtonWidgetMetadata: WidgetMetadata = {
 const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   const { hass } = useWebSocket();
   const [isActive, setIsActive] = useState(false);
+  const { setWidgetState } = useWidgetRuntimeStore();
 
   // Phase 44: Config destructuring with defaults
   const {
@@ -187,6 +189,9 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
 
   const handleClick = async () => {
     if (isEditMode) return;
+
+    // Publish click event to runtime store so flows can trigger on it
+    setWidgetState(config.id, { value: Date.now() });
 
     // Visual feedback
     if (clickFeedback !== 'none') {

@@ -328,6 +328,8 @@ export function getWidgetProperties(widgetType: string): Array<{ value: string; 
   // Widget-specific properties
   const specificProps: Record<string, Array<{ value: string; label: string; description: string }>> = {
     button: [
+      // Click event — add to a Widget Property node to auto-generate a widget-change trigger on click
+      { value: 'runtime.value', label: '🖱️ Click Event (Timestamp)', description: 'Fires every time the button is clicked — value is the click timestamp' },
       // Content
       { value: 'config.label',               label: 'Button Label',         description: 'Current button text' },
       // Behavior
