@@ -113,7 +113,10 @@ export function generateWidgetCatalog(): string {
   sections.push('=== UNIVERSAL (all widgets) ===');
   sections.push('Position: x, y, width, height, zIndex (always required)');
   sections.push('Background: backgroundColor(color), backgroundImage(text), backgroundSize(enum) [cover|contain|auto]');
-  sections.push('Border: borderWidth(num), borderColor(color), borderRadius(num), borderStyle(enum) [solid|dashed|dotted]');
+  sections.push('Border: borderWidth(num), borderColor(color), borderStyle(enum) [solid|dashed|dotted]');
+  sections.push('  borderRadius: num (all corners) OR object {topLeft,topRight,bottomRight,bottomLeft (num each)}');
+  sections.push('  chamfer corners: add *Style fields e.g. topLeftStyle(enum)[rounded|chamfer], topRightStyle, bottomRightStyle, bottomLeftStyle');
+  sections.push('  chamfer=45° diagonal cut; rounded=smooth arc (default). Example: {topLeft:20,topLeftStyle:"chamfer"}');
   sections.push('Shadow: boxShadow(text), shadowColor(color)');
   sections.push('');
   

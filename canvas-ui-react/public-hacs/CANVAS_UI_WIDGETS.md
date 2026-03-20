@@ -90,7 +90,11 @@ These properties work on **ALL** widgets:
 - `borderStyle` - `solid`, `dashed`, `dotted`, `double`
 - `borderWidth` - Border thickness (pixels)
 - `borderColor` - Border color (hex)
-- `borderRadius` - Corner radius (pixels, 0=sharp)
+- `borderRadius` - Corner radius: use a number (all corners uniform) or a per-corner object:
+  - `{"topLeft": 20, "topRight": 20, "bottomRight": 0, "bottomLeft": 0}` — different radius per corner
+  - Add `*Style` fields for chamfer (45° angled diagonal cut): `"topLeftStyle": "chamfer"` — defaults to `"rounded"`
+  - Example chamfered top corners: `{"topLeft": 20, "topLeftStyle": "chamfer", "topRight": 20, "topRightStyle": "chamfer"}`
+  - Rounded and chamfered corners can be mixed on the same widget
 - `boxShadow` - CSS shadow (e.g., `"0 4px 8px rgba(0,0,0,0.3)"`)
 - `opacity` - Transparency (0-1)
 
