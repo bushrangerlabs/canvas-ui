@@ -171,11 +171,44 @@ export function getWritableWidgetProperties(widgetType: string): Array<{ value: 
 
   const specificProps: Record<string, Array<{ value: string; label: string; description: string }>> = {
     button: [
-      { value: 'config.label',           label: 'Button Label',     description: 'Text shown on the button' },
-      { value: 'config.backgroundColor', label: 'Background Color', description: 'Button background color' },
-      { value: 'config.textColor',       label: 'Text Color',       description: 'Button label color' },
-      { value: 'config.iconColor',       label: 'Icon Color',       description: 'Button icon tint color' },
-      { value: 'config.icon',            label: 'Icon',             description: 'Icon identifier' },
+      // Content
+      { value: 'config.label',          label: 'Button Label',        description: 'Text shown on the button' },
+      // Behavior
+      { value: 'config.entity_id',      label: 'Entity ID',           description: 'Target entity for the action' },
+      { value: 'config.actionType',     label: 'Action Type',         description: 'auto | toggle | turn_on | turn_off | custom | navigation | url | mqtt' },
+      { value: 'config.value',          label: 'Value',               description: 'Value to set (input_text, input_number, etc.)' },
+      { value: 'config.customDomain',   label: 'Service Domain',      description: 'Custom service domain (e.g. light, switch)' },
+      { value: 'config.customService',  label: 'Service Name',        description: 'Custom service name (e.g. turn_on, trigger)' },
+      { value: 'config.serviceData',    label: 'Service Data (JSON)', description: 'Service data as a JSON string' },
+      { value: 'config.targetView',     label: 'Target View',         description: 'View name to navigate to' },
+      { value: 'config.url',            label: 'URL',                 description: 'URL to open' },
+      { value: 'config.urlTarget',      label: 'URL Target',          description: '_blank (new tab) | _self (same tab)' },
+      { value: 'config.mqttTopic',      label: 'MQTT Topic',          description: 'MQTT topic to publish to' },
+      { value: 'config.mqttPayload',    label: 'MQTT Payload',        description: 'MQTT message payload' },
+      { value: 'config.mqttQos',        label: 'MQTT QoS',            description: '0 | 1 | 2' },
+      { value: 'config.mqttRetain',     label: 'MQTT Retain',         description: 'true | false — retain message on broker' },
+      { value: 'config.confirmAction',  label: 'Require Confirmation',description: 'true | false — show confirmation dialog before action' },
+      { value: 'config.confirmMessage', label: 'Confirmation Message',description: 'Text shown in the confirmation dialog' },
+      // Feedback
+      { value: 'config.clickFeedback',       label: 'Click Feedback',       description: 'none | scale | highlight | ripple | shadow | color' },
+      { value: 'config.feedbackDuration',    label: 'Feedback Duration (ms)',description: 'How long the click effect lasts (50–1000)' },
+      { value: 'config.feedbackIntensity',   label: 'Feedback Intensity',   description: 'Effect intensity 0.5–2.0' },
+      { value: 'config.clickBackgroundColor',label: 'Click Background Color',description: 'Background color shown on click (color feedback mode)' },
+      { value: 'config.clickBorderColor',    label: 'Click Border Color',   description: 'Border color shown on click (color feedback mode)' },
+      { value: 'config.clickBorderWidth',    label: 'Click Border Width',   description: 'Border width during click (color feedback mode)' },
+      { value: 'config.hapticFeedback',      label: 'Haptic Feedback',      description: 'true | false — vibrate on tap (mobile)' },
+      // Icon
+      { value: 'config.showIcon',       label: 'Show Icon',           description: 'true | false — show icon on button' },
+      { value: 'config.icon',           label: 'Icon',                description: 'Icon identifier (e.g. mdi:lightbulb, Home)' },
+      { value: 'config.iconPosition',   label: 'Icon Position',       description: 'left | right | top | bottom | only' },
+      { value: 'config.iconSize',       label: 'Icon Size',           description: 'Icon size in pixels (12–96)' },
+      { value: 'config.iconSpacing',    label: 'Icon Spacing',        description: 'Gap between icon and text in pixels' },
+      { value: 'config.iconColor',      label: 'Icon Color',          description: 'Icon tint color (defaults to text color)' },
+      // Typography
+      { value: 'config.textColor',      label: 'Text Color',          description: 'Button label text color' },
+      { value: 'config.fontFamily',     label: 'Font Family',         description: 'Font name (e.g. Arial, Roboto)' },
+      { value: 'config.fontSize',       label: 'Font Size',           description: 'Label text size in pixels' },
+      { value: 'config.fontWeight',     label: 'Font Weight',         description: 'normal | bold | 300 | 500' },
     ],
     text: [
       { value: 'config.text',       label: 'Text Content', description: 'Display text (supports bindings)' },
@@ -294,6 +327,21 @@ export function getWidgetProperties(widgetType: string): Array<{ value: string; 
   
   // Widget-specific properties
   const specificProps: Record<string, Array<{ value: string; label: string; description: string }>> = {
+    button: [
+      { value: 'config.label',          label: 'Button Label',        description: 'Current button text' },
+      { value: 'config.entity_id',      label: 'Entity ID',           description: 'Bound entity' },
+      { value: 'config.actionType',     label: 'Action Type',         description: 'Current action type' },
+      { value: 'config.targetView',     label: 'Target View',         description: 'Navigation target view name' },
+      { value: 'config.url',            label: 'URL',                 description: 'URL to open' },
+      { value: 'config.icon',           label: 'Icon',                description: 'Current icon identifier' },
+      { value: 'config.showIcon',       label: 'Show Icon',           description: 'Whether icon is visible (true/false)' },
+      { value: 'config.textColor',      label: 'Text Color',          description: 'Button text color' },
+      { value: 'config.iconColor',      label: 'Icon Color',          description: 'Icon tint color' },
+      { value: 'config.fontSize',       label: 'Font Size',           description: 'Label text size in pixels' },
+      { value: 'config.clickFeedback',  label: 'Click Feedback',      description: 'Current click feedback mode' },
+      { value: 'config.confirmAction',  label: 'Require Confirmation',description: 'Whether confirmation is enabled (true/false)' },
+      { value: 'config.confirmMessage', label: 'Confirmation Message',description: 'Confirmation dialog text' },
+    ],
     slider: [
       { value: 'runtime.value', label: 'Current Value (Live)', description: 'Live slider value (changes as user drags)' },
       { value: 'config.min', label: 'Minimum', description: 'Minimum slider value' },
