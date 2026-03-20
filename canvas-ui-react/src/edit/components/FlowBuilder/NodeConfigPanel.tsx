@@ -271,6 +271,19 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
             </Select>
           </FormControl>
         );
+      } else if (nodeData.nodeType === 'set-widget-group') {
+        // Free text for group node — no single widget type to filter by
+        return (
+          <TextField
+            fullWidth
+            label="Property Path"
+            value={value || ''}
+            onChange={(e) => setConfig({ ...config, [key]: e.target.value })}
+            sx={{ mb: 2 }}
+            placeholder="e.g. config.textColor"
+            helperText="Property path applied to all widgets in the group"
+          />
+        );
       } else {
         // Show text field if no widget selected (preserves saved value)
         return (
@@ -431,6 +444,43 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
             ))}
           </Select>
         </FormControl>
+      );
+    }
+
+    // Coerce type selector (for Value processing node)
+    if (key === 'coerce_type') {
+      return (
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Output Type</InputLabel>
+          <Select
+            value={value || 'passthrough'}
+            label="Output Type"
+            onChange={(e) => setConfig({ ...config, [key]: e.target.value })}
+          >
+            <MenuItem value="passthrough">Passthrough (no coercion)</MenuItem>
+            <MenuItem value="string">String</MenuItem>
+            <MenuItem value="number">Number</MenuItem>
+            <MenuItem value="boolean">Boolean</MenuItem>
+            <MenuItem value="color">Color (hex string)</MenuItem>
+          </Select>
+        </FormControl>
+      );
+    }
+
+    // Widget IDs textarea (for Set Widget Group node)
+    if (key === 'widget_ids') {
+      return (
+        <TextField
+          fullWidth
+          multiline
+          rows={4}
+          label="Widget IDs"
+          value={value || ''}
+          onChange={(e) => setConfig({ ...config, [key]: e.target.value })}
+          sx={{ mb: 2 }}
+          placeholder="widget-id-1, widget-id-2, ..."
+          helperText="Comma or newline separated widget IDs"
+        />
       );
     }
 
@@ -596,11 +646,23 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
         )}
         {nodeData.nodeType === 'delay' && renderConfigField('delay_ms', config.delay_ms)}
         {nodeData.nodeType === 'js-expression' && renderConfigField('expression', config.expression)}
+        {nodeData.nodeType === 'value' && (
+          <>
+            {renderConfigField('coerce_type', config.coerce_type)}
+            {renderConfigField('value', config.value)}
+          </>
+        )}
         
         {/* Output nodes */}
         {nodeData.nodeType === 'set-widget' && (
           <>
             {renderConfigField('widget_id', config.widget_id)}
+            {renderConfigField('property', config.property)}
+          </>
+        )}
+        {nodeData.nodeType === 'set-widget-group' && (
+          <>
+            {renderConfigField('widget_ids', config.widget_ids)}
             {renderConfigField('property', config.property)}
           </>
         )}
@@ -629,7 +691,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
 
         {/* Show all existing config fields not already displayed */}
         {Object.entries(config)
-          .filter(([key]) => !['domain', 'entity_id', 'operation', 'value', 'service', 'service_data', 'widget_id', 'property', 'variable_name', 'format', 'value_type', 'default_value', 'url', 'operator', 'compare_value', 'logic_type', 'condition', 'true_value', 'false_value', 'delay_ms', 'expression', 'body', 'key', 'action', 'message'].includes(key))
+          .filter(([key]) => !['domain', 'entity_id', 'operation', 'value', 'service', 'service_data', 'widget_id', 'widget_ids', 'property', 'variable_name', 'format', 'value_type', 'default_value', 'url', 'operator', 'compare_value', 'logic_type', 'coerce_type', 'condition', 'true_value', 'false_value', 'delay_ms', 'expression', 'body', 'key', 'action', 'message'].includes(key))
           .map(([key, value]) => renderConfigField(key, value))}
 
         {/* Actions */}

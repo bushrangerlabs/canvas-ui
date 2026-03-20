@@ -163,6 +163,16 @@ export const NODE_REGISTRY: Record<FlowNodeType, NodeMetadata> = {
     inputs: 1,
     outputs: 1,
   },
+  'value': {
+    type: 'value',
+    category: 'processing',
+    label: 'Value',
+    description: 'Inject a static value or coerce an input to a target type',
+    icon: 'Transform',
+    color: '#2196F3',
+    inputs: 1,
+    outputs: 1,
+  },
 
   // OUTPUT NODES (6 types)
   'set-widget': {
@@ -171,6 +181,16 @@ export const NODE_REGISTRY: Record<FlowNodeType, NodeMetadata> = {
     label: 'Set Widget',
     description: 'Update widget property (supports action names like set_text or direct property paths)',
     icon: 'Widgets',
+    color: '#FF9800',
+    inputs: 1,
+    outputs: 0,
+  },
+  'set-widget-group': {
+    type: 'set-widget-group',
+    category: 'output',
+    label: 'Set Widget Group',
+    description: 'Set the same property to the same value across multiple widgets at once',
+    icon: 'Layers',
     color: '#FF9800',
     inputs: 1,
     outputs: 0,

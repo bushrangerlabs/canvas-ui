@@ -14,6 +14,7 @@ import {
     ExpandMore,
     Http,
     Input as InputIcon,
+    Layers,
     Loop,
     PlayArrow,
     Schedule,
@@ -21,6 +22,7 @@ import {
     Storage,
     TextFields,
     Timer,
+    Transform,
     Widgets,
 } from '@mui/icons-material';
 import {
@@ -56,6 +58,8 @@ const ICON_MAP: Record<string, React.ReactElement> = {
   PlayArrow: <PlayArrow fontSize="small" />,
   Storage: <Storage fontSize="small" />,
   BugReport: <BugReport fontSize="small" />,
+  Transform: <Transform fontSize="small" />,
+  Layers: <Layers fontSize="small" />,
 };
 
 export const NodePalette: React.FC = () => {

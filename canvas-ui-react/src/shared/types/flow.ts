@@ -32,13 +32,15 @@ export type ProcessingNodeType =
   | 'condition'          // IF/THEN/ELSE branching
   | 'loop'               // Iterate over arrays
   | 'delay'              // Time delay
-  | 'js-expression';     // Custom JavaScript
+  | 'js-expression'      // Custom JavaScript
+  | 'value';             // Static value / type coercion
 
 /**
  * Output node types - Actions and side effects
  */
 export type OutputNodeType =
   | 'set-widget'         // Update widget property (supports both action names and direct paths)
+  | 'set-widget-group'   // Update a property on multiple widgets at once
   | 'call-service'       // Call HA service
   | 'set-variable'       // Update canvas variable
   | 'http-post'          // HTTP POST request

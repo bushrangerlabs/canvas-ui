@@ -344,6 +344,21 @@ async function executeNode(
         return fn(inputValue);
       }
       
+      case 'value': {
+        // Use connected input if available, fall back to configured static value
+        const inputValue = Object.values(inputs)[0];
+        const rawValue = inputValue !== undefined ? inputValue : config?.value;
+        const coerceType = config?.coerce_type || 'passthrough';
+        
+        switch (coerceType) {
+          case 'number':  return parseFloat(String(rawValue));
+          case 'boolean': return rawValue === 'true' || rawValue === true || Number(rawValue) !== 0;
+          case 'string':  return String(rawValue ?? '');
+          case 'color':   return String(rawValue ?? '#ffffff');
+          default:        return rawValue; // passthrough
+        }
+      }
+      
       // OUTPUT NODES - Set values or trigger actions
       case 'set-widget': {
         const widgetId = config?.widget_id || config?.widgetId;
@@ -387,6 +402,23 @@ async function executeNode(
         
         await context.setWidget(widgetId, targetProperty, value);
         flowLog(`[FlowExecutor] set-widget: ${widgetId}.${targetProperty} =`, value);
+        return value;
+      }
+      
+      case 'set-widget-group': {
+        const property = config?.property;
+        const widgetIdsRaw: string = config?.widget_ids || '';
+        const widgetIds = widgetIdsRaw.split(/[,\n]/).map((id: string) => id.trim()).filter(Boolean);
+        const inputValue = Object.values(inputs)[0];
+        const value = inputValue !== undefined ? inputValue : config?.value;
+        
+        if (!property) throw new Error('Property required for set-widget-group');
+        if (widgetIds.length === 0) throw new Error('At least one widget ID required for set-widget-group');
+        
+        for (const widgetId of widgetIds) {
+          await context.setWidget(widgetId, property, value);
+        }
+        flowLog(`[FlowExecutor] set-widget-group: [${widgetIds.join(', ')}].${property} =`, value);
         return value;
       }
       
