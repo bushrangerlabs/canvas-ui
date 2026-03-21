@@ -16,7 +16,7 @@ import type { FlowDefinition } from '../types/flow';
  * Hook for managing flow execution
  */
 export function useFlowExecution() {
-  const { config, updateWidget, setVariable, listVariables } = useConfigStore();
+  const { config, setVariable, listVariables } = useConfigStore();
   const { entities, hass } = useWebSocket();
 
   // Keep the module-level hass reference current so setVariable / deleteVariable
@@ -33,59 +33,95 @@ export function useFlowExecution() {
     callServiceRef.current = hass?.callService ?? null;
   }, [hass]);
 
+  // Stable setWidget implementation — reads live state via getState() so no stale closures.
+  // Used by both the trigger manager and the cross-iframe postMessage listener.
+  const setWidgetImpl = useRef(async (widgetId: string, property: string, value: any) => {
+    const { config: currentConfig, updateWidget: storeUpdateWidget } = useConfigStore.getState();
+
+    // Find the widget across all views in this canvas instance
+    let targetWidget: any = null;
+    let targetViewId: string | null = null;
+
+    currentConfig?.views.forEach(view => {
+      const widget = view.widgets.find(w => w.id === widgetId || w.config?.name === widgetId);
+      if (widget) {
+        targetWidget = widget;
+        targetViewId = view.id;
+      }
+    });
+
+    if (!targetWidget || !targetViewId) {
+      // Widget not found in this canvas instance.
+      // If we're running inside an embedded iframe, delegate to the parent canvas instance
+      // via postMessage so the parent can apply the update to its own store.
+      // This enables menu iframes to control widgets (e.g. content iframes) on the main view.
+      if (window.parent !== window) {
+        window.parent.postMessage(
+          { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
+          window.location.origin
+        );
+      } else {
+        console.error(`[Flow] Widget not found: ${widgetId}`, {
+          searchedWidgets: currentConfig?.views.flatMap(v => v.widgets.map(w => w.id)),
+        });
+      }
+      return;
+    }
+
+    // Parse property path (e.g. "config.text", "config.style.color", "runtime.value")
+    const parts = property.split('.');
+
+    if (parts[0] === 'config' && parts.length > 1) {
+      // Special case: config.url on an IFrame widget.
+      // Store in widgetRuntimeStore (ephemeral, not persisted to HA) so that:
+      //   a) The iframe always reloads even when the same URL is set again (runtimeUrlTs nonce)
+      //   b) The unchanged-diff check in updateWidget is bypassed
+      if (property === 'config.url') {
+        useWidgetRuntimeStore.getState().setWidgetState(widgetId, {
+          metadata: { runtimeUrl: value, runtimeUrlTs: Date.now() },
+        });
+        return;
+      }
+
+      // Build a PARTIAL update object for the nested property path — no mutation of existing refs.
+      // e.g. 'config.style.backgroundColor' → { style: { backgroundColor: value } }
+      // updateWidget handles the deep-merge of style (and top-level config props).
+      let configUpdate: any = {};
+      let target = configUpdate;
+      for (let i = 1; i < parts.length - 1; i++) {
+        target[parts[i]] = {};
+        target = target[parts[i]];
+      }
+      target[parts[parts.length - 1]] = value;
+      storeUpdateWidget(targetViewId, targetWidget.id, { config: configUpdate });
+    } else if (parts[0] === 'runtime') {
+      console.warn(`[Flow] Cannot set runtime property via set-widget: ${property}`);
+    } else {
+      // Direct top-level config property
+      const newConfig = { ...targetWidget.config, [property]: value };
+      storeUpdateWidget(targetViewId, targetWidget.id, { config: newConfig });
+    }
+  });
+
+  // Listen for cross-iframe CANVAS_UI_SET_WIDGET messages posted by child canvas instances
+  // (e.g. a menu iframe navigating a content iframe on the main view).
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'CANVAS_UI_SET_WIDGET') return;
+      const { widgetId, property, value } = event.data;
+      setWidgetImpl.current(widgetId, property, value);
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Initialize trigger manager
   useEffect(() => {
     if (!triggerManagerRef.current) {
       triggerManagerRef.current = new FlowTriggerManager({
         setWidget: async (widgetId: string, property: string, value: any) => {
-          // Get current config from store (not from closure)
-          const currentConfig = useConfigStore.getState().config;
-          
-          // Find the widget across all views
-          let targetWidget: any = null;
-          let targetViewId: string | null = null;
-          
-          currentConfig?.views.forEach(view => {
-            const widget = view.widgets.find(w => w.id === widgetId || w.config?.name === widgetId);
-            if (widget) {
-              targetWidget = widget;
-              targetViewId = view.id;
-            }
-          });
-          
-          if (!targetWidget || !targetViewId) {
-            console.error(`Widget not found: ${widgetId}`, { 
-              searchedWidgets: currentConfig?.views.flatMap(v => v.widgets.map(w => w.id)) 
-            });
-            return;
-          }
-          
-          // Parse property path (e.g., "config.text" or "runtime.value")
-          const parts = property.split('.');
-          
-          if (parts[0] === 'config' && parts.length > 1) {
-            // Build a PARTIAL update object for the nested property path — no mutation of existing refs.
-            // e.g. 'config.style.backgroundColor' → { style: { backgroundColor: value } }
-            // updateWidget handles the deep-merge of style (and top-level config props).
-            // Mutating targetWidget.config's nested objects (via shallow copy + reference traversal)
-            // would corrupt the diff check in updateWidget and prevent set() from being called.
-            let configUpdate: any = {};
-            let target = configUpdate;
-            for (let i = 1; i < parts.length - 1; i++) {
-              target[parts[i]] = {};
-              target = target[parts[i]];
-            }
-            target[parts[parts.length - 1]] = value;
-            
-            updateWidget(targetViewId, targetWidget.id, { config: configUpdate });
-          } else if (parts[0] === 'runtime') {
-            // Runtime properties can't be directly set - they're computed
-            console.warn(`Cannot set runtime property: ${property}`);
-          } else {
-            // Direct config property
-            const newConfig = { ...targetWidget.config, [property]: value };
-            updateWidget(targetViewId, targetWidget.id, { config: newConfig });
-          }
+          await setWidgetImpl.current(widgetId, property, value);
         },
         setVariable: (name: string, value: any) => {
           setVariable(name, value);

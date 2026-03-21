@@ -9,6 +9,7 @@ import type { WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
 import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
+import { useWidgetRuntimeStore } from '../stores/widgetRuntimeStore';
 
 export const IFrameWidgetMetadata: WidgetMetadata = {
   name: 'IFrame',
@@ -59,6 +60,14 @@ const IFrameWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }
   const isVisible = useVisibility(visibilityCondition);
   const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
 
+  // Runtime URL override — set by flows via set-widget/set-widget-group targeting config.url.
+  // Stored ephemerally in widgetRuntimeStore (not persisted to HA) so:
+  //   - Repeated clicks to the same URL still force an iframe reload (runtimeUrlTs nonce)
+  //   - Cross-iframe flows from a menu iframe can navigate this widget on the parent canvas
+  const runtimeMeta = useWidgetRuntimeStore(state => state.widgetStates[config.id]?.metadata);
+  const runtimeUrl: string | undefined = runtimeMeta?.runtimeUrl;
+  const runtimeUrlTs: number = runtimeMeta?.runtimeUrlTs ?? 0;
+
   // Get URL from entity if urlType is 'entity'
   const entityUrl = entityState?.state || '';
 
@@ -72,6 +81,9 @@ const IFrameWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }
   } else {
     finalUrl = url;
   }
+
+  // Runtime URL takes priority over config URL (allows flows + cross-iframe navigation)
+  const effectiveUrl = runtimeUrl ?? finalUrl;
 
   // Container fills widget area
   const containerStyle: React.CSSProperties = {
@@ -96,7 +108,7 @@ const IFrameWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }
     pointerEvents: isEditMode ? 'none' : 'auto', // Disable iframe interaction in edit mode
   };
 
-  if (!finalUrl) {
+  if (!effectiveUrl) {
     return (
       <div style={{ ...finalContainerStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
         No URL configured
@@ -107,8 +119,8 @@ const IFrameWidget: React.FC<WidgetProps> = ({ config, entityState, isEditMode }
   return (
     <div style={finalContainerStyle}>
       <iframe
-        key={`${finalUrl}-${scrolling}`}
-        src={finalUrl}
+        key={`${effectiveUrl}-${runtimeUrlTs}-${scrolling}`}
+        src={effectiveUrl}
         style={iframeStyle}
         scrolling={scrolling}
         allowFullScreen={allowFullscreen}
