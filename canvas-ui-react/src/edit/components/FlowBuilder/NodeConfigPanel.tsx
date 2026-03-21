@@ -8,12 +8,14 @@ import {
     Button,
     Drawer,
     FormControl,
+    IconButton,
     InputLabel,
     MenuItem,
     Select,
     TextField,
     Typography
 } from '@mui/material';
+import { Add, Delete } from '@mui/icons-material';
 import React, { useEffect, useMemo, useState } from 'react';
 import { getWidgetProperties, getWritableWidgetProperties } from '../../../shared/flows/autoTriggers';
 import { formatWidgetDisplay, parseWidgetId } from '../../../shared/flows/widgetDisplayUtils';
@@ -103,6 +105,8 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   
   // Local state for form fields
   const [config, setConfig] = useState<Record<string, any>>({});
+  // Draft state for Set Widget Group entry builder
+  const [draftEntry, setDraftEntry] = useState<{widget_id: string; property: string; value: string}>({widget_id: '', property: '', value: ''});
   
   // Get flow and node data
   const flow = getFlow(flowId);
@@ -125,6 +129,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
     } else {
       setConfig({});
     }
+    setDraftEntry({widget_id: '', property: '', value: ''});
   }, [nodeId, flowId, getFlow]); // Fetch fresh data when nodeId changes
   
   // Get current view's widgets
@@ -147,6 +152,14 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
 
     return props;
   }, [config.widget_id, widgets, nodeData?.nodeType]);
+
+  // Properties for the Set Widget Group draft entry row (dynamic per selected draft widget)
+  const draftProperties = useMemo(() => {
+    if (!draftEntry.widget_id) return [];
+    const w = widgets.find(wid => wid.id === draftEntry.widget_id);
+    if (!w) return [];
+    return getWritableWidgetProperties(w.type);
+  }, [draftEntry.widget_id, widgets]);
 
   if (!node || !nodeData || !metadata) {
     return null;
@@ -467,22 +480,6 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
       );
     }
 
-    // Widget IDs textarea (for Set Widget Group node)
-    if (key === 'widget_ids') {
-      return (
-        <TextField
-          fullWidth
-          multiline
-          rows={4}
-          label="Widget IDs"
-          value={value || ''}
-          onChange={(e) => setConfig({ ...config, [key]: e.target.value })}
-          sx={{ mb: 2 }}
-          placeholder="widget-id-1, widget-id-2, ..."
-          helperText="Comma or newline separated widget IDs"
-        />
-      );
-    }
 
     // Logic gate selector
     if (key === 'logic_type' && nodeData.nodeType === 'logic') {
@@ -658,12 +655,100 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
           <>
             {renderConfigField('widget_id', config.widget_id)}
             {renderConfigField('property', config.property)}
+            {renderConfigField('value', config.value)}
           </>
         )}
         {nodeData.nodeType === 'set-widget-group' && (
           <>
-            {renderConfigField('widget_ids', config.widget_ids)}
-            {renderConfigField('property', config.property)}
+            {/* Entry builder row */}
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Add Entry</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Widget</InputLabel>
+                <Select
+                  value={draftEntry.widget_id}
+                  label="Widget"
+                  onChange={(e) => setDraftEntry({ ...draftEntry, widget_id: e.target.value, property: '' })}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {widgets.map((w) => (
+                    <MenuItem key={w.id} value={w.id}>{formatWidgetDisplay(w.id, widgets)}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small" disabled={!draftEntry.widget_id}>
+                <InputLabel>Property</InputLabel>
+                <Select
+                  value={draftEntry.property}
+                  label="Property"
+                  onChange={(e) => setDraftEntry({ ...draftEntry, property: e.target.value })}
+                >
+                  <MenuItem value=""><em>{draftEntry.widget_id ? 'None' : 'Select widget first'}</em></MenuItem>
+                  {draftProperties.map((p: { value: string; label: string; description: string }) => (
+                    <MenuItem key={p.value} value={p.value}>
+                      <Box>
+                        <Typography variant="body2">{p.label}</Typography>
+                        <Typography variant="caption" color="text.secondary">{p.description}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                size="small"
+                label="Value"
+                value={draftEntry.value}
+                onChange={(e) => setDraftEntry({ ...draftEntry, value: e.target.value })}
+                placeholder="e.g. #ffff00"
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Add />}
+                disabled={!draftEntry.widget_id || !draftEntry.property}
+                onClick={() => {
+                  const existing = (config.entries as Array<{widget_id: string; property: string; value: string}>) || [];
+                  setConfig({ ...config, entries: [...existing, { ...draftEntry }] });
+                  setDraftEntry({ widget_id: '', property: '', value: '' });
+                }}
+              >
+                Add
+              </Button>
+            </Box>
+            {/* Entries list */}
+            {((config.entries as any[]) || []).length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                  Entries ({(config.entries as any[]).length})
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
+                  {(config.entries as Array<{widget_id: string; property: string; value: string}>).map((entry, idx) => {
+                    const w = widgets.find(ww => ww.id === entry.widget_id);
+                    const wLabel = w ? formatWidgetDisplay(w.id, widgets) : entry.widget_id;
+                    return (
+                      <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="caption" display="block" noWrap sx={{ fontWeight: 600 }}>{wLabel}</Typography>
+                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                            {entry.property} = &ldquo;{entry.value}&rdquo;
+                          </Typography>
+                        </Box>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            const updated = (config.entries as any[]).filter((_, i) => i !== idx);
+                            setConfig({ ...config, entries: updated });
+                          }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </>
+            )}
           </>
         )}
         {nodeData.nodeType === 'call-service' && (
@@ -691,7 +776,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
 
         {/* Show all existing config fields not already displayed */}
         {Object.entries(config)
-          .filter(([key]) => !['domain', 'entity_id', 'operation', 'value', 'service', 'service_data', 'widget_id', 'widget_ids', 'property', 'variable_name', 'format', 'value_type', 'default_value', 'url', 'operator', 'compare_value', 'logic_type', 'coerce_type', 'condition', 'true_value', 'false_value', 'delay_ms', 'expression', 'body', 'key', 'action', 'message'].includes(key))
+          .filter(([key]) => !['domain', 'entity_id', 'operation', 'value', 'service', 'service_data', 'widget_id', 'widget_ids', 'entries', 'property', 'variable_name', 'format', 'value_type', 'default_value', 'url', 'operator', 'compare_value', 'logic_type', 'coerce_type', 'condition', 'true_value', 'false_value', 'delay_ms', 'expression', 'body', 'key', 'action', 'message'].includes(key))
           .map(([key, value]) => renderConfigField(key, value))}
 
         {/* Actions */}

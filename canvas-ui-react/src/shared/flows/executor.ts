@@ -406,20 +406,19 @@ async function executeNode(
       }
       
       case 'set-widget-group': {
-        const property = config?.property;
-        const widgetIdsRaw: string = config?.widget_ids || '';
-        const widgetIds = widgetIdsRaw.split(/[,\n]/).map((id: string) => id.trim()).filter(Boolean);
-        const inputValue = Object.values(inputs)[0];
-        const value = inputValue !== undefined ? inputValue : config?.value;
+        const entries: Array<{widget_id: string; property: string; value: string}> = config?.entries || [];
         
-        if (!property) throw new Error('Property required for set-widget-group');
-        if (widgetIds.length === 0) throw new Error('At least one widget ID required for set-widget-group');
-        
-        for (const widgetId of widgetIds) {
-          await context.setWidget(widgetId, property, value);
+        if (entries.length === 0) {
+          flowLog(`[FlowExecutor] set-widget-group: no entries configured, skipping`);
+          return null;
         }
-        flowLog(`[FlowExecutor] set-widget-group: [${widgetIds.join(', ')}].${property} =`, value);
-        return value;
+        
+        for (const entry of entries) {
+          if (!entry.widget_id || !entry.property) continue;
+          await context.setWidget(entry.widget_id, entry.property, entry.value);
+          flowLog(`[FlowExecutor] set-widget-group: ${entry.widget_id}.${entry.property} =`, entry.value);
+        }
+        return entries.length;
       }
       
       case 'call-service': {
