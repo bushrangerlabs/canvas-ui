@@ -139,42 +139,50 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({ flowId, onSave }) => {
   // Check if any nodes or edges are selected
   const hasSelection = nodes.some(n => n.selected) || edges.some(e => e.selected);
 
-  // Clone a node — deep copy with new ID, offset 40px right/down
-  const handleCloneNode = useCallback((nodeId: string) => {
-    const sourceNode = nodes.find(n => n.id === nodeId);
-    if (!sourceNode) return;
-    const clonedNode: Node<FlowNodeData> = {
-      ...sourceNode,
-      id: `node_${Date.now()}`,
-      position: {
-        x: sourceNode.position.x + 40,
-        y: sourceNode.position.y + 40,
-      },
-      selected: false,
-      data: {
-        ...sourceNode.data,
-        config: sourceNode.data.config ? JSON.parse(JSON.stringify(sourceNode.data.config)) : {},
-        outputs: {},
-      },
-    };
-    setNodes((nds) => nds.concat(clonedNode));
-  }, [nodes, setNodes]);
+  // Stable refs for node callbacks — lets nodeTypes keep [] deps (required by React Flow)
+  const onConfigureRef = useRef<(nodeId: string) => void>(() => {});
+  const onCloneRef = useRef<(nodeId: string) => void>(() => {});
 
-  // Create node types with onConfigure callback
+  // Update refs every render so closures always have fresh state
+  onConfigureRef.current = (nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    setConfigPanelOpen(true);
+  };
+  onCloneRef.current = (nodeId: string) => {
+    setNodes((nds) => {
+      const sourceNode = nds.find(n => n.id === nodeId);
+      if (!sourceNode) return nds;
+      const clonedNode: Node<FlowNodeData> = {
+        ...sourceNode,
+        id: `node_${Date.now()}`,
+        position: {
+          x: sourceNode.position.x + 40,
+          y: sourceNode.position.y + 40,
+        },
+        selected: false,
+        data: {
+          ...sourceNode.data,
+          config: sourceNode.data.config ? JSON.parse(JSON.stringify(sourceNode.data.config)) : {},
+          outputs: {},
+        },
+      };
+      return nds.concat(clonedNode);
+    });
+  };
+
+  // nodeTypes MUST have stable [] deps — React Flow remounts all nodes when nodeTypes changes,
+  // which breaks click handlers. Use refs to access latest callbacks without changing deps.
   const nodeTypes = React.useMemo(
     () => ({
       'custom-node': (props: any) => (
         <CustomNode
           {...props}
-          onConfigure={(nodeId: string) => {
-            setSelectedNodeId(nodeId);
-            setConfigPanelOpen(true);
-          }}
-          onClone={handleCloneNode}
+          onConfigure={(nodeId: string) => onConfigureRef.current(nodeId)}
+          onClone={(nodeId: string) => onCloneRef.current(nodeId)}
         />
       ),
     }),
-    [handleCloneNode]
+    [] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Sync nodes/edges when flowId changes or when flow data changes externally (e.g., NodeConfigPanel updates)
