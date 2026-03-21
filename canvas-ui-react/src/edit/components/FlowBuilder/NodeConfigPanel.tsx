@@ -109,6 +109,12 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   const [draftEntry, setDraftEntry] = useState<{widget_id: string; property: string; value: string}>({widget_id: '', property: '', value: ''});
   // Index of the entry currently being edited (-1 = adding new)
   const [editingIndex, setEditingIndex] = useState<number>(-1);
+  // Widget filter state — main widget_id field (Widget Property / Set Widget nodes)
+  const [widgetViewFilter, setWidgetViewFilter] = useState('');
+  const [widgetSearch, setWidgetSearch] = useState('');
+  // Widget filter state — Set Widget Group draft builder
+  const [draftViewFilter, setDraftViewFilter] = useState('');
+  const [draftWidgetSearch, setDraftWidgetSearch] = useState('');
   
   // Get flow and node data
   const flow = getFlow(flowId);
@@ -133,6 +139,10 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
     }
     setDraftEntry({widget_id: '', property: '', value: ''});
     setEditingIndex(-1);
+    setWidgetViewFilter('');
+    setWidgetSearch('');
+    setDraftViewFilter('');
+    setDraftWidgetSearch('');
   }, [nodeId, flowId, getFlow]); // Fetch fresh data when nodeId changes
   
   // All widgets across ALL views — flows can target any widget regardless of which view it lives on
@@ -140,21 +150,37 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
     () => appConfig?.views.flatMap(v => v.widgets || []) ?? [],
     [appConfig]
   );
-  const widgetViewNames = useMemo(() => {
-    const map = new Map<string, string>();
-    appConfig?.views.forEach(v => (v.widgets || []).forEach(w => map.set(w.id, v.name || v.id)));
+  const views = useMemo(() => appConfig?.views ?? [], [appConfig]);
+  const widgetViewInfo = useMemo(() => {
+    const map = new Map<string, {name: string; id: string}>();
+    appConfig?.views.forEach(v => (v.widgets || []).forEach(w => map.set(w.id, {name: v.name || v.id, id: v.id})));
     return map;
   }, [appConfig]);
   // Display helper: "Widget Name [View]" (falls back to ID if unnamed)
   const displayWidget = (widgetId: string) => {
     const widget = widgets.find(w => w.id === widgetId);
     const name = widget?.name;
-    const viewName = widgetViewNames.get(widgetId);
-    if (name && viewName) return `${name} [${viewName}]`;
+    const info = widgetViewInfo.get(widgetId);
+    if (name && info) return `${name} [${info.name}]`;
     if (name) return name;
-    if (viewName) return `${widgetId} [${viewName}]`;
+    if (info) return `${widgetId} [${info.name}]`;
     return widgetId;
   };
+  // Filtered widget lists for the two separate dropdowns
+  const filteredWidgets = useMemo(() => widgets.filter(w => {
+    const info = widgetViewInfo.get(w.id);
+    const viewMatch = !widgetViewFilter || info?.id === widgetViewFilter;
+    const s = widgetSearch.toLowerCase().trim();
+    const nameMatch = !s || (w.name || '').toLowerCase().includes(s) || w.id.toLowerCase().includes(s);
+    return viewMatch && nameMatch;
+  }), [widgets, widgetViewFilter, widgetSearch, widgetViewInfo]);
+  const draftFilteredWidgets = useMemo(() => widgets.filter(w => {
+    const info = widgetViewInfo.get(w.id);
+    const viewMatch = !draftViewFilter || info?.id === draftViewFilter;
+    const s = draftWidgetSearch.toLowerCase().trim();
+    const nameMatch = !s || (w.name || '').toLowerCase().includes(s) || w.id.toLowerCase().includes(s);
+    return viewMatch && nameMatch;
+  }), [widgets, draftViewFilter, draftWidgetSearch, widgetViewInfo]);
   
   // Get widget properties appropriate for the current node type (memoized).
   // set-widget (write) uses getWritableWidgetProperties (content + universal style + layout).
@@ -237,33 +263,54 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
       if (import.meta.env.DEV) console.log('[NodeConfigPanel] Rendering widget_id field:', { value, configWidgetId: config.widget_id });
       
       return (
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Widget</InputLabel>
-          <Select
-            value={value || ''}
-            label="Widget"
-            onChange={(e) => {
-              const widgetId = e.target.value; // value is the raw widget ID
-              const shouldResetProperty = config.widget_id && config.widget_id !== widgetId;
-              setConfig({ 
-                ...config, 
-                [key]: widgetId, 
-                ...(shouldResetProperty ? { property: '' } : {})
-              });
-            }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {widgets.map((widget) => {
-              return (
+        <Box sx={{ mb: 2 }}>
+          {/* View filter + search row */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+            <FormControl size="small" sx={{ flex: '0 0 130px' }}>
+              <InputLabel>View</InputLabel>
+              <Select
+                value={widgetViewFilter}
+                label="View"
+                onChange={(e) => setWidgetViewFilter(e.target.value)}
+              >
+                <MenuItem value=""><em>All views</em></MenuItem>
+                {views.map(v => (
+                  <MenuItem key={v.id} value={v.id}>{v.name || v.id}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              size="small"
+              placeholder="Search widgets…"
+              value={widgetSearch}
+              onChange={(e) => setWidgetSearch(e.target.value)}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+          <FormControl fullWidth>
+            <InputLabel>Widget</InputLabel>
+            <Select
+              value={value || ''}
+              label="Widget"
+              onChange={(e) => {
+                const widgetId = e.target.value;
+                const shouldResetProperty = config.widget_id && config.widget_id !== widgetId;
+                setConfig({ 
+                  ...config, 
+                  [key]: widgetId, 
+                  ...(shouldResetProperty ? { property: '' } : {})
+                });
+              }}
+            >
+              <MenuItem value=""><em>None</em></MenuItem>
+              {filteredWidgets.map((widget) => (
                 <MenuItem key={widget.id} value={widget.id}>
                   {displayWidget(widget.id)}
                 </MenuItem>
-              );
-            })}
-          </Select>
-        </FormControl>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
       );
     }
     
@@ -679,6 +726,29 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
               {editingIndex >= 0 ? `Edit Entry ${editingIndex + 1}` : 'Add Entry'}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              {/* View filter + search for draft widget selector */}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <FormControl size="small" sx={{ flex: '0 0 120px' }}>
+                  <InputLabel>View</InputLabel>
+                  <Select
+                    value={draftViewFilter}
+                    label="View"
+                    onChange={(e) => setDraftViewFilter(e.target.value)}
+                  >
+                    <MenuItem value=""><em>All views</em></MenuItem>
+                    {views.map(v => (
+                      <MenuItem key={v.id} value={v.id}>{v.name || v.id}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  size="small"
+                  placeholder="Search widgets…"
+                  value={draftWidgetSearch}
+                  onChange={(e) => setDraftWidgetSearch(e.target.value)}
+                  sx={{ flex: 1 }}
+                />
+              </Box>
               <FormControl fullWidth size="small">
                 <InputLabel>Widget</InputLabel>
                 <Select
@@ -687,7 +757,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                   onChange={(e) => setDraftEntry({ ...draftEntry, widget_id: e.target.value, property: '' })}
                 >
                   <MenuItem value=""><em>None</em></MenuItem>
-                  {widgets.map((w) => (
+                  {draftFilteredWidgets.map((w) => (
                     <MenuItem key={w.id} value={w.id}>{displayWidget(w.id)}</MenuItem>
                   ))}
                 </Select>
