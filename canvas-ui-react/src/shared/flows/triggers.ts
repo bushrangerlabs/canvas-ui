@@ -7,7 +7,7 @@
 
 import type { WidgetRuntimeState } from '../stores/widgetRuntimeStore';
 import type { FlowDefinition, FlowTriggerConfig } from '../types/flow';
-import { executeFlow } from './executor';
+import { executeFlow, type TriggerContext } from './executor';
 
 /**
  * Runtime-toggleable debug logger for the flow system.
@@ -34,6 +34,7 @@ export class FlowTriggerManager {
   private intervalTimers: Map<string, number> = new Map();
   private runtimeWatchers: Map<string, number> = new Map(); // Polling timers for runtime property changes
   private flowDebounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map(); // Debounce: coalesces rapid successive fires
+  private flowDebounceTriggerContexts: Map<string, TriggerContext | undefined> = new Map();
   
   // External dependencies
   private widgets: Record<string, any> = {};
@@ -192,7 +193,7 @@ export class FlowTriggerManager {
                 } else {
                   // Genuine change from a known previous value, outside startup window → fire.
                   flowLog(`[FlowTrigger] FIRE: runtime change ${widgetId}.${property}: ${oldValue} → ${newValue}, triggering flow "${flow.name}"`);
-                  this.debouncedExecuteFlow(flow);
+                  this.debouncedExecuteFlow(flow, { widgetId, property });
                 }
                 // Either way, update previous state so next real change is detected
                 this.previousRuntimeStates[widgetId] = { ...currentState };
@@ -254,7 +255,7 @@ export class FlowTriggerManager {
             
             if (oldValue !== newValue) {
               flowLog(`[FlowTrigger] FIRE: widget-change (config) ${widgetId}.${property}: ${JSON.stringify(oldValue)} → ${JSON.stringify(newValue)}, triggering flow "${flow.name}"`);
-              this.debouncedExecuteFlow(flow);
+              this.debouncedExecuteFlow(flow, { widgetId, property: property! });
             }
           } else {
             // No specific property - trigger on any widget change
@@ -360,12 +361,16 @@ export class FlowTriggerManager {
    */
   private static readonly DEBOUNCE_MS = 50;
 
-  private debouncedExecuteFlow(flow: FlowDefinition): void {
+  private debouncedExecuteFlow(flow: FlowDefinition, triggerContext?: TriggerContext): void {
     const existing = this.flowDebounceTimers.get(flow.id);
     if (existing) clearTimeout(existing);
+    // Update stored context (last trigger within the debounce window wins)
+    this.flowDebounceTriggerContexts.set(flow.id, triggerContext);
     const timer = setTimeout(() => {
       this.flowDebounceTimers.delete(flow.id);
-      this.executeFlow(flow);
+      const ctx = this.flowDebounceTriggerContexts.get(flow.id);
+      this.flowDebounceTriggerContexts.delete(flow.id);
+      this.executeFlow(flow, ctx);
     }, FlowTriggerManager.DEBOUNCE_MS);
     this.flowDebounceTimers.set(flow.id, timer);
   }
@@ -373,7 +378,7 @@ export class FlowTriggerManager {
   /**
    * Execute a flow
    */
-  private async executeFlow(flow: FlowDefinition): Promise<void> {
+  private async executeFlow(flow: FlowDefinition, triggerContext?: TriggerContext): Promise<void> {
     try {
       console.log(`[Flow] FIRED: "${flow.name}" (${flow.id})`);
       flowLog(`[FlowTrigger] ▶ Executing flow: "${flow.name}" (${flow.id})`);
@@ -386,7 +391,7 @@ export class FlowTriggerManager {
         setWidget: this.setWidget,
         setVariable: this.setVariable,
         callService: this.callService,
-      });
+      }, triggerContext);
       
       if (result.status === 'error') {
         console.error(`[FlowTrigger] ✗ Flow failed: "${flow.name}"`, result.error);

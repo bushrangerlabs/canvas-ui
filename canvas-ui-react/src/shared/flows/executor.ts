@@ -100,6 +100,33 @@ interface ExecutionContextInternal {
 }
 
 /**
+ * Context describing which trigger caused flow execution — used to restrict
+ * which execution chains run when a single flow has multiple widget-property inputs.
+ */
+export interface TriggerContext {
+  widgetId: string;
+  property: string;
+}
+
+/**
+ * Walk forward from startNodeIds following edges, returning the set of all reachable node IDs.
+ */
+function getReachableNodes(startNodeIds: string[], edges: Array<{source: string; target: string}>): Set<string> {
+  const reachable = new Set<string>(startNodeIds);
+  const queue = [...startNodeIds];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    edges.forEach(edge => {
+      if (edge.source === current && !reachable.has(edge.target)) {
+        reachable.add(edge.target);
+        queue.push(edge.target);
+      }
+    });
+  }
+  return reachable;
+}
+
+/**
  * Get inputs for a node from its connected source nodes
  */
 function getNodeInputs(
@@ -599,7 +626,8 @@ export async function executeFlow(
     setWidget: (widgetId: string, property: string, value: any) => Promise<void>;
     setVariable: (name: string, value: any) => void;
     callService: (domain: string, service: string, data: any) => Promise<void>;
-  }
+  },
+  triggerContext?: TriggerContext
 ): Promise<FlowExecutionResult> {
   const startTime = Date.now();
   const nodeResults: Record<string, NodeExecutionResult> = {};
@@ -632,11 +660,45 @@ export async function executeFlow(
     if (sortedNodes.length === 0) {
       throw new Error('Flow contains cycles or is invalid');
     }
-    
-    flowLog(`[FlowExecutor] Starting flow "${flow.name}" — ${sortedNodes.length} nodes: [${sortedNodes.map(n => n.data.nodeType).join(' → ')}]`);
+
+    // If a triggerContext is provided, restrict execution to only the subgraph reachable
+    // from widget-property nodes that match the triggering widget/property.
+    // This prevents parallel chains (e.g. button 1 chain AND button 2 chain) from both
+    // executing when only one button was clicked.
+    let nodesToExecute = sortedNodes;
+    if (triggerContext) {
+      const matchingInputIds = sortedNodes
+        .filter(n =>
+          n.data.nodeType === 'widget-property' &&
+          (n.data.config?.widget_id || n.data.config?.widgetId) === triggerContext.widgetId &&
+          n.data.config?.property === triggerContext.property
+        )
+        .map(n => n.id);
+
+      if (matchingInputIds.length > 0) {
+        // Nodes reachable from the triggered input
+        const triggerReachable = getReachableNodes(matchingInputIds, flow.edges);
+
+        // Nodes reachable from ANY widget-property node (all chained subtrees)
+        const allWidgetPropertyIds = sortedNodes
+          .filter(n => n.data.nodeType === 'widget-property')
+          .map(n => n.id);
+        const allInputReachable = getReachableNodes(allWidgetPropertyIds, flow.edges);
+
+        // Keep: nodes in the triggered chain, plus any truly standalone nodes
+        // (not connected to any widget-property chain at all)
+        nodesToExecute = sortedNodes.filter(
+          n => triggerReachable.has(n.id) || !allInputReachable.has(n.id)
+        );
+
+        flowLog(`[FlowExecutor] Trigger filter: ${triggerContext.widgetId}.${triggerContext.property} → running ${nodesToExecute.length}/${sortedNodes.length} nodes`);
+      }
+    }
+
+    flowLog(`[FlowExecutor] Starting flow "${flow.name}" — ${nodesToExecute.length} nodes: [${nodesToExecute.map(n => n.data.nodeType).join(' → ')}]`);
     
     // Execute nodes in order
-    for (const node of sortedNodes) {
+    for (const node of nodesToExecute) {
       const nodeStartTime = Date.now();
       
       try {
