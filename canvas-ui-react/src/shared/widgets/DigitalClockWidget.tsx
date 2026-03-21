@@ -43,7 +43,9 @@ export const DigitalClockWidgetMetadata: WidgetMetadata = {
     { name: 'dateColor', type: 'color', label: 'Date Color', default: '#00ff00', category: 'style' },
     { name: 'fontFamily', type: 'font', label: 'Time Font', default: '"DSEG7 Classic", monospace', category: 'style' },
     { name: 'fontFamilySecondary', type: 'font', label: 'AM/PM & Date Font', default: 'Arial, sans-serif', category: 'style' },
-    { name: 'fontSize', type: 'number', label: 'Font Size', default: 48, min: 20, max: 120, category: 'style' },
+    { name: 'fontSize', type: 'number', label: 'Clock Font Size', default: 48, min: 10, max: 200, category: 'style' },
+    { name: 'dateFontSize', type: 'number', label: 'Date Font Size (0 = auto)', default: 0, min: 0, max: 120, category: 'style' },
+    { name: 'dateGap', type: 'number', label: 'Date Gap (px)', default: 8, min: 0, max: 80, category: 'style' },
     { name: 'glow', type: 'checkbox', label: 'Glow Effect', default: true, category: 'style' },
     { name: 'blinkColon', type: 'checkbox', label: 'Blinking Colon', default: true, category: 'style' },
   ],
@@ -60,11 +62,17 @@ const DigitalClockWidget: React.FC<WidgetProps> = ({ config }) => {
     timeColor = '#00ff00',
     dateColor = '#00ff00',
     fontSize = 48,
+    dateFontSize = 0,
+    dateGap = 8,
     fontFamily = 'digital',
     fontFamilySecondary = 'Arial, sans-serif',
     glow = true,
     blinkColon = true,
   } = config.config;
+
+  // Resolved date font sizes: use explicit value if set (>0), else proportional fallback
+  const resolvedDateFontSize = dateFontSize > 0 ? dateFontSize : Math.round(fontSize * 0.3);
+  const resolvedDayFontSize = dateFontSize > 0 ? Math.round(dateFontSize * 0.85) : Math.round(fontSize * 0.25);
 
   // State
   const [time, setTime] = useState(new Date());
@@ -159,20 +167,20 @@ const DigitalClockWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   const dateStyle: React.CSSProperties = {
-    fontSize: `${fontSize * 0.3}px`,
+    fontSize: `${resolvedDateFontSize}px`,
     color: dateColor,
-    marginTop: '8px',
+    marginTop: `${dateGap}px`,
     textAlign: 'center',
-    textShadow: glow ? `0 0 ${fontSize * 0.1}px ${dateColor}` : 'none',
+    textShadow: glow ? `0 0 ${resolvedDateFontSize * 0.33}px ${dateColor}` : 'none',
     fontFamily: fontFamilySecondary,
   };
 
   const dayStyle: React.CSSProperties = {
-    fontSize: `${fontSize * 0.25}px`,
+    fontSize: `${resolvedDayFontSize}px`,
     color: dateColor,
     marginTop: '4px',
     textAlign: 'center',
-    textShadow: glow ? `0 0 ${fontSize * 0.1}px ${dateColor}` : 'none',
+    textShadow: glow ? `0 0 ${resolvedDayFontSize * 0.33}px ${dateColor}` : 'none',
     fontFamily: fontFamilySecondary,
   };
 

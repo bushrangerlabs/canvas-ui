@@ -18,7 +18,7 @@ import {
 import { Add, Delete, Edit } from '@mui/icons-material';
 import React, { useEffect, useMemo, useState } from 'react';
 import { getWidgetProperties, getWritableWidgetProperties } from '../../../shared/flows/autoTriggers';
-import { formatWidgetDisplay, parseWidgetId } from '../../../shared/flows/widgetDisplayUtils';
+
 import { useWebSocket } from '../../../shared/providers/WebSocketProvider';
 import { useConfigStore } from '../../../shared/stores/useConfigStore';
 import type { FlowNodeData } from '../../../shared/types/flow';
@@ -100,7 +100,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   onClose,
   onSave,
 }) => {
-  const { getFlow, setFlow, config: appConfig, currentViewId } = useConfigStore();
+  const { getFlow, setFlow, config: appConfig } = useConfigStore();
   const { entities } = useWebSocket();
   
   // Local state for form fields
@@ -135,9 +135,26 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
     setEditingIndex(-1);
   }, [nodeId, flowId, getFlow]); // Fetch fresh data when nodeId changes
   
-  // Get current view's widgets
-  const currentView = appConfig?.views.find(v => v.id === currentViewId);
-  const widgets = currentView?.widgets || [];
+  // All widgets across ALL views — flows can target any widget regardless of which view it lives on
+  const widgets = useMemo(
+    () => appConfig?.views.flatMap(v => v.widgets || []) ?? [],
+    [appConfig]
+  );
+  const widgetViewNames = useMemo(() => {
+    const map = new Map<string, string>();
+    appConfig?.views.forEach(v => (v.widgets || []).forEach(w => map.set(w.id, v.name || v.id)));
+    return map;
+  }, [appConfig]);
+  // Display helper: "Widget Name [View]" (falls back to ID if unnamed)
+  const displayWidget = (widgetId: string) => {
+    const widget = widgets.find(w => w.id === widgetId);
+    const name = widget?.name;
+    const viewName = widgetViewNames.get(widgetId);
+    if (name && viewName) return `${name} [${viewName}]`;
+    if (name) return name;
+    if (viewName) return `${widgetId} [${viewName}]`;
+    return widgetId;
+  };
   
   // Get widget properties appropriate for the current node type (memoized).
   // set-widget (write) uses getWritableWidgetProperties (content + universal style + layout).
@@ -226,11 +243,8 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
             value={value || ''}
             label="Widget"
             onChange={(e) => {
-              // Parse widget ID from display string (removes custom name)
-              const displayValue = e.target.value;
-              const widgetId = parseWidgetId(displayValue);
+              const widgetId = e.target.value; // value is the raw widget ID
               const shouldResetProperty = config.widget_id && config.widget_id !== widgetId;
-              if (import.meta.env.DEV) console.log('[NodeConfigPanel] Widget changed:', { displayValue, widgetId, shouldResetProperty });
               setConfig({ 
                 ...config, 
                 [key]: widgetId, 
@@ -242,12 +256,9 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
               <em>None</em>
             </MenuItem>
             {widgets.map((widget) => {
-              // Use centralized display formatter: "widget-id (CustomName)"
-              const displayValue = formatWidgetDisplay(widget.id, widgets);
-              
               return (
                 <MenuItem key={widget.id} value={widget.id}>
-                  {displayValue}
+                  {displayWidget(widget.id)}
                 </MenuItem>
               );
             })}
@@ -677,7 +688,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                 >
                   <MenuItem value=""><em>None</em></MenuItem>
                   {widgets.map((w) => (
-                    <MenuItem key={w.id} value={w.id}>{formatWidgetDisplay(w.id, widgets)}</MenuItem>
+                    <MenuItem key={w.id} value={w.id}>{displayWidget(w.id)}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -748,7 +759,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
                   {(config.entries as Array<{widget_id: string; property: string; value: string}>).map((entry, idx) => {
                     const w = widgets.find(ww => ww.id === entry.widget_id);
-                    const wLabel = w ? formatWidgetDisplay(w.id, widgets) : entry.widget_id;
+                    const wLabel = w ? displayWidget(w.id) : entry.widget_id;
                     return (
                       <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, p: 1, bgcolor: editingIndex === idx ? 'action.selected' : 'action.hover', borderRadius: 1, border: editingIndex === idx ? '1px solid' : 'none', borderColor: 'primary.main' }}>
                         <Box sx={{ flex: 1, minWidth: 0 }}>

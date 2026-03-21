@@ -280,6 +280,17 @@ export function getWritableWidgetProperties(widgetType: string): Array<{ value: 
       { value: 'config.fontSize', label: 'Font Size', description: 'Text size in pixels' },
       { value: 'config.color',    label: 'Color',     description: 'Text color' },
     ],
+    digitalclock: [
+      { value: 'config.timeColor',     label: 'Time Color',           description: 'Clock digit color' },
+      { value: 'config.dateColor',     label: 'Date Color',           description: 'Date/day text color' },
+      { value: 'config.backgroundColor', label: 'Background Color',  description: 'Widget background color' },
+      { value: 'config.fontSize',      label: 'Clock Font Size',      description: 'Clock digit size in pixels' },
+      { value: 'config.dateFontSize',  label: 'Date Font Size',       description: 'Date text size in px (0 = auto)' },
+      { value: 'config.dateGap',       label: 'Date Gap (px)',         description: 'Gap between clock and date text' },
+      { value: 'config.showDate',      label: 'Show Date',            description: 'true | false' },
+      { value: 'config.showDay',       label: 'Show Day',             description: 'true | false' },
+      { value: 'config.glow',          label: 'Glow Effect',          description: 'true | false' },
+    ],
     html: [
       { value: 'config.html', label: 'HTML Content', description: 'Raw HTML string' },
     ],
