@@ -284,7 +284,7 @@ export function getWritableWidgetProperties(widgetType: string): Array<{ value: 
       { value: 'config.html', label: 'HTML Content', description: 'Raw HTML string' },
     ],
     iframe: [
-      { value: 'config.src',       label: 'URL',       description: 'Iframe source URL' },
+      { value: 'config.url',       label: 'URL',       description: 'Iframe source URL' },
       { value: 'config.entity_id', label: 'Entity ID', description: 'Entity driving the URL' },
     ],
     graph: [
