@@ -73,13 +73,23 @@ export function useFlowExecution() {
 
     if (parts[0] === 'config' && parts.length > 1) {
       // Special case: config.url on an IFrame widget.
-      // Store in widgetRuntimeStore (ephemeral, not persisted to HA) so that:
-      //   a) The iframe always reloads even when the same URL is set again (runtimeUrlTs nonce)
-      //   b) The unchanged-diff check in updateWidget is bypassed
+      // Store in widgetRuntimeStore (ephemeral, not persisted to HA) so that repeated
+      // same-URL clicks still force an iframe reload via the runtimeUrlTs nonce.
+      // ALSO bubble to window.parent when inside an iframe — the full canvas config is shared
+      // across all kiosk instances, so the widget may be FOUND locally but only RENDERED in
+      // the parent canvas (e.g. a menu iframe can see the main view's content IFrame widget
+      // in the config, but it isn't rendered there).  The parent canvas applies the update to
+      // its own widgetRuntimeStore, which triggers the actual re-render.
       if (property === 'config.url') {
         useWidgetRuntimeStore.getState().setWidgetState(widgetId, {
           metadata: { runtimeUrl: value, runtimeUrlTs: Date.now() },
         });
+        if (window.parent !== window) {
+          window.parent.postMessage(
+            { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
+            window.location.origin
+          );
+        }
         return;
       }
 
