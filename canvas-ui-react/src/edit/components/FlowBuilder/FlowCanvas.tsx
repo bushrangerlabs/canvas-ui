@@ -139,6 +139,27 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({ flowId, onSave }) => {
   // Check if any nodes or edges are selected
   const hasSelection = nodes.some(n => n.selected) || edges.some(e => e.selected);
 
+  // Clone a node — deep copy with new ID, offset 40px right/down
+  const handleCloneNode = useCallback((nodeId: string) => {
+    const sourceNode = nodes.find(n => n.id === nodeId);
+    if (!sourceNode) return;
+    const clonedNode: Node<FlowNodeData> = {
+      ...sourceNode,
+      id: `node_${Date.now()}`,
+      position: {
+        x: sourceNode.position.x + 40,
+        y: sourceNode.position.y + 40,
+      },
+      selected: false,
+      data: {
+        ...sourceNode.data,
+        config: sourceNode.data.config ? JSON.parse(JSON.stringify(sourceNode.data.config)) : {},
+        outputs: {},
+      },
+    };
+    setNodes((nds) => nds.concat(clonedNode));
+  }, [nodes, setNodes]);
+
   // Create node types with onConfigure callback
   const nodeTypes = React.useMemo(
     () => ({
@@ -149,10 +170,11 @@ const FlowCanvasInner: React.FC<FlowCanvasProps> = ({ flowId, onSave }) => {
             setSelectedNodeId(nodeId);
             setConfigPanelOpen(true);
           }}
+          onClone={handleCloneNode}
         />
       ),
     }),
-    []
+    [handleCloneNode]
   );
 
   // Sync nodes/edges when flowId changes or when flow data changes externally (e.g., NodeConfigPanel updates)

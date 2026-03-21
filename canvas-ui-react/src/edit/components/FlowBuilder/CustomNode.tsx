@@ -3,7 +3,7 @@
  * Displays node with handles, icon, label, and configuration
  */
 
-import { Settings as SettingsIcon } from '@mui/icons-material';
+import { ContentCopy as CopyIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import { Box, IconButton, Paper, Typography } from '@mui/material';
 import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
@@ -16,9 +16,10 @@ interface CustomNodeProps {
   data: FlowNodeData;
   id: string;
   onConfigure?: (nodeId: string) => void;
+  onClone?: (nodeId: string) => void;
 }
 
-export const CustomNode: React.FC<CustomNodeProps> = memo(({ data, id, onConfigure }) => {
+export const CustomNode: React.FC<CustomNodeProps> = memo(({ data, id, onConfigure, onClone }) => {
   const metadata = getNodeMetadata(data.nodeType);
   const { config: appConfig, currentViewId } = useConfigStore();
   
@@ -87,6 +88,20 @@ export const CustomNode: React.FC<CustomNodeProps> = memo(({ data, id, onConfigu
           <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.7rem' }}>
             {metadata.label.toUpperCase()}
           </Typography>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClone?.(id);
+            }}
+            sx={{
+              p: 0.25,
+              color: 'white',
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' },
+            }}
+          >
+            <CopyIcon sx={{ fontSize: 14 }} />
+          </IconButton>
           <IconButton
             size="small"
             onClick={(e) => {

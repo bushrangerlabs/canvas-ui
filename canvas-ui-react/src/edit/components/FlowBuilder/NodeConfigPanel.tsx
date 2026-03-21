@@ -15,7 +15,7 @@ import {
     TextField,
     Typography
 } from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
+import { Add, Delete, Edit } from '@mui/icons-material';
 import React, { useEffect, useMemo, useState } from 'react';
 import { getWidgetProperties, getWritableWidgetProperties } from '../../../shared/flows/autoTriggers';
 import { formatWidgetDisplay, parseWidgetId } from '../../../shared/flows/widgetDisplayUtils';
@@ -107,6 +107,8 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   const [config, setConfig] = useState<Record<string, any>>({});
   // Draft state for Set Widget Group entry builder
   const [draftEntry, setDraftEntry] = useState<{widget_id: string; property: string; value: string}>({widget_id: '', property: '', value: ''});
+  // Index of the entry currently being edited (-1 = adding new)
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
   
   // Get flow and node data
   const flow = getFlow(flowId);
@@ -130,6 +132,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
       setConfig({});
     }
     setDraftEntry({widget_id: '', property: '', value: ''});
+    setEditingIndex(-1);
   }, [nodeId, flowId, getFlow]); // Fetch fresh data when nodeId changes
   
   // Get current view's widgets
@@ -661,7 +664,9 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
         {nodeData.nodeType === 'set-widget-group' && (
           <>
             {/* Entry builder row */}
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Add Entry</Typography>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+              {editingIndex >= 0 ? `Edit Entry ${editingIndex + 1}` : 'Add Entry'}
+            </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Widget</InputLabel>
@@ -705,16 +710,34 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
               <Button
                 variant="outlined"
                 size="small"
-                startIcon={<Add />}
+                startIcon={editingIndex >= 0 ? <Edit /> : <Add />}
                 disabled={!draftEntry.widget_id || !draftEntry.property}
                 onClick={() => {
                   const existing = (config.entries as Array<{widget_id: string; property: string; value: string}>) || [];
-                  setConfig({ ...config, entries: [...existing, { ...draftEntry }] });
+                  if (editingIndex >= 0) {
+                    const updated = existing.map((e, i) => i === editingIndex ? { ...draftEntry } : e);
+                    setConfig({ ...config, entries: updated });
+                  } else {
+                    setConfig({ ...config, entries: [...existing, { ...draftEntry }] });
+                  }
                   setDraftEntry({ widget_id: '', property: '', value: '' });
+                  setEditingIndex(-1);
                 }}
               >
-                Add
+                {editingIndex >= 0 ? 'Update' : 'Add'}
               </Button>
+              {editingIndex >= 0 && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => {
+                    setDraftEntry({ widget_id: '', property: '', value: '' });
+                    setEditingIndex(-1);
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
             </Box>
             {/* Entries list */}
             {((config.entries as any[]) || []).length > 0 && (
@@ -727,7 +750,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                     const w = widgets.find(ww => ww.id === entry.widget_id);
                     const wLabel = w ? formatWidgetDisplay(w.id, widgets) : entry.widget_id;
                     return (
-                      <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                      <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, p: 1, bgcolor: editingIndex === idx ? 'action.selected' : 'action.hover', borderRadius: 1, border: editingIndex === idx ? '1px solid' : 'none', borderColor: 'primary.main' }}>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography variant="caption" display="block" noWrap sx={{ fontWeight: 600 }}>{wLabel}</Typography>
                           <Typography variant="caption" color="text.secondary" display="block" noWrap>
@@ -737,8 +760,21 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                         <IconButton
                           size="small"
                           onClick={() => {
+                            setDraftEntry({ ...entry });
+                            setEditingIndex(idx);
+                          }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
                             const updated = (config.entries as any[]).filter((_, i) => i !== idx);
                             setConfig({ ...config, entries: updated });
+                            if (editingIndex === idx) {
+                              setDraftEntry({ widget_id: '', property: '', value: '' });
+                              setEditingIndex(-1);
+                            }
                           }}
                         >
                           <Delete fontSize="small" />
