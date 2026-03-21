@@ -6,6 +6,7 @@
 import {
     Add as AddIcon,
     Delete as DeleteIcon,
+    DriveFileRenameOutline as RenameIcon,
     Edit as EditIcon,
     FileDownload as ExportIcon,
     FileUpload as ImportIcon,
@@ -50,6 +51,31 @@ export const FlowList: React.FC<FlowListProps> = ({ onEditFlow, onConfigureTrigg
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newFlowName, setNewFlowName] = useState('');
   const [newFlowDescription, setNewFlowDescription] = useState('');
+
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<FlowDefinition | null>(null);
+  const [renameFlowName, setRenameFlowName] = useState('');
+  const [renameFlowDescription, setRenameFlowDescription] = useState('');
+
+  const handleOpenRename = (flow: FlowDefinition) => {
+    setRenameTarget(flow);
+    setRenameFlowName(flow.name);
+    setRenameFlowDescription(flow.description || '');
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameFlow = () => {
+    if (!renameTarget || !renameFlowName.trim()) return;
+    setFlow({
+      ...renameTarget,
+      name: renameFlowName.trim(),
+      description: renameFlowDescription,
+      metadata: { createdAt: renameTarget.metadata?.createdAt ?? Date.now(), ...renameTarget.metadata, updatedAt: Date.now() },
+    });
+    setRenameDialogOpen(false);
+    setRenameTarget(null);
+    onSave?.();
+  };
 
   const handleCreateFlow = () => {
     if (!newFlowName.trim()) return;
@@ -233,6 +259,15 @@ export const FlowList: React.FC<FlowListProps> = ({ onEditFlow, onConfigureTrigg
                         <ToggleIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
+                    <Tooltip title="Rename Flow">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenRename(flow)}
+                        color="default"
+                      >
+                        <RenameIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Configure Triggers">
                       <IconButton
                         size="small"
@@ -276,6 +311,47 @@ export const FlowList: React.FC<FlowListProps> = ({ onEditFlow, onConfigureTrigg
           </Table>
         </TableContainer>
       )}
+
+      {/* Rename Flow Dialog */}
+      <Dialog
+        open={renameDialogOpen}
+        onClose={() => setRenameDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Rename Flow</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Flow Name"
+            fullWidth
+            value={renameFlowName}
+            onChange={(e) => setRenameFlowName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleRenameFlow(); }}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Description (optional)"
+            fullWidth
+            multiline
+            rows={3}
+            value={renameFlowDescription}
+            onChange={(e) => setRenameFlowDescription(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleRenameFlow}
+            variant="contained"
+            disabled={!renameFlowName.trim()}
+          >
+            Rename
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Create Flow Dialog */}
       <Dialog
