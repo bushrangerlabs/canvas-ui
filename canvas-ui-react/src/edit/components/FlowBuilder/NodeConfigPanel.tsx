@@ -125,6 +125,9 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   const [selectedEntries, setSelectedEntries] = useState<Set<number>>(new Set());
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
   const { nodeType: clipNodeType, entries: clipEntries, copyEntries: copyToClipboard } = useFlowClipboardStore();
+  const [mgDraftTab, setMgDraftTab] = useState<{widget_id: string; value: string}>({widget_id: '', value: ''});
+  const [mgViewFilter, setMgViewFilter] = useState('');
+  const [mgSearch, setMgSearch] = useState('');
   
   // Get flow and node data
   const flow = getFlow(flowId);
@@ -154,6 +157,9 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
     setDraftViewFilter('');
     setDraftWidgetSearch('');
     setSelectedEntries(new Set());
+    setMgDraftTab({widget_id: '', value: ''});
+    setMgViewFilter('');
+    setMgSearch('');
   }, [nodeId, flowId, getFlow]); // Fetch fresh data when nodeId changes
   
   // All widgets across ALL views — flows can target any widget regardless of which view it lives on
@@ -192,7 +198,14 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
     const nameMatch = !s || (w.name || '').toLowerCase().includes(s) || w.id.toLowerCase().includes(s);
     return viewMatch && nameMatch;
   }), [widgets, draftViewFilter, draftWidgetSearch, widgetViewInfo]);
-  
+  const mgFilteredWidgets = useMemo(() => widgets.filter(w => {
+    const info = widgetViewInfo.get(w.id);
+    const viewMatch = !mgViewFilter || info?.id === mgViewFilter;
+    const s = mgSearch.toLowerCase().trim();
+    const nameMatch = !s || (w.name || '').toLowerCase().includes(s) || w.id.toLowerCase().includes(s);
+    return viewMatch && nameMatch;
+  }), [widgets, mgViewFilter, mgSearch, widgetViewInfo]);
+
   // Get widget properties appropriate for the current node type (memoized).
   // set-widget (write) uses getWritableWidgetProperties (content + universal style + layout).
   // widget-property (read) uses getWidgetProperties (runtime.value + key config props).
@@ -971,6 +984,105 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                 </Button>
               </DialogActions>
             </Dialog>
+          </>
+        )}
+        {nodeData.nodeType === 'menu-group' && (
+          <>
+            {/* Border colors */}
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Border Colors</Typography>
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <TextField size="small" label="Active" value={config.activeColor || '#ffffff'}
+                onChange={(e) => setConfig({ ...config, activeColor: e.target.value })}
+                sx={{ flex: 1 }}
+                InputProps={{ startAdornment: <Box component="span" sx={{ display: 'inline-block', width: 16, height: 16, borderRadius: '3px', bgcolor: config.activeColor || '#ffffff', border: '1px solid rgba(255,255,255,0.3)', mr: 1, flexShrink: 0 }} /> }} />
+              <TextField size="small" label="Inactive" value={config.inactiveColor || '#808080'}
+                onChange={(e) => setConfig({ ...config, inactiveColor: e.target.value })}
+                sx={{ flex: 1 }}
+                InputProps={{ startAdornment: <Box component="span" sx={{ display: 'inline-block', width: 16, height: 16, borderRadius: '3px', bgcolor: config.inactiveColor || '#808080', border: '1px solid rgba(255,255,255,0.3)', mr: 1, flexShrink: 0 }} /> }} />
+            </Box>
+            {/* Optional colors */}
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Optional: Background / Text / Icon colors</Typography>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <TextField size="small" label="Active BG" placeholder="none" value={config.activeBgColor || ''}
+                onChange={(e) => setConfig({ ...config, activeBgColor: e.target.value })} sx={{ flex: 1 }} />
+              <TextField size="small" label="Inactive BG" placeholder="none" value={config.inactiveBgColor || ''}
+                onChange={(e) => setConfig({ ...config, inactiveBgColor: e.target.value })} sx={{ flex: 1 }} />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <TextField size="small" label="Active text" placeholder="none" value={config.activeTextColor || ''}
+                onChange={(e) => setConfig({ ...config, activeTextColor: e.target.value })} sx={{ flex: 1 }} />
+              <TextField size="small" label="Inactive text" placeholder="none" value={config.inactiveTextColor || ''}
+                onChange={(e) => setConfig({ ...config, inactiveTextColor: e.target.value })} sx={{ flex: 1 }} />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <TextField size="small" label="Active icon" placeholder="none" value={config.activeIconColor || ''}
+                onChange={(e) => setConfig({ ...config, activeIconColor: e.target.value })} sx={{ flex: 1 }} />
+              <TextField size="small" label="Inactive icon" placeholder="none" value={config.inactiveIconColor || ''}
+                onChange={(e) => setConfig({ ...config, inactiveIconColor: e.target.value })} sx={{ flex: 1 }} />
+            </Box>
+            {/* Tab builder */}
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Add Tab</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <FormControl size="small" sx={{ flex: '0 0 120px' }}>
+                  <InputLabel>View</InputLabel>
+                  <Select value={mgViewFilter} label="View" onChange={(e) => setMgViewFilter(e.target.value)}>
+                    <MenuItem value=""><em>All views</em></MenuItem>
+                    {views.map(v => <MenuItem key={v.id} value={v.id}>{v.name || v.id}</MenuItem>)}
+                  </Select>
+                </FormControl>
+                <TextField size="small" placeholder="Search widgets…" value={mgSearch}
+                  onChange={(e) => setMgSearch(e.target.value)} sx={{ flex: 1 }} />
+              </Box>
+              <FormControl fullWidth size="small">
+                <InputLabel>Button Widget</InputLabel>
+                <Select value={mgDraftTab.widget_id} label="Button Widget"
+                  onChange={(e) => setMgDraftTab({ ...mgDraftTab, widget_id: e.target.value })}>
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {mgFilteredWidgets.map((w) => (
+                    <MenuItem key={w.id} value={w.id}>{displayWidget(w.id)}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField fullWidth size="small" label="Output value (emitted downstream)"
+                value={mgDraftTab.value}
+                placeholder="e.g. home, /canvas-kiosk#main_menu"
+                onChange={(e) => setMgDraftTab({ ...mgDraftTab, value: e.target.value })}
+                helperText="Value passed to downstream nodes when this tab is selected" />
+              <Button variant="outlined" size="small" startIcon={<Add />}
+                disabled={!mgDraftTab.widget_id}
+                onClick={() => {
+                  const existing = (config.tabs as any[]) || [];
+                  setConfig({ ...config, tabs: [...existing, { ...mgDraftTab }] });
+                  setMgDraftTab({ widget_id: '', value: '' });
+                }}>
+                Add Tab
+              </Button>
+            </Box>
+            {/* Tabs list */}
+            {((config.tabs as any[]) || []).length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                  Tabs ({(config.tabs as any[]).length})
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
+                  {(config.tabs as Array<{widget_id: string; value: string}>).map((tab, idx) => (
+                    <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="caption" display="block" noWrap sx={{ fontWeight: 600 }}>{displayWidget(tab.widget_id)}</Typography>
+                        {tab.value && <Typography variant="caption" color="text.secondary" display="block" noWrap>→ &ldquo;{tab.value}&rdquo;</Typography>}
+                      </Box>
+                      <IconButton size="small" onClick={() => {
+                        const updated = (config.tabs as any[]).filter((_, i) => i !== idx);
+                        setConfig({ ...config, tabs: updated });
+                      }}>
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
+              </>
+            )}
           </>
         )}
         {nodeData.nodeType === 'call-service' && (

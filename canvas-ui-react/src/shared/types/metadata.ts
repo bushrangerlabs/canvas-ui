@@ -48,6 +48,9 @@ export interface FieldMetadata {
   
   // Help text
   description?: string;
+
+  // Entity domain filter (for type: 'entity')
+  domains?: string[];
 }
 
 export interface WidgetMetadata {

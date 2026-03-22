@@ -81,6 +81,16 @@ export const NODE_REGISTRY: Record<FlowNodeType, NodeMetadata> = {
     inputs: 0,
     outputs: 1,
   },
+  'menu-group': {
+    type: 'menu-group',
+    category: 'input',
+    label: 'Menu Group',
+    description: 'Exclusive button group — manages active/inactive visual state and emits selected value downstream',
+    icon: 'RadioButtonChecked',
+    color: '#9C27B0',
+    inputs: 0,
+    outputs: 1,
+  },
 
   // PROCESSING NODES (8 types)
   'math': {

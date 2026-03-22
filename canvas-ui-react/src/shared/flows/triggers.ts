@@ -91,6 +91,41 @@ export class FlowTriggerManager {
       flowLog(`[FlowTrigger] Setting up trigger type: ${trigger.type}`, trigger.config);
       this.setupTrigger(flow, trigger);
     });
+
+    // Auto-register watchers for menu-group nodes
+    // Each button widget in a menu-group acts as an implicit widget-change trigger.
+    flow.nodes.forEach(node => {
+      if (node.data.nodeType !== 'menu-group') return;
+      const tabs: Array<{widget_id: string}> = node.data.config?.tabs || [];
+      tabs.forEach(tab => {
+        if (!tab.widget_id) return;
+        const watcherKey = `${flow.id}:mg:${tab.widget_id}`;
+        if (this.runtimeWatchers.has(watcherKey)) return; // already watching
+        if (!this.previousRuntimeStates[tab.widget_id]) {
+          const s = this.getRuntimeState(tab.widget_id);
+          this.previousRuntimeStates[tab.widget_id] = s ? { ...s } : {};
+        }
+        const timer = setInterval(() => {
+          const currentState = this.getRuntimeState(tab.widget_id);
+          const previousState = this.previousRuntimeStates[tab.widget_id];
+          if (currentState) {
+            const oldValue = previousState?.['value'];
+            const newValue = (currentState as any)['value'];
+            if (newValue !== undefined && oldValue !== newValue) {
+              if (oldValue === undefined || this._inStartupWindow) {
+                this.previousRuntimeStates[tab.widget_id] = { ...currentState };
+              } else {
+                flowLog(`[FlowTrigger] menu-group FIRE: ${tab.widget_id} clicked, triggering flow "${flow.name}"`);
+                this.debouncedExecuteFlow(flow, { widgetId: tab.widget_id, property: 'runtime.value' });
+                this.previousRuntimeStates[tab.widget_id] = { ...currentState };
+              }
+            }
+          }
+        }, 100);
+        this.runtimeWatchers.set(watcherKey, timer);
+        flowLog(`[FlowTrigger] menu-group watcher started for ${tab.widget_id}`);
+      });
+    });
   }
   
   /**
@@ -117,6 +152,21 @@ export class FlowTriggerManager {
           this.runtimeWatchers.delete(watcherKey);
         }
       }
+    });
+
+    // Clean up menu-group button watchers
+    flow.nodes.forEach(node => {
+      if (node.data.nodeType !== 'menu-group') return;
+      const tabs: Array<{widget_id: string}> = node.data.config?.tabs || [];
+      tabs.forEach(tab => {
+        if (!tab.widget_id) return;
+        const watcherKey = `${flowId}:mg:${tab.widget_id}`;
+        const timer = this.runtimeWatchers.get(watcherKey);
+        if (timer) {
+          clearInterval(timer);
+          this.runtimeWatchers.delete(watcherKey);
+        }
+      });
     });
     
     // Remove listeners

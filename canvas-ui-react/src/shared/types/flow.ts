@@ -19,7 +19,8 @@ export type InputNodeType =
   | 'canvas-variable'    // Read global canvas variable
   | 'time-date'          // Current time/date
   | 'user-input'         // Static value entry
-  | 'http-request';      // HTTP GET request
+  | 'http-request'       // HTTP GET request
+  | 'menu-group';        // Exclusive button group with active/inactive state management
 
 /**
  * Processing node types - Data transformation

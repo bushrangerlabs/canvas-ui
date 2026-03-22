@@ -91,6 +91,7 @@ interface ExecutionContextInternal {
   nodeOutputs: Record<string, any>; // Outputs from executed nodes
   startTime: number;
   status: FlowExecutionStatus;
+  triggerContext?: TriggerContext; // Which trigger caused this execution
   // Helper functions
   getWidget: (widgetId: string) => any;
   getEntity: (entityId: string) => any;
@@ -593,6 +594,68 @@ async function executeNode(
         return true;
       }
 
+      case 'menu-group': {
+        const tabs: Array<{widget_id: string; value: string; activeIcon?: string; activeLabel?: string}> = config?.tabs || [];
+        const activeColor: string = config?.activeColor || '#ffffff';
+        const inactiveColor: string = config?.inactiveColor || '#808080';
+        const activeBgColor: string = config?.activeBgColor || '';
+        const inactiveBgColor: string = config?.inactiveBgColor || '';
+        const activeTextColor: string = config?.activeTextColor || '';
+        const inactiveTextColor: string = config?.inactiveTextColor || '';
+        const activeIconColor: string = config?.activeIconColor || '';
+        const inactiveIconColor: string = config?.inactiveIconColor || '';
+
+        if (tabs.length === 0) {
+          flowLog(`[FlowExecutor] menu-group: no tabs configured, skipping`);
+          return null;
+        }
+
+        // Find which tab was triggered by matching the clicked button widget ID
+        const triggerWidgetId = context.triggerContext?.widgetId;
+        const activeTabIndex = triggerWidgetId
+          ? tabs.findIndex(t => t.widget_id === triggerWidgetId)
+          : -1;
+
+        if (activeTabIndex === -1) {
+          flowLog(`[FlowExecutor] menu-group: no matching tab for trigger widget ${triggerWidgetId}`);
+          return null;
+        }
+
+        // Apply active/inactive visual state to all button widgets
+        for (let i = 0; i < tabs.length; i++) {
+          const tab = tabs[i];
+          if (!tab.widget_id) continue;
+          const isActive = i === activeTabIndex;
+
+          // Border color (always applied)
+          await context.setWidget(tab.widget_id, 'config.style.borderColor', isActive ? activeColor : inactiveColor);
+
+          // Optional background color
+          if (activeBgColor || inactiveBgColor) {
+            await context.setWidget(tab.widget_id, 'config.style.backgroundColor', isActive ? activeBgColor : inactiveBgColor);
+          }
+          // Optional text color
+          if (activeTextColor || inactiveTextColor) {
+            await context.setWidget(tab.widget_id, 'config.textColor', isActive ? activeTextColor : inactiveTextColor);
+          }
+          // Optional icon color
+          if (activeIconColor || inactiveIconColor) {
+            await context.setWidget(tab.widget_id, 'config.iconColor', isActive ? activeIconColor : inactiveIconColor);
+          }
+          // Optional active icon/label override
+          if (isActive && tab.activeIcon) {
+            await context.setWidget(tab.widget_id, 'config.icon', tab.activeIcon);
+          }
+          if (isActive && tab.activeLabel) {
+            await context.setWidget(tab.widget_id, 'config.label', tab.activeLabel);
+          }
+        }
+
+        const selectedTab = tabs[activeTabIndex];
+        flowLog(`[FlowExecutor] menu-group: tab ${activeTabIndex} (${triggerWidgetId}) selected, emitting: ${selectedTab.value}`);
+        return selectedTab.value;
+      }
+
       case 'dismiss-screensaver': {
         const widgetId = config?.widgetId || config?.widget_id;
         window.dispatchEvent(
@@ -641,6 +704,7 @@ export async function executeFlow(
     nodeOutputs: {},
     startTime,
     status: 'running',
+    triggerContext,
     getWidget: (widgetId: string) => externalContext.widgets[widgetId],
     getEntity: (entityId: string) => externalContext.entities[entityId],
     getVariable: (name: string) => context.variables[name],
@@ -668,20 +732,29 @@ export async function executeFlow(
     let nodesToExecute = sortedNodes;
     if (triggerContext) {
       const matchingInputIds = sortedNodes
-        .filter(n =>
-          n.data.nodeType === 'widget-property' &&
-          (n.data.config?.widget_id || n.data.config?.widgetId) === triggerContext.widgetId &&
-          n.data.config?.property === triggerContext.property
-        )
+        .filter(n => {
+          if (n.data.nodeType === 'widget-property') {
+            return (
+              (n.data.config?.widget_id || n.data.config?.widgetId) === triggerContext.widgetId &&
+              n.data.config?.property === triggerContext.property
+            );
+          }
+          if (n.data.nodeType === 'menu-group') {
+            // A menu-group node matches when any of its tabs' button widget fired
+            const tabs: Array<{widget_id: string}> = n.data.config?.tabs || [];
+            return tabs.some(t => t.widget_id === triggerContext.widgetId);
+          }
+          return false;
+        })
         .map(n => n.id);
 
       if (matchingInputIds.length > 0) {
         // Nodes reachable from the triggered input
         const triggerReachable = getReachableNodes(matchingInputIds, flow.edges);
 
-        // Nodes reachable from ANY widget-property node (all chained subtrees)
+        // Nodes reachable from ANY widget-property or menu-group input node
         const allWidgetPropertyIds = sortedNodes
-          .filter(n => n.data.nodeType === 'widget-property')
+          .filter(n => n.data.nodeType === 'widget-property' || n.data.nodeType === 'menu-group')
           .map(n => n.id);
         const allInputReachable = getReachableNodes(allWidgetPropertyIds, flow.edges);
 

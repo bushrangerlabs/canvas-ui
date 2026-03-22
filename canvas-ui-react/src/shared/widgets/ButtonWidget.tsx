@@ -43,6 +43,8 @@ export const ButtonWidgetMetadata: WidgetMetadata = {
       { value: 'custom', label: 'Custom Service Call' },
       { value: 'navigation', label: 'Navigate to View' },
       { value: 'url', label: 'Open URL' },
+      { value: 'load-iframe', label: 'Load in IFrame' },
+      { value: 'execute-automation', label: 'Execute Automation' },
       { value: 'mqtt', label: 'MQTT Publish' },
     ]},
     
@@ -63,6 +65,13 @@ export const ButtonWidgetMetadata: WidgetMetadata = {
       { value: '_blank', label: 'New Tab' },
       { value: '_self', label: 'Same Tab' },
     ], visibleWhen: { field: 'actionType', value: 'url' } },
+
+    // Load IFrame
+    { name: 'iframeWidgetId', type: 'text', label: 'IFrame Widget Name/ID', default: '', category: 'behavior', description: 'Name or ID of the IFrame widget to navigate', visibleWhen: { field: 'actionType', value: 'load-iframe' } },
+    { name: 'iframeUrl', type: 'text', label: 'IFrame URL', default: '', category: 'behavior', description: 'URL to load in the IFrame', visibleWhen: { field: 'actionType', value: 'load-iframe' } },
+
+    // Execute Automation
+    { name: 'automationEntityId', type: 'entity', label: 'Automation', default: '', category: 'behavior', description: 'HA automation to trigger', domains: ['automation'], visibleWhen: { field: 'actionType', value: 'execute-automation' } },
     
     // MQTT
     { name: 'mqttTopic', type: 'text', label: 'MQTT Topic', default: '', category: 'behavior', description: 'e.g. home/devices/switch1', visibleWhen: { field: 'actionType', value: 'mqtt' } },
@@ -143,6 +152,9 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
     targetView = '',
     url = '',
     urlTarget = '_blank',
+    iframeWidgetId = '',
+    iframeUrl = '',
+    automationEntityId = '',
     mqttTopic = '',
     mqttPayload = '',
     mqttQos = '0',
@@ -220,6 +232,14 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
       case 'url':
         handleUrl();
         break;
+
+      case 'load-iframe':
+        handleLoadIframe();
+        break;
+
+      case 'execute-automation':
+        await handleExecuteAutomation();
+        break;
       
       case 'custom':
         await handleCustomService();
@@ -244,6 +264,37 @@ const ButtonWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
   const handleUrl = () => {
     if (url) {
       window.open(url, urlTarget);
+    }
+  };
+
+  const handleLoadIframe = () => {
+    if (!iframeWidgetId || !iframeUrl) {
+      console.error('[ButtonWidget] load-iframe requires both iframeWidgetId and iframeUrl');
+      return;
+    }
+    // Write to runtime store (same-canvas iframe)
+    useWidgetRuntimeStore.getState().setWidgetState(iframeWidgetId, {
+      metadata: { runtimeUrl: iframeUrl, runtimeUrlTs: Date.now() },
+    });
+    // Bubble to parent if this button lives inside an embedded iframe
+    if (window.parent !== window) {
+      window.parent.postMessage(
+        { type: 'CANVAS_UI_SET_WIDGET', widgetId: iframeWidgetId, property: 'config.url', value: iframeUrl },
+        window.location.origin
+      );
+    }
+  };
+
+  const handleExecuteAutomation = async () => {
+    if (!hass) return;
+    if (!automationEntityId) {
+      console.error('[ButtonWidget] execute-automation requires automationEntityId');
+      return;
+    }
+    try {
+      await hass.callService('automation', 'trigger', { entity_id: automationEntityId });
+    } catch (error) {
+      console.error('[ButtonWidget] execute-automation failed:', error);
     }
   };
 
