@@ -404,8 +404,11 @@ async function executeNode(
           configValue = interpolateString(configValue, context);
         }
         
-        // Get the value to use (prefer input, fallback to interpolated config)
-        const value = inputValue !== undefined ? inputValue : configValue;
+        // Config value takes priority over input value.
+        // Input is only used as a fallback when no value is configured on this node.
+        // This prevents click-trigger timestamps (and other incidental upstream values)
+        // from overwriting a deliberately configured static value.
+        const value = (configValue !== undefined && configValue !== '') ? configValue : inputValue;
         
         // Determine property path
         let targetProperty: string;
