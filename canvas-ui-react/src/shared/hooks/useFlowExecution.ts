@@ -135,7 +135,20 @@ export function useFlowExecution() {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type !== 'CANVAS_UI_SET_WIDGET') return;
       const { widgetId, property, value } = event.data;
+      // Process locally
       setWidgetImpl.current(widgetId, property, value);
+      // Relay to all child iframes — the widget may live in a sibling iframe
+      // (e.g. parent receives from menu iframe, needs to forward to content iframe)
+      document.querySelectorAll('iframe').forEach((frame) => {
+        try {
+          frame.contentWindow?.postMessage(
+            { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
+            window.location.origin
+          );
+        } catch {
+          // cross-origin frame — skip silently
+        }
+      });
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
