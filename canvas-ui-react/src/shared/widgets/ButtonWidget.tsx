@@ -67,7 +67,7 @@ export const ButtonWidgetMetadata: WidgetMetadata = {
     ], visibleWhen: { field: 'actionType', value: 'url' } },
 
     // Load IFrame
-    { name: 'iframeWidgetId', type: 'text', label: 'IFrame Widget Name/ID', default: '', category: 'behavior', description: 'Name or ID of the IFrame widget to navigate', visibleWhen: { field: 'actionType', value: 'load-iframe' } },
+    { name: 'iframeWidgetId', type: 'widget', label: 'IFrame Widget', default: '', category: 'behavior', description: 'The IFrame widget to navigate', visibleWhen: { field: 'actionType', value: 'load-iframe' } },
     { name: 'iframeUrl', type: 'text', label: 'IFrame URL', default: '', category: 'behavior', description: 'URL to load in the IFrame', visibleWhen: { field: 'actionType', value: 'load-iframe' } },
 
     // Execute Automation

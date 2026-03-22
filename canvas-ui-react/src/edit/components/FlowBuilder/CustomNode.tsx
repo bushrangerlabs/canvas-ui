@@ -21,11 +21,10 @@ interface CustomNodeProps {
 
 export const CustomNode: React.FC<CustomNodeProps> = memo(({ data, id, onConfigure, onClone }) => {
   const metadata = getNodeMetadata(data.nodeType);
-  const { config: appConfig, currentViewId } = useConfigStore();
+  const { config: appConfig } = useConfigStore();
   
-  // Get current view's widgets for name resolution
-  const currentView = appConfig?.views.find(v => v.id === currentViewId);
-  const widgets = currentView?.widgets || [];
+  // Use all views' widgets so cross-view targets resolve to names
+  const widgets = appConfig?.views.flatMap(v => v.widgets || []) ?? [];
 
   if (!metadata) {
     return (

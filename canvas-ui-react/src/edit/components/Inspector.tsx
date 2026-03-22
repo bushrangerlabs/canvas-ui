@@ -9,6 +9,7 @@ import {
     Accordion,
     AccordionDetails,
     AccordionSummary,
+    Autocomplete,
     Box,
     Button,
     Checkbox,
@@ -379,6 +380,29 @@ export const Inspector: React.FC<InspectorProps> = ({
             sx={{ mb: 1, display: 'block' }}
           />
         );
+
+      case 'widget': {
+        const widgetOptions = allWidgets;
+        const selectedWidget = widgetOptions.find(w => w.id === value) || null;
+        const getWidgetLabel = (w: WidgetConfig) => {
+          const viewName = allViews.find(v => v.widgets?.some(ww => ww.id === w.id))?.name || '';
+          return w.name ? `${w.name}${viewName ? ` [${viewName}]` : ''}` : w.id;
+        };
+        return (
+          <Box key={field.name} sx={{ mb: 2 }}>
+            <Autocomplete
+              size="small"
+              options={widgetOptions}
+              getOptionLabel={getWidgetLabel}
+              value={selectedWidget}
+              onChange={(_, newVal) => handleFieldChange(field.name, newVal?.id || '')}
+              renderInput={(params) => (
+                <TextField {...params} label={field.label} helperText={field.description} />
+              )}
+            />
+          </Box>
+        );
+      }
 
       case 'entity':
         return (

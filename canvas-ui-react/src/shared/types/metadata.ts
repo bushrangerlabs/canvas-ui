@@ -10,6 +10,7 @@ export type FieldType =
   | 'select'
   | 'checkbox'
   | 'entity'
+  | 'widget'
   | 'icon'
   | 'slider'
   | 'textarea'
