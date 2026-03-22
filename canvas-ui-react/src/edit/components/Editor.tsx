@@ -981,7 +981,8 @@ const Editor: React.FC = () => {
           }}
           currentView={currentView}
           allViews={config.views}
-          allWidgets={config.views.flatMap(v => v.widgets || [])}
+          allWidgets={currentView.widgets}
+          allWidgetsForPicker={config.views.flatMap(v => v.widgets || [])}
           onViewSwitch={(viewId) => setCurrentView(viewId)}
           onWidgetSelect={(widgetId) => setSelectedWidgets([widgetId])}
           onUpdateView={(viewId, updates) => {

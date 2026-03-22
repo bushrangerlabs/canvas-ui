@@ -61,6 +61,7 @@ interface InspectorProps {
   currentView: ViewConfig | null;
   allViews: ViewConfig[];
   allWidgets: WidgetConfig[];
+  allWidgetsForPicker?: WidgetConfig[]; // Cross-view list used by widget-picker fields
   onViewSwitch: (viewId: string) => void;
   onWidgetSelect: (widgetId: string) => void;
   onUpdateView: (viewId: string, updates: Partial<ViewConfig>) => void;
@@ -78,6 +79,7 @@ export const Inspector: React.FC<InspectorProps> = ({
   currentView,
   allViews,
   allWidgets,
+  allWidgetsForPicker,
   onViewSwitch,
   onUpdateView,
   onToggleWidgetHidden,
@@ -382,7 +384,7 @@ export const Inspector: React.FC<InspectorProps> = ({
         );
 
       case 'widget': {
-        const widgetOptions = allWidgets;
+        const widgetOptions = allWidgetsForPicker ?? allWidgets;
         const selectedWidget = widgetOptions.find(w => w.id === value) || null;
         const getWidgetLabel = (w: WidgetConfig) => {
           const viewName = allViews.find(v => v.widgets?.some(ww => ww.id === w.id))?.name || '';
