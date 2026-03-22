@@ -6,6 +6,11 @@
 import {
     Box,
     Button,
+    Checkbox,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Drawer,
     FormControl,
     IconButton,
@@ -13,14 +18,16 @@ import {
     MenuItem,
     Select,
     TextField,
+    Tooltip,
     Typography
 } from '@mui/material';
-import { Add, Delete, Edit } from '@mui/icons-material';
+import { Add, ContentCopy as ContentCopyIcon, ContentPaste as ContentPasteIcon, Delete, Edit } from '@mui/icons-material';
 import React, { useEffect, useMemo, useState } from 'react';
 import { getWidgetProperties, getWritableWidgetProperties } from '../../../shared/flows/autoTriggers';
 
 import { useWebSocket } from '../../../shared/providers/WebSocketProvider';
 import { useConfigStore } from '../../../shared/stores/useConfigStore';
+import { useFlowClipboardStore } from '../../../shared/stores/flowClipboardStore';
 import type { FlowNodeData } from '../../../shared/types/flow';
 import { getNodeMetadata } from '../../../shared/types/nodeRegistry';
 
@@ -115,6 +122,9 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   // Widget filter state — Set Widget Group draft builder
   const [draftViewFilter, setDraftViewFilter] = useState('');
   const [draftWidgetSearch, setDraftWidgetSearch] = useState('');
+  const [selectedEntries, setSelectedEntries] = useState<Set<number>>(new Set());
+  const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
+  const { nodeType: clipNodeType, entries: clipEntries, copyEntries: copyToClipboard } = useFlowClipboardStore();
   
   // Get flow and node data
   const flow = getFlow(flowId);
@@ -143,6 +153,7 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
     setWidgetSearch('');
     setDraftViewFilter('');
     setDraftWidgetSearch('');
+    setSelectedEntries(new Set());
   }, [nodeId, flowId, getFlow]); // Fetch fresh data when nodeId changes
   
   // All widgets across ALL views — flows can target any widget regardless of which view it lives on
@@ -820,18 +831,78 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                 </Button>
               )}
             </Box>
+            {/* Paste from clipboard */}
+            {clipNodeType === 'set-widget-group' && clipEntries.length > 0 && (
+              <Button
+                fullWidth
+                size="small"
+                variant="outlined"
+                color="secondary"
+                startIcon={<ContentPasteIcon />}
+                sx={{ mb: 2 }}
+                onClick={() => setPasteDialogOpen(true)}
+              >
+                Paste {clipEntries.length} {clipEntries.length === 1 ? 'entry' : 'entries'} from clipboard
+              </Button>
+            )}
             {/* Entries list */}
             {((config.entries as any[]) || []).length > 0 && (
               <>
-                <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-                  Entries ({(config.entries as any[]).length})
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: 'text.secondary', flex: 1 }}>
+                    Entries ({(config.entries as any[]).length})
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="text"
+                    sx={{ fontSize: '0.7rem', minWidth: 0, px: 0.5, textTransform: 'none' }}
+                    onClick={() => {
+                      const allCount = (config.entries as any[]).length;
+                      if (selectedEntries.size === allCount) {
+                        setSelectedEntries(new Set());
+                      } else {
+                        setSelectedEntries(new Set(Array.from({ length: allCount }, (_, i) => i)));
+                      }
+                    }}
+                  >
+                    {selectedEntries.size === (config.entries as any[]).length ? 'Deselect all' : 'Select all'}
+                  </Button>
+                  {selectedEntries.size > 0 && (
+                    <Tooltip title="Copy selected entries to clipboard">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<ContentCopyIcon />}
+                        sx={{ fontSize: '0.7rem', textTransform: 'none' }}
+                        onClick={() => {
+                          const entriesToCopy = (config.entries as Array<{widget_id: string; property: string; value: string}>)
+                            .filter((_, i) => selectedEntries.has(i));
+                          copyToClipboard('set-widget-group', entriesToCopy);
+                          setSelectedEntries(new Set());
+                        }}
+                      >
+                        Copy ({selectedEntries.size})
+                      </Button>
+                    </Tooltip>
+                  )}
+                </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
                   {(config.entries as Array<{widget_id: string; property: string; value: string}>).map((entry, idx) => {
                     const w = widgets.find(ww => ww.id === entry.widget_id);
                     const wLabel = w ? displayWidget(w.id) : entry.widget_id;
                     return (
-                      <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, p: 1, bgcolor: editingIndex === idx ? 'action.selected' : 'action.hover', borderRadius: 1, border: editingIndex === idx ? '1px solid' : 'none', borderColor: 'primary.main' }}>
+                      <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, p: 1, bgcolor: editingIndex === idx ? 'action.selected' : (selectedEntries.has(idx) ? 'action.focus' : 'action.hover'), borderRadius: 1, border: (editingIndex === idx || selectedEntries.has(idx)) ? '1px solid' : 'none', borderColor: editingIndex === idx ? 'primary.main' : 'secondary.main' }}>
+                        <Checkbox
+                          size="small"
+                          checked={selectedEntries.has(idx)}
+                          onChange={(e) => {
+                            const next = new Set(selectedEntries);
+                            if (e.target.checked) next.add(idx);
+                            else next.delete(idx);
+                            setSelectedEntries(next);
+                          }}
+                          sx={{ p: 0, mt: 0.25 }}
+                        />
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography variant="caption" display="block" noWrap sx={{ fontWeight: 600 }}>{wLabel}</Typography>
                           <Typography variant="caption" color="text.secondary" display="block" noWrap>
@@ -866,6 +937,40 @@ export const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
                 </Box>
               </>
             )}
+            {/* Paste entries dialog */}
+            <Dialog open={pasteDialogOpen} onClose={() => setPasteDialogOpen(false)}>
+              <DialogTitle>Paste entries</DialogTitle>
+              <DialogContent>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Paste {clipEntries.length} {clipEntries.length === 1 ? 'entry' : 'entries'} from clipboard.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Append adds them after existing entries. Replace overwrites all current entries.
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setPasteDialogOpen(false)}>Cancel</Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    const existing = (config.entries as Array<{widget_id: string; property: string; value: string}>) || [];
+                    setConfig({ ...config, entries: [...existing, ...clipEntries] });
+                    setPasteDialogOpen(false);
+                  }}
+                >
+                  Append
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    setConfig({ ...config, entries: [...clipEntries] });
+                    setPasteDialogOpen(false);
+                  }}
+                >
+                  Replace
+                </Button>
+              </DialogActions>
+            </Dialog>
           </>
         )}
         {nodeData.nodeType === 'call-service' && (
