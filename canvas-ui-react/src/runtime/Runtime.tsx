@@ -127,39 +127,56 @@ const Runtime: React.FC = () => {
   // Expose hass to window for Lovelace cards in kiosk/view mode
   useEffect(() => {
     if (hass && authenticated) {
-      // Try to find HA's real hass object from <home-assistant> element.
-      // This works in ALL panel modes (edit, kiosk, preview) since Canvas UI always
-      // runs as an HA panel in the same document. The <home-assistant> element always
-      // has the full hass (localize, themes, callService, formatEntityState, etc.)
+      // Walk up window hierarchy to find <home-assistant> or a window.hass with full HA hass.
+      // This handles nested iframe contexts (IFrame widget → kiosk frame → HA main).
       let haHass: any = null;
-      
-      // Try <home-assistant> element first (most reliable in panel mode)
-      const homeAssistant = document.querySelector('home-assistant');
-      if (homeAssistant && (homeAssistant as any).hass && typeof (homeAssistant as any).hass.localize === 'function') {
-        haHass = (homeAssistant as any).hass;
-        console.log('[Runtime] Found full hass on <home-assistant> element');
-      }
-      // Fallback: check if window.hass already has the full object (set by canvas-ui-panel.js)
-      if (!haHass) {
-        const existingHass = (window as any).hass;
-        if (existingHass && typeof existingHass.localize === 'function') {
-          haHass = existingHass;
-          console.log('[Runtime] Found full hass already on window.hass');
+
+      const walkForHass = () => {
+        let win: Window = window;
+        let checkedTop = false;
+        // Check <home-assistant> element in each reachable window
+        while (!checkedTop) {
+          try {
+            const ha = (win as any).document?.querySelector?.('home-assistant');
+            if (ha && typeof (ha as any).hass?.localize === 'function') return (ha as any).hass;
+          } catch (_) {}
+          if (win === win.parent) { checkedTop = true; break; }
+          try { win = win.parent; } catch (_) { break; }
         }
-      }
-      // Fallback: window.hassConnection
-      if (!haHass && (window as any).hassConnection) {
-        haHass = (window as any).hassConnection;
-        console.log('[Runtime] Found hass on window.hassConnection');
-      }
+        // Check window.hass in each reachable window
+        win = window; checkedTop = false;
+        while (!checkedTop) {
+          try {
+            const wh = (win as any).hass;
+            if (wh && typeof wh.localize === 'function') return wh;
+          } catch (_) {}
+          if (win === win.parent) { checkedTop = true; break; }
+          try { win = win.parent; } catch (_) { break; }
+        }
+        return null;
+      };
+
+      haHass = walkForHass();
 
       if (haHass && typeof haHass.localize === 'function') {
         // Use HA's full hass object (has localize, formatNumber, themes, etc.)
         console.log('[Runtime] ✅ Using full HA hass (panel mode)');
         (window as any).hass = haHass;
-        // Make sure loadCardHelpers is available
-        if (!(window as any).loadCardHelpers && (window.parent as any).loadCardHelpers) {
-          (window as any).loadCardHelpers = (window.parent as any).loadCardHelpers;
+        // Propagate loadCardHelpers — walk up to find it
+        if (!(window as any).loadCardHelpers) {
+          let win: Window = window;
+          let found = false;
+          while (!found) {
+            try {
+              if ((win.parent as any).loadCardHelpers) {
+                (window as any).loadCardHelpers = (win.parent as any).loadCardHelpers;
+                found = true;
+                break;
+              }
+            } catch (_) { break; }
+            if (win === win.parent) break;
+            win = win.parent;
+          }
         }
       } else {
         // Standalone mode (dev server, etc.) - use our WebSocket hass

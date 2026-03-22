@@ -14,6 +14,32 @@ declare global {
   }
 }
 
+// Walk up the window hierarchy to find the window that owns HA's custom elements.
+// Needed when LovelaceCardWidget runs inside a nested iframe (e.g. IFrame widget inside kiosk).
+// Safely ignores cross-origin frames (accessing their properties throws a SecurityError).
+function getHAWindow(): Window {
+  let win: Window = window;
+  try {
+    while (win !== win.parent) {
+      const parent = win.parent;
+      try {
+        if ((parent as any).customElements?.get('ha-card')) return parent;
+      } catch (_) { /* cross-origin */ }
+      if (win === parent) break; // top reached
+      win = parent;
+    }
+  } catch (_) { /* cross-origin at top */ }
+  // Fallback: check the chain again returning the highest same-origin window
+  let best: Window = window;
+  try {
+    let cur: Window = window;
+    while (cur !== cur.parent) {
+      try { cur = cur.parent; best = cur; } catch (_) { break; }
+    }
+  } catch (_) {}
+  return (best as any).customElements?.get('ha-card') ? best : window;
+}
+
 /**
  * Lovelace Card Widget
  * Embeds any Home Assistant Lovelace card (built-in or custom)
@@ -275,9 +301,9 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
         return;
       }
       
-      // Check if HA frontend is available (either in same window or parent iframe)
-      const hasHAFrontend = !!(window as any).customElements?.get('ha-card') || 
-                            (window.parent !== window.self && !!(window.parent as any).customElements?.get('ha-card'));
+      // Check if HA frontend is available anywhere in the window hierarchy
+      const haWindow = getHAWindow();
+      const hasHAFrontend = !!(haWindow as any).customElements?.get('ha-card');
       
       if (!hasHAFrontend) {
         setError('Home Assistant frontend not detected. Lovelace cards require HA custom elements.');
@@ -340,18 +366,30 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
         // Prefer the full HA hass (has localize, themes, callService, formatEntityState, etc.)
         // The full hass is set by canvas-ui-panel.js before React boots, or by <home-assistant> element.
         const getFullHass = () => {
-          // 1. Check <home-assistant> element (most reliable - always has full hass in panel mode)
-          const homeAssistant = document.querySelector('home-assistant');
-          if (homeAssistant && (homeAssistant as any).hass && typeof (homeAssistant as any).hass.localize === 'function') {
-            return (homeAssistant as any).hass;
+          // 1. Walk up windows to find <home-assistant> element (works at any nesting depth)
+          let win: Window = window;
+          let checkedTop = false;
+          while (!checkedTop) {
+            try {
+              const ha = (win as any).document?.querySelector?.('home-assistant');
+              if (ha && typeof (ha as any).hass?.localize === 'function') return (ha as any).hass;
+            } catch (_) {}
+            if (win === win.parent) { checkedTop = true; break; }
+            try { win = win.parent; } catch (_) { break; }
           }
-          // 2. window.hass - could be full HA hass (set by canvas-ui-panel.js) or partial (set by WebSocketProvider)
-          const windowHass = (window as any).hass;
-          if (windowHass && typeof windowHass.localize === 'function') {
-            return windowHass; // Full HA hass
+          // 2. Walk up for window.hass
+          win = window;
+          checkedTop = false;
+          while (!checkedTop) {
+            try {
+              const wh = (win as any).hass;
+              if (wh && typeof wh.localize === 'function') return wh;
+            } catch (_) {}
+            if (win === win.parent) { checkedTop = true; break; }
+            try { win = win.parent; } catch (_) { break; }
           }
-          // 3. Fall back to partial hass (WebSocketProvider's hassConnection) if that's all we have
-          return windowHass;
+          // 3. Fall back to own window.hass (partial)
+          return (window as any).hass;
         };
 
         const waitForHass = () => {
@@ -380,10 +418,8 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
           parentHasHaCard: !!(window.parent as any).customElements?.get('ha-card'),
         });
         
-        // Determine which window has the HA custom elements
-        const haWindow = (window.parent !== window.self && (window.parent as any).customElements?.get('ha-card')) 
-          ? window.parent 
-          : window;
+        // Determine which window has the HA custom elements (walk up the hierarchy)
+        const haWindow = getHAWindow();
         
         // Try using loadCardHelpers first (for built-in cards)
         if ((haWindow as any).loadCardHelpers) {
@@ -523,14 +559,31 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
   // This is event-driven (no polling) so cards reflect state changes instantly.
   useEffect(() => {
     if (!cardElementRef.current) return;
-    // Prefer full HA hass from <home-assistant> element (has localize, themes, callService, etc.)
-    // Fall back to window.hass
-    const homeAssistant = document.querySelector('home-assistant');
-    const haHass = homeAssistant && (homeAssistant as any).hass;
-    const windowHass = (window as any).hass;
-    const fullHass = (haHass && typeof haHass.localize === 'function') ? haHass
-      : (windowHass && typeof windowHass.localize === 'function') ? windowHass
-      : windowHass;
+    // Walk up window hierarchy to find <home-assistant> or window.hass with full hass
+    const getHass = () => {
+      let win: Window = window;
+      let checkedTop = false;
+      while (!checkedTop) {
+        try {
+          const ha = (win as any).document?.querySelector?.('home-assistant');
+          if (ha && typeof (ha as any).hass?.localize === 'function') return (ha as any).hass;
+        } catch (_) {}
+        if (win === win.parent) { checkedTop = true; break; }
+        try { win = win.parent; } catch (_) { break; }
+      }
+      win = window;
+      checkedTop = false;
+      while (!checkedTop) {
+        try {
+          const wh = (win as any).hass;
+          if (wh && typeof wh.localize === 'function') return wh;
+        } catch (_) { break; }
+        if (win === win.parent) { checkedTop = true; break; }
+        try { win = win.parent; } catch (_) { break; }
+      }
+      return (window as any).hass;
+    };
+    const fullHass = getHass();
     if (fullHass && fullHass.states && typeof fullHass.states === 'object') {
       (cardElementRef.current as any).hass = fullHass;
     }
