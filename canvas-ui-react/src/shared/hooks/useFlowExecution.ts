@@ -104,12 +104,27 @@ export function useFlowExecution() {
       }
       target[parts[parts.length - 1]] = value;
       storeUpdateWidget(targetViewId, targetWidget.id, { config: configUpdate });
+      // When running inside an iframe (e.g. a menu view), the target widget may be
+      // rendered on the parent canvas rather than here — bubble to parent so it can
+      // apply the same update to its own store and trigger a re-render there.
+      if (window.parent !== window) {
+        window.parent.postMessage(
+          { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
+          window.location.origin
+        );
+      }
     } else if (parts[0] === 'runtime') {
       console.warn(`[Flow] Cannot set runtime property via set-widget: ${property}`);
     } else {
       // Direct top-level config property
       const newConfig = { ...targetWidget.config, [property]: value };
       storeUpdateWidget(targetViewId, targetWidget.id, { config: newConfig });
+      if (window.parent !== window) {
+        window.parent.postMessage(
+          { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
+          window.location.origin
+        );
+      }
     }
   });
 
