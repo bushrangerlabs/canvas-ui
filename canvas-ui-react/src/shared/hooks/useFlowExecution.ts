@@ -35,7 +35,7 @@ export function useFlowExecution() {
 
   // Stable setWidget implementation — reads live state via getState() so no stale closures.
   // Used by both the trigger manager and the cross-iframe postMessage listener.
-  const setWidgetImpl = useRef(async (widgetId: string, property: string, value: any) => {
+  const setWidgetImpl = useRef(async (widgetId: string, property: string, value: any, skipBubble = false) => {
     const { config: currentConfig, updateWidget: storeUpdateWidget } = useConfigStore.getState();
 
     // Find the widget across all views in this canvas instance
@@ -55,7 +55,7 @@ export function useFlowExecution() {
       // If we're running inside an embedded iframe, delegate to the parent canvas instance
       // via postMessage so the parent can apply the update to its own store.
       // This enables menu iframes to control widgets (e.g. content iframes) on the main view.
-      if (window.parent !== window) {
+      if (!skipBubble && window.parent !== window) {
         window.parent.postMessage(
           { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
           window.location.origin
@@ -84,7 +84,7 @@ export function useFlowExecution() {
         useWidgetRuntimeStore.getState().setWidgetState(widgetId, {
           metadata: { runtimeUrl: value, runtimeUrlTs: Date.now() },
         });
-        if (window.parent !== window) {
+        if (!skipBubble && window.parent !== window) {
           window.parent.postMessage(
             { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
             window.location.origin
@@ -107,7 +107,7 @@ export function useFlowExecution() {
       // When running inside an iframe (e.g. a menu view), the target widget may be
       // rendered on the parent canvas rather than here — bubble to parent so it can
       // apply the same update to its own store and trigger a re-render there.
-      if (window.parent !== window) {
+      if (!skipBubble && window.parent !== window) {
         window.parent.postMessage(
           { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
           window.location.origin
@@ -119,7 +119,7 @@ export function useFlowExecution() {
       // Direct top-level config property
       const newConfig = { ...targetWidget.config, [property]: value };
       storeUpdateWidget(targetViewId, targetWidget.id, { config: newConfig });
-      if (window.parent !== window) {
+      if (!skipBubble && window.parent !== window) {
         window.parent.postMessage(
           { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
           window.location.origin
@@ -134,21 +134,24 @@ export function useFlowExecution() {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type !== 'CANVAS_UI_SET_WIDGET') return;
-      const { widgetId, property, value } = event.data;
-      // Process locally
-      setWidgetImpl.current(widgetId, property, value);
-      // Relay to all child iframes — the widget may live in a sibling iframe
-      // (e.g. parent receives from menu iframe, needs to forward to content iframe)
-      document.querySelectorAll('iframe').forEach((frame) => {
-        try {
-          frame.contentWindow?.postMessage(
-            { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value },
-            window.location.origin
-          );
-        } catch {
-          // cross-origin frame — skip silently
-        }
-      });
+      const { widgetId, property, value, relayed } = event.data;
+      // Process locally — if this is a relayed message, suppress further bubbling up
+      setWidgetImpl.current(widgetId, property, value, relayed === true);
+      // Only relay to child iframes when this is the FIRST hop (not already a relay).
+      // Stamping relayed:true on the forwarded message prevents infinite loops where
+      // child iframes bubble back up and the parent relays again indefinitely.
+      if (!relayed) {
+        document.querySelectorAll('iframe').forEach((frame) => {
+          try {
+            frame.contentWindow?.postMessage(
+              { type: 'CANVAS_UI_SET_WIDGET', widgetId, property, value, relayed: true },
+              window.location.origin
+            );
+          } catch {
+            // cross-origin frame — skip silently
+          }
+        });
+      }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
