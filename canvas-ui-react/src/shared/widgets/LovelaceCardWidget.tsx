@@ -49,6 +49,11 @@ function getHAWindow(): Window {
 const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardElementRef = useRef<HTMLElement | null>(null);
+  // Portal container in haWindow.document.body used when canvas UI runs inside an iframe
+  // (cross-document case) to avoid the "Sharing constructed stylesheets in multiple documents"
+  // NotAllowedError thrown by Lit when CSSStyleSheet objects from one document are adopted
+  // in a ShadowRoot belonging to a different document.
+  const portalContainerRef = useRef<HTMLElement | null>(null);
   const { hass, entities } = useWebSocket();
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -471,14 +476,62 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
         trySetConfig();
         
         if (containerRef.current) {
-          // Append card element (container is now empty since loading state is separate)
-          containerRef.current.appendChild(cardElement);
-          cardElementRef.current = cardElement;
+          const haSourceWindow = getHAWindow();
+          if ((haSourceWindow as any) !== window) {
+            // Cross-document: card was created via haWindow's loadCardHelpers whose Lit
+            // CSSStyleSheets belong to haWindow.document. Appending them to our iframe
+            // document causes "Sharing constructed stylesheets in multiple documents is
+            // not allowed". Fix: render into a portal div in haWindow.document.body and
+            // position it to overlay our React placeholder.
+            const portalDiv = (haSourceWindow as any).document.createElement('div');
+            portalDiv.style.cssText = 'position:fixed;overflow:hidden;z-index:2147483647;pointer-events:auto;';
+            (haSourceWindow as any).document.body.appendChild(portalDiv);
+            portalDiv.appendChild(cardElement);
+            portalContainerRef.current = portalDiv;
+            cardElementRef.current = cardElement;
+
+            const syncPortalPosition = () => {
+              if (!containerRef.current || !portalDiv.isConnected) return;
+              const rect = containerRef.current.getBoundingClientRect();
+              // Find our iframe in haWindow.document to get its offset in the parent viewport
+              let iframeTop = 0, iframeLeft = 0;
+              try {
+                const iframes = (haSourceWindow as any).document.querySelectorAll('iframe');
+                for (const iframe of iframes) {
+                  try {
+                    if (iframe.contentWindow === window) {
+                      const ir = iframe.getBoundingClientRect();
+                      iframeTop = ir.top;
+                      iframeLeft = ir.left;
+                      break;
+                    }
+                  } catch (_) {}
+                }
+              } catch (_) {}
+              portalDiv.style.top = (iframeTop + rect.top) + 'px';
+              portalDiv.style.left = (iframeLeft + rect.left) + 'px';
+              portalDiv.style.width = rect.width + 'px';
+              portalDiv.style.height = rect.height + 'px';
+            };
+
+            syncPortalPosition();
+            const posObserver = new ResizeObserver(syncPortalPosition);
+            posObserver.observe(containerRef.current);
+            (haSourceWindow as any).addEventListener('scroll', syncPortalPosition, { passive: true, capture: true });
+            (haSourceWindow as any).addEventListener('resize', syncPortalPosition, { passive: true });
+
+            cleanupFn = () => {
+              posObserver.disconnect();
+              try { (haSourceWindow as any).removeEventListener('scroll', syncPortalPosition, { capture: true }); } catch (_) {}
+              try { (haSourceWindow as any).removeEventListener('resize', syncPortalPosition); } catch (_) {}
+            };
+          } else {
+            // Same document: safe to append directly into React tree
+            containerRef.current.appendChild(cardElement);
+            cardElementRef.current = cardElement;
+            cleanupFn = () => {};
+          }
         }
-        
-        cleanupFn = () => {
-          // Cleanup handled in main useEffect return
-        };
         
       } catch (err: any) {
         console.error('[LovelaceCardWidget] Error creating card:', err);
@@ -502,6 +555,12 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
         }
       }
       cardElementRef.current = null;
+
+      // Remove portal container from haWindow.document.body if used
+      if (portalContainerRef.current) {
+        try { portalContainerRef.current.remove(); } catch (_) {}
+        portalContainerRef.current = null;
+      }
     };
   }, [
     // Only recreate the card when the card type or card config changes.
@@ -593,7 +652,9 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => {
-      window.dispatchEvent(new Event('resize'));
+      // Dispatch resize to the window where the card element actually lives
+      const targetWin: any = portalContainerRef.current ? getHAWindow() : window;
+      targetWin.dispatchEvent(new Event('resize'));
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
