@@ -665,9 +665,14 @@ const LovelaceCardWidget: React.FC<WidgetProps> = ({ config }) => {
   // Currently using card-mod YAML field instead
 
   // Apply container styling
+  // Note: width/height come from config.position (set by WidgetRenderer's outer container),
+  // NOT from config.config — the lovelace widget stores dimensions only in position.
+  // Use 100% so the inner container fills the WidgetRenderer box exactly; this ensures
+  // ha-card's height:100% resolves correctly and the card fills its widget bounds
+  // consistently in both kiosk and editor preview contexts.
   const containerStyle: React.CSSProperties = {
-    width: config.config.width,
-    height: config.config.height,
+    width: '100%',
+    height: '100%',
     position: 'relative',
     overflow: 'hidden',
     zIndex: parseInt(config.config.zIndex || '1'),
