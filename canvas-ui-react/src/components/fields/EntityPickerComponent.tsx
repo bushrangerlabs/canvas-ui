@@ -99,8 +99,10 @@ export function EntityPickerComponent({
         value={value}
         fullWidth
         size="small"
+        onChange={(e) => updateConfig(propertyPath, e.target.value)}
+        placeholder="e.g. sensor.temperature"
+        inputProps={{ style: { fontFamily: 'monospace', fontSize: 13 } }}
         InputProps={{
-          readOnly: true,
           endAdornment: (
             <InputAdornment position="end">
               {value && (
@@ -114,8 +116,6 @@ export function EntityPickerComponent({
             </InputAdornment>
           ),
         }}
-        onClick={() => setOpen(true)}
-        sx={{ cursor: 'pointer' }}
       />
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>

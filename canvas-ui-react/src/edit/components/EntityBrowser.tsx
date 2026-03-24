@@ -60,6 +60,7 @@ import {
   MenuItem,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -278,9 +279,7 @@ export const EntityBrowser: React.FC<EntityBrowserProps> = ({
   const handleClear = () => setSelectedEntity('');
 
   const currentEntity = options.find((o) => o.id === value);
-  const displayValue = currentEntity
-    ? `${currentEntity.name} (${currentEntity.id})`
-    : value || 'No entity selected';
+  const friendlyName = currentEntity?.name;
 
   const getDomainColor = (domain: string) => DOMAIN_COLORS[domain] || '#9E9E9E';
 
@@ -289,20 +288,24 @@ export const EntityBrowser: React.FC<EntityBrowserProps> = ({
       <TextField
         fullWidth
         label={label}
-        value={displayValue}
+        value={value}
         size="small"
-        onClick={handleOpen}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="e.g. sensor.temperature"
+        inputProps={{ style: { fontFamily: 'monospace', fontSize: 13 } }}
+        helperText={friendlyName && friendlyName !== value ? friendlyName : undefined}
         InputProps={{
-          readOnly: true,
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton size="small" onClick={handleOpen}>
-                <SearchIcon />
-              </IconButton>
+              <Tooltip title="Browse entities">
+                <IconButton size="small" onClick={handleOpen}>
+                  <SearchIcon />
+                </IconButton>
+              </Tooltip>
             </InputAdornment>
           ),
         }}
-        sx={{ cursor: 'pointer', mb: 2 }}
+        sx={{ mb: friendlyName && friendlyName !== value ? 0.5 : 2 }}
       />
 
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -461,4 +464,3 @@ export const EntityBrowser: React.FC<EntityBrowserProps> = ({
     </>
   );
 };
-
