@@ -7,6 +7,8 @@
 import React, { Suspense, lazy } from 'react';
 import type { WidgetConfig, WidgetProps } from '../types';
 import type { WidgetMetadata } from '../types/metadata';
+import { WIDGET_REGISTRY } from '../registry/widgetRegistry';
+import { useContainerSelection } from '../contexts/ContainerSelectionContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -104,6 +106,7 @@ export const getSpanSize = (arr: number[], start: number, span: number, gap: num
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ScrollableContainerWidget: React.FC<WidgetProps> = ({ config, isEditMode }) => {
+  const { selectedChild, setSelectedChild } = useContainerSelection();
   const {
     scrollDirection = 'vertical',
     columns        = [200, 200],
@@ -198,19 +201,28 @@ const ScrollableContainerWidget: React.FC<WidgetProps> = ({ config, isEditMode }
         {/* Child widgets */}
         {children.map(child => {
           const ChildComp = childComponents[child.widgetType];
+          const childMeta = WIDGET_REGISTRY[child.widgetType];
           const cspan = child.colspan || 1;
           const rspan = child.rowspan || 1;
 
           const cellW = getSpanSize(columns, child.col, cspan, gap);
           const cellH = getSpanSize(rows,    child.row, rspan, gap);
 
+          const isSelectedCell = isEditMode && selectedChild?.containerId === config.id && selectedChild?.childId === child.id;
+
           const cellStyle: React.CSSProperties = {
             gridColumn: `${child.col + 1} / span ${cspan}`,
             gridRow:    `${child.row + 1} / span ${rspan}`,
             overflow:   'hidden',
             backgroundColor: cellBackground,
-            // Subtle highlight in edit mode so cells are visible
-            ...(isEditMode ? { outline: '1px solid rgba(80,160,255,0.25)' } : {}),
+            cursor: isEditMode ? 'pointer' : 'default',
+            // Highlight in edit mode; brighter ring when selected
+            ...(isEditMode ? {
+              outline: isSelectedCell
+                ? '2px solid rgba(80,180,255,0.9)'
+                : '1px solid rgba(80,160,255,0.25)',
+              ...(isSelectedCell ? { boxShadow: '0 0 0 1px rgba(80,180,255,0.4)' } : {}),
+            } : {}),
           };
 
           if (!ChildComp) {
@@ -246,7 +258,12 @@ const ScrollableContainerWidget: React.FC<WidgetProps> = ({ config, isEditMode }
           };
 
           return (
-            <div key={child.id} style={cellStyle}>
+            <div
+              key={child.id}
+              style={cellStyle}
+              onClick={isEditMode ? (e) => { e.stopPropagation(); setSelectedChild({ containerId: config.id, childId: child.id }); } : undefined}
+              title={isEditMode ? `Click to edit ${childMeta?.name ?? child.widgetType}` : undefined}
+            >
               <Suspense
                 fallback={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',

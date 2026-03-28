@@ -9,6 +9,8 @@ import { Box, Drawer, Typography } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import type { AIProvider } from '../../services/ai/ConversationService';
 import { Canvas } from '../../shared/components/Canvas';
+import { ContainerSelectionContext } from '../../shared/contexts/ContainerSelectionContext';
+import type { ContainerChildSelection } from '../../shared/contexts/ContainerSelectionContext';
 import { useFlowExecution } from '../../shared/hooks/useFlowExecution';
 import { useWebSocket } from '../../shared/providers/WebSocketProvider';
 import { WIDGET_REGISTRY } from '../../shared/registry/widgetRegistry';
@@ -78,6 +80,7 @@ const Editor: React.FC = () => {
   const [deleteViewDialogOpen, setDeleteViewDialogOpen] = useState(false);
   const [variablesManagerOpen, setVariablesManagerOpen] = useState(false); // Phase 2
   const [flowBuilderOpen, setFlowBuilderOpen] = useState(false); // Phase 3
+  const [selectedContainerChild, setSelectedContainerChild] = useState<ContainerChildSelection | null>(null);
   const [aiSettingsOpen, setAISettingsOpen] = useState(false); // AI Settings (Provider + Prompts)
   const [canvasSettingsOpen, setCanvasSettingsOpen] = useState(false); // Canvas UI Settings (API keys)
   const [widgetNameDialogOpen, setWidgetNameDialogOpen] = useState(false); // Widget naming dialog
@@ -283,6 +286,13 @@ const Editor: React.FC = () => {
       setCurrentView(config.views[0].id);
     }
   }, [config, currentViewId, setCurrentView]);
+
+  // Clear container child selection when a different widget is selected
+  useEffect(() => {
+    if (selectedContainerChild && !selectedWidgets.includes(selectedContainerChild.containerId)) {
+      setSelectedContainerChild(null);
+    }
+  }, [selectedWidgets, selectedContainerChild]);
 
   // Get current view
   const currentView = config?.views.find(v => v.id === currentViewId);
@@ -832,6 +842,7 @@ const Editor: React.FC = () => {
   }
 
   return (
+    <ContainerSelectionContext.Provider value={{ selectedChild: selectedContainerChild, setSelectedChild: setSelectedContainerChild }}>
     <Box sx={{ display: 'flex', height: '100vh' }}>
       {/* Canvas Toolbar - Hidden in kiosk mode */}
       {mode !== 'kiosk' && (
@@ -1219,6 +1230,7 @@ const Editor: React.FC = () => {
         />
       )}
     </Box>
+    </ContainerSelectionContext.Provider>
   );
 };
 
