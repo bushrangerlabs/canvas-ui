@@ -65,234 +65,6 @@ interface ContainerGridEditorProps {
   onUpdate: (updates: Partial<WidgetConfig>) => void;
 }
 
-// ── Shared field renderer for container child widgets ──
-// Used by ChildInspectorPanel (child's own settings panel).
-const renderContainerChildField = (
-  child: ContainerChild,
-  fieldName: string,
-  label: string,
-  type: string,
-  onUpdateValue: (fieldName: string, value: any) => void,
-  opts?: {
-    options?: { value: any; label: string }[];
-    min?: number; max?: number; step?: number;
-    description?: string;
-    domains?: string[];
-  }
-) => {
-  const value = child.config[fieldName] ?? '';
-  switch (type) {
-    case 'text':
-    case 'textarea':
-      return (
-        <TextField key={fieldName} fullWidth label={label} value={value}
-          onChange={e => onUpdateValue(fieldName, e.target.value)}
-          helperText={opts?.description}
-          multiline={type === 'textarea'} rows={type === 'textarea' ? 2 : 1}
-          size="small" sx={{ mb: 1.5 }} />
-      );
-    case 'number':
-    case 'slider':
-      return (
-        <TextField key={fieldName} fullWidth type="number" label={label}
-          value={value === '' ? '' : Number(value)}
-          onChange={e => onUpdateValue(fieldName, parseFloat(e.target.value))}
-          helperText={opts?.description}
-          inputProps={{ min: opts?.min, max: opts?.max, step: opts?.step ?? 1 }}
-          size="small" sx={{ mb: 1.5 }} />
-      );
-    case 'color':
-      return (
-        <Box key={fieldName} sx={{ mb: 1.5 }}>
-          <ColorPicker label={label} value={value || '#ffffff'}
-            onChange={v => onUpdateValue(fieldName, v)} />
-        </Box>
-      );
-    case 'select':
-      return (
-        <FormControl key={fieldName} fullWidth size="small" sx={{ mb: 1.5 }}>
-          <InputLabel>{label}</InputLabel>
-          <Select value={value} label={label}
-            onChange={e => onUpdateValue(fieldName, e.target.value)}>
-            {opts?.options?.map(o => (
-              <MenuItem key={String(o.value)} value={o.value}>{o.label}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      );
-    case 'checkbox':
-      return (
-        <FormControlLabel key={fieldName}
-          control={<Checkbox checked={!!value} onChange={e => onUpdateValue(fieldName, e.target.checked)} size="small" />}
-          label={<Typography variant="caption">{label}</Typography>}
-          sx={{ mb: 1, display: 'block' }} />
-      );
-    case 'entity':
-      return (
-        <Box key={fieldName} sx={{ mb: 1.5 }}>
-          <EntityBrowser label={label} value={value || ''}
-            onChange={v => onUpdateValue(fieldName, v)} />
-        </Box>
-      );
-    default:
-      return null;
-  }
-};
-
-// ── ChildInspectorPanel: shows when user clicks a child widget cell in edit mode ──
-interface ChildInspectorPanelProps {
-  childId: string;
-  containerWidget: WidgetConfig;
-  onUpdateContainer: (updates: Partial<WidgetConfig>) => void;
-  onBack: () => void;
-}
-
-const ChildInspectorPanel: React.FC<ChildInspectorPanelProps> = ({
-  childId, containerWidget, onUpdateContainer, onBack,
-}) => {
-  const cfg = containerWidget.config as {
-    columns: number[]; rows: number[]; children: ContainerChild[];
-  };
-  const children: ContainerChild[] = cfg.children ?? [];
-  const child = children.find(c => c.id === childId);
-  const childMeta = child ? WIDGET_REGISTRY[child.widgetType] : null;
-
-  if (!child) return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="caption" color="error">Widget not found in container.</Typography>
-    </Box>
-  );
-
-  const patchContainer = (patch: Partial<typeof cfg>) => {
-    onUpdateContainer({ config: { ...containerWidget.config, ...patch } });
-  };
-
-  const updateChildPlacement = (patch: Partial<ContainerChild>) => {
-    patchContainer({ children: children.map(c => c.id === childId ? { ...c, ...patch } : c) });
-  };
-
-  const updateChildFieldValue = (fieldName: string, value: any) => {
-    patchContainer({
-      children: children.map(c =>
-        c.id === childId ? { ...c, config: { ...c.config, [fieldName]: value } } : c
-      ),
-    });
-  };
-
-  const removeChild = () => {
-    patchContainer({ children: children.filter(c => c.id !== childId) });
-    onBack();
-  };
-
-  const cols = cfg.columns ?? [200, 200];
-  const rows = cfg.rows ?? [150, 150];
-
-  const accordionSx = {
-    mb: 1, '&:before': { display: 'none' }, boxShadow: 'none',
-    border: '1px solid', borderColor: 'primary.main', bgcolor: 'background.paper',
-  };
-  const summarySx = {
-    minHeight: 36, '&.Mui-expanded': { minHeight: 36 },
-    '& .MuiAccordionSummary-content': { margin: '6px 0' }, bgcolor: 'background.default',
-  };
-
-  return (
-    <Box>
-      {/* Breadcrumb */}
-      <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1,
-        borderBottom: '1px solid', borderColor: 'divider',
-        bgcolor: 'rgba(80,180,255,0.06)',
-      }}>
-        <IconButton size="small" onClick={onBack} title="Back to container grid">
-          <MuiIcons.ArrowBackOutlined fontSize="small" />
-        </IconButton>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2 }}>
-            Scrollable Container
-          </Typography>
-          <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.3 }}>
-            {childMeta?.name ?? child.widgetType}
-          </Typography>
-        </Box>
-        <Button size="small" color="error" variant="outlined"
-          onClick={removeChild} startIcon={<MuiIcons.DeleteOutlined />}
-          sx={{ fontSize: 11 }}>
-          Remove
-        </Button>
-      </Box>
-
-      <Box sx={{ px: 1, pt: 1 }}>
-        {/* Grid Position */}
-        <Accordion defaultExpanded disableGutters sx={accordionSx}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
-            <Typography variant="caption" fontWeight={600} textTransform="uppercase" color="primary">
-              Grid Position
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails sx={{ p: 1.5 }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 0.5 }}>
-              <TextField type="number" size="small" label="Row" value={child.row}
-                onChange={e => updateChildPlacement({ row: Math.max(0, parseInt(e.target.value) || 0) })}
-                inputProps={{ min: 0, max: rows.length - 1 }} />
-              <TextField type="number" size="small" label="Column" value={child.col}
-                onChange={e => updateChildPlacement({ col: Math.max(0, parseInt(e.target.value) || 0) })}
-                inputProps={{ min: 0, max: cols.length - 1 }} />
-              <TextField type="number" size="small" label="Col Span" value={child.colspan ?? 1}
-                onChange={e => updateChildPlacement({ colspan: Math.max(1, parseInt(e.target.value) || 1) })}
-                inputProps={{ min: 1, max: cols.length }} />
-              <TextField type="number" size="small" label="Row Span" value={child.rowspan ?? 1}
-                onChange={e => updateChildPlacement({ rowspan: Math.max(1, parseInt(e.target.value) || 1) })}
-                inputProps={{ min: 1, max: rows.length }} />
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Widget Settings — grouped by category */}
-        {childMeta && (() => {
-          const fieldsByCategory: Record<string, typeof childMeta.fields> = {};
-          childMeta.fields
-            .filter(f => !['x', 'y', 'width', 'height'].includes(f.name))
-            .forEach(f => {
-              const cat = f.category || 'general';
-              if (!fieldsByCategory[cat]) fieldsByCategory[cat] = [];
-              fieldsByCategory[cat].push(f);
-            });
-
-          return Object.entries(fieldsByCategory).map(([cat, fields]) => (
-            <Accordion key={cat} defaultExpanded disableGutters sx={accordionSx}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
-                <Typography variant="caption" fontWeight={600} textTransform="uppercase" color="primary">
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 1.5 }}>
-                {fields.map(f => {
-                  const visField = f as any;
-                  if (visField.visibleWhen) {
-                    const depVal = child.config[visField.visibleWhen.field];
-                    if (depVal !== visField.visibleWhen.value) return null;
-                  }
-                  return renderContainerChildField(
-                    child, f.name, f.label, f.type,
-                    updateChildFieldValue,
-                    {
-                      options: f.options as { value: any; label: string }[] | undefined,
-                      min: f.min, max: f.max, step: f.step,
-                      description: f.description,
-                      domains: f.domains,
-                    }
-                  );
-                })}
-              </AccordionDetails>
-            </Accordion>
-          ));
-        })()}
-      </Box>
-    </Box>
-  );
-};
-
 const ContainerGridEditor: React.FC<ContainerGridEditorProps> = ({ widget, onUpdate }) => {
   const { setSelectedChild } = useContext(ContainerSelectionContext);
   const cfg = widget.config as {
@@ -593,6 +365,29 @@ export const Inspector: React.FC<InspectorProps> = ({
 }) => {
   const { entities } = useWebSocket();
   const { selectedChild, setSelectedChild } = useContext(ContainerSelectionContext);
+
+  // ── Child widget mode: when a child inside a ScrollableContainer is selected ──
+  const activeChild: ContainerChild | null = (
+    selectedChild && widget?.type === 'scrollablecontainer' && selectedChild.containerId === widget.id
+  ) ? ((widget.config as any).children as ContainerChild[] ?? []).find((c: ContainerChild) => c.id === selectedChild.childId) ?? null
+    : null;
+  const activeChildMeta = activeChild ? (WIDGET_REGISTRY[activeChild.widgetType] ?? null) : null;
+  // When editing a child widget use its metadata; otherwise use the passed-in metadata
+  const effectiveMeta = activeChildMeta ?? metadata;
+
+  // Helpers for child mode ---
+  const removeActiveChild = () => {
+    if (!activeChild || !widget) return;
+    const _ch: ContainerChild[] = (widget.config as any).children ?? [];
+    onUpdate({ config: { ...widget.config, children: _ch.filter(c => c.id !== activeChild.id) } });
+    setSelectedChild(null);
+  };
+  const updateChildPlacement = (patch: Partial<ContainerChild>) => {
+    if (!activeChild || !widget) return;
+    const _ch: ContainerChild[] = (widget.config as any).children ?? [];
+    onUpdate({ config: { ...widget.config, children: _ch.map(c => c.id === activeChild.id ? { ...c, ...patch } : c) } });
+  };
+
   const [tabValue, setTabValue] = useState(1); // Default to Widget tab
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     Position: true,        // Always expanded - most commonly adjusted
@@ -627,7 +422,7 @@ export const Inspector: React.FC<InspectorProps> = ({
   };
 
   const getGroupedFields = () => {
-    if (!metadata) return {};
+    if (!effectiveMeta) return {};
     
     const groups: Record<string, FieldMetadata[]> = {
       Position: [],
@@ -636,9 +431,10 @@ export const Inspector: React.FC<InspectorProps> = ({
       Behavior: [],
     };
 
-    metadata.fields.forEach(field => {
+    effectiveMeta.fields.forEach(field => {
       if (['x', 'y', 'width', 'height'].includes(field.name)) {
-        groups.Position.push(field);
+        // Skip position fields in child mode — grid controls layout
+        if (!activeChild) groups.Position.push(field);
       } else if (field.category === 'layout') {
         groups.Layout.push(field);
       } else if (field.category === 'style') {
@@ -656,6 +452,9 @@ export const Inspector: React.FC<InspectorProps> = ({
   };
 
   const getValue = (fieldName: string, defaultValue: any) => {
+    if (activeChild) {
+      return (activeChild.config as any)[fieldName] ?? defaultValue;
+    }
     if (!widget) return defaultValue;
     
     if (fieldName === 'x') return widget.position.x;
@@ -667,6 +466,19 @@ export const Inspector: React.FC<InspectorProps> = ({
   };
 
   const handleFieldChange = (fieldName: string, value: any) => {
+    if (activeChild) {
+      // In child mode: update the child's config inside the container
+      const _ch: ContainerChild[] = (widget!.config as any).children ?? [];
+      onUpdate({
+        config: {
+          ...widget!.config,
+          children: _ch.map(c =>
+            c.id === activeChild.id ? { ...c, config: { ...(c.config as any), [fieldName]: value } } : c
+          ),
+        },
+      });
+      return;
+    }
     if (!widget) return;
     
     if (['x', 'y', 'width', 'height'].includes(fieldName)) {
@@ -699,7 +511,7 @@ export const Inspector: React.FC<InspectorProps> = ({
     }
 
     // Gauge widget - hide arc options if needle-only mode
-    if (metadata?.name === 'Gauge') {
+    if (effectiveMeta?.name === 'Gauge') {
       const needleOnly = getValue('needleOnly', false);
       if (needleOnly && ['showArc', 'arcWidth', 'zone1Color', 'zone1Limit', 'zone2Color', 'zone2Limit', 'zone3Color', 'showTicks'].includes(field.name)) {
         return false;
@@ -707,7 +519,7 @@ export const Inspector: React.FC<InspectorProps> = ({
     }
 
     // Button widget - show value field only for auto/toggle/turn_on/turn_off
-    if (metadata?.name === 'Button') {
+    if (effectiveMeta?.name === 'Button') {
       const actionType = getValue('actionType', 'auto');
       
       // Show value field only for auto/toggle/turn_on/turn_off
@@ -722,7 +534,7 @@ export const Inspector: React.FC<InspectorProps> = ({
     }
 
     // Progress Circle - hide segment options if not segmented
-    if (metadata?.name === 'Progress Circle') {
+    if (effectiveMeta?.name === 'Progress Circle') {
       const segmented = getValue('segmented', false);
       if (!segmented && ['segmentCount', 'segmentGap'].includes(field.name)) {
         return false;
@@ -781,7 +593,7 @@ export const Inspector: React.FC<InspectorProps> = ({
       case 'text':
       case 'textarea':
         // Image widget URL field — show a Pixabay browse button
-        if (field.name === 'imageUrl' && widget?.type === 'image') {
+        if (field.name === 'imageUrl' && (widget?.type === 'image' || activeChild?.widgetType === 'image')) {
           return (
             <Box key={field.name} sx={{ mb: 2 }}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
@@ -1229,7 +1041,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   Style changes apply to all selected widgets
                 </Typography>
               </Box>
-            ) : !widget || !metadata ? (
+            ) : !widget || !effectiveMeta ? (
               <Box sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
                   Select a widget to edit
@@ -1241,16 +1053,41 @@ export const Inspector: React.FC<InspectorProps> = ({
             ) : (
               <>
                 <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                  <Typography variant="subtitle1" fontWeight={600}>
-                    {metadata.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {widget.id}
-                  </Typography>
+                  {activeChild ? (
+                    <>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                        <IconButton size="small" onClick={() => setSelectedChild(null)} title="Back to container">
+                          <MuiIcons.ArrowBackOutlined fontSize="small" />
+                        </IconButton>
+                        <Typography variant="caption" color="text.secondary">
+                          Scrollable Container
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {activeChildMeta?.name ?? activeChild.widgetType}
+                        </Typography>
+                        <Button size="small" color="error" variant="outlined"
+                          onClick={removeActiveChild} startIcon={<MuiIcons.DeleteOutlined />}
+                          sx={{ fontSize: 11 }}>
+                          Remove
+                        </Button>
+                      </Box>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {effectiveMeta.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {widget.id}
+                      </Typography>
+                    </>
+                  )}
                 </Box>
 
                 {/* Shape widget — Edit Shape button */}
-                {widget?.type === 'shape' && (
+                {widget?.type === 'shape' && !activeChild && (
                   <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                     <Button
                       fullWidth
@@ -1278,7 +1115,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 )}
 
                 {/* Widget Name Field (Foundation for Flow System) */}
-                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(33, 150, 243, 0.05)' }}>
+                {!activeChild && <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(33, 150, 243, 0.05)' }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -1298,9 +1135,34 @@ export const Inspector: React.FC<InspectorProps> = ({
                       }
                     }}
                   />
-                </Box>
+                </Box>}
 
                 <Box sx={{ p: 1 }}>
+                  {/* Grid Position — only shown when editing a child widget */}
+                  {activeChild && (
+                    <Accordion defaultExpanded disableGutters sx={{ mb: 1, '&:before': { display: 'none' }, boxShadow: 'none', border: '1px solid', borderColor: 'primary.main', bgcolor: 'background.paper' }}>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '&.Mui-expanded': { minHeight: 36 }, '& .MuiAccordionSummary-content': { margin: '6px 0' }, bgcolor: 'background.default' }}>
+                        <Typography variant="caption" fontWeight={600} textTransform="uppercase" color="primary">Grid Position</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 1.5 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                          <TextField type="number" size="small" label="Row" value={activeChild.row}
+                            onChange={e => updateChildPlacement({ row: Math.max(0, parseInt(e.target.value) || 0) })}
+                            inputProps={{ min: 0 }} />
+                          <TextField type="number" size="small" label="Column" value={activeChild.col}
+                            onChange={e => updateChildPlacement({ col: Math.max(0, parseInt(e.target.value) || 0) })}
+                            inputProps={{ min: 0 }} />
+                          <TextField type="number" size="small" label="Col Span" value={activeChild.colspan ?? 1}
+                            onChange={e => updateChildPlacement({ colspan: Math.max(1, parseInt(e.target.value) || 1) })}
+                            inputProps={{ min: 1 }} />
+                          <TextField type="number" size="small" label="Row Span" value={activeChild.rowspan ?? 1}
+                            onChange={e => updateChildPlacement({ rowspan: Math.max(1, parseInt(e.target.value) || 1) })}
+                            inputProps={{ min: 1 }} />
+                        </Box>
+                      </AccordionDetails>
+                    </Accordion>
+                  )}
+
                   {/* Widget-specific property groups */}
                   {Object.entries(groupedFields).map(([groupName, fields]) => {
                     // Filter visible fields for count
@@ -1343,7 +1205,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         <AccordionDetails sx={{ p: 2 }}>
                           {visibleFields.map(renderField)}
                           {/* Add z-index and rotation to Position section */}
-                          {groupName === 'Position' && (
+                          {groupName === 'Position' && !activeChild && (
                           <>
                             <TextField
                               fullWidth
@@ -1373,25 +1235,16 @@ export const Inspector: React.FC<InspectorProps> = ({
                   );
                   })}
 
-                  {/* Scrollable Container - grid editor or child widget inspector */}
-                  {widget?.type === 'scrollablecontainer' && (
-                    selectedChild?.containerId === widget.id ? (
-                      <ChildInspectorPanel
-                        childId={selectedChild.childId}
-                        containerWidget={widget}
-                        onUpdateContainer={onUpdate}
-                        onBack={() => setSelectedChild(null)}
-                      />
-                    ) : (
-                      <ContainerGridEditor widget={widget} onUpdate={onUpdate} />
-                    )
+                  {/* Scrollable Container — grid editor (hidden when a child widget is selected) */}
+                  {widget?.type === 'scrollablecontainer' && !activeChild && (
+                    <ContainerGridEditor widget={widget} onUpdate={onUpdate} />
                   )}
                 </Box>
               </>
             )}
 
             {/* Universal Style Groups - Background, Border, Shadow for single and multi-select */}
-            {styleWidget && (
+            {styleWidget && !activeChild && (
               <Box sx={{ p: 1 }}>
                 <Accordion
                     expanded={expandedGroups['Background'] || false}
