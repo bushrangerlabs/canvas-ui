@@ -132,7 +132,7 @@ HA_PASS=yourpassword
 
 ---
 
-## 🎨 Current Widgets (28)
+## 🎨 Current Widgets (29)
 
 | Widget | Description |
 |---|---|
@@ -164,6 +164,7 @@ HA_PASS=yourpassword
 | ResolutionWidget | Canvas resolution/viewport |
 | ScrollingTextWidget | Scrolling marquee text |
 | ExampleModernWidget | Template/example widget |
+| ScrollableContainerWidget | CSS-grid scrollable container that hosts other widgets in configurable rows/columns; managed via ContainerGridEditor in the inspector |
 
 ---
 
