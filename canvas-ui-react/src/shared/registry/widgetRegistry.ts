@@ -27,6 +27,7 @@ import { RadioButtonWidgetMetadata } from '../widgets/RadioButtonWidget';
 import { resolutionWidgetMetadata } from '../widgets/ResolutionWidget';
 import { screensaverWidgetMetadata } from '../widgets/ScreensaverWidget';
 import { ScrollingTextWidgetMetadata } from '../widgets/ScrollingTextWidget';
+import { scrollableContainerMetadata } from '../widgets/ScrollableContainerWidget';
 import { ShapeWidgetMetadata } from '../widgets/ShapeWidget';
 import { SliderWidgetMetadata } from '../widgets/SliderWidget';
 import { SwitchWidgetMetadata } from '../widgets/SwitchWidget';
@@ -70,6 +71,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetMetadata> = {
   scrollingtext: ScrollingTextWidgetMetadata,
   shape: ShapeWidgetMetadata,
   screensaver: screensaverWidgetMetadata,
+  scrollablecontainer: scrollableContainerMetadata,
 };
 
 /**

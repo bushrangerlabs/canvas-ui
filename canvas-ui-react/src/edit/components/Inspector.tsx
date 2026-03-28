@@ -53,6 +53,490 @@ import { PixabayPickerDialog } from './PixabayPickerDialog';
 import { ShapeEditorDialog } from './ShapeEditorDialog';
 import { SHAPE_PRESETS } from '../../shared/utils/buildSVGPath';
 import type { VertexPoint } from '../../shared/utils/buildSVGPath';
+import type { ContainerChild } from '../../shared/widgets/ScrollableContainerWidget';
+
+// ─── ContainerGridEditor ───────────────────────────────────────────────────────
+// Rendered inside the Inspector Widget tab when the selected widget is a
+// scrollablecontainer.  Handles column / row layout + child widget management.
+
+interface ContainerGridEditorProps {
+  widget: WidgetConfig;
+  onUpdate: (updates: Partial<WidgetConfig>) => void;
+}
+
+const ContainerGridEditor: React.FC<ContainerGridEditorProps> = ({ widget, onUpdate }) => {
+  const cfg = widget.config as {
+    scrollDirection: string;
+    columns: number[];
+    rows:    number[];
+    gap:     number;
+    padding: number;
+    cellBackground: string;
+    children: ContainerChild[];
+  };
+
+  const columns:  number[]         = cfg.columns  ?? [200, 200];
+  const rows:     number[]         = cfg.rows     ?? [150, 150];
+  const children: ContainerChild[] = cfg.children ?? [];
+
+  // track which child accordions are expanded
+  const [expandedChild, setExpandedChild] = React.useState<string | null>(null);
+  // "add widget" form visibility
+  const [showAddForm, setShowAddForm] = React.useState(false);
+  const [newWidgetType, setNewWidgetType] = React.useState('text');
+  const [newRow,     setNewRow]     = React.useState(0);
+  const [newCol,     setNewCol]     = React.useState(0);
+  const [newColspan, setNewColspan] = React.useState(1);
+  const [newRowspan, setNewRowspan] = React.useState(1);
+
+  // ── Helper: push a config update back up ──
+  const patchConfig = (patch: Partial<typeof cfg>) => {
+    onUpdate({ config: { ...widget.config, ...patch } });
+  };
+
+  // ── Columns ──
+  const updateColumn = (idx: number, val: number) => {
+    const next = [...columns];
+    next[idx] = Math.max(10, val);
+    patchConfig({ columns: next });
+  };
+  const addColumn = () => patchConfig({ columns: [...columns, 150] });
+  const removeColumn = (idx: number) => {
+    if (columns.length <= 1) return;
+    const next = columns.filter((_, i) => i !== idx);
+    // shift children that reference removed column
+    const updatedChildren = children
+      .filter(c => !(c.col === idx && (c.colspan || 1) === 1)) // remove single-cell children in that col
+      .map(c => ({
+        ...c,
+        col: c.col > idx ? c.col - 1 : c.col,
+        colspan: c.col === idx ? Math.max(1, (c.colspan || 1) - 1) : (c.colspan || 1),
+      }));
+    patchConfig({ columns: next, children: updatedChildren });
+  };
+
+  // ── Rows ──
+  const updateRow = (idx: number, val: number) => {
+    const next = [...rows];
+    next[idx] = Math.max(10, val);
+    patchConfig({ rows: next });
+  };
+  const addRow = () => patchConfig({ rows: [...rows, 150] });
+  const removeRow = (idx: number) => {
+    if (rows.length <= 1) return;
+    const next = rows.filter((_, i) => i !== idx);
+    const updatedChildren = children
+      .filter(c => !(c.row === idx && (c.rowspan || 1) === 1))
+      .map(c => ({
+        ...c,
+        row: c.row > idx ? c.row - 1 : c.row,
+        rowspan: c.row === idx ? Math.max(1, (c.rowspan || 1) - 1) : (c.rowspan || 1),
+      }));
+    patchConfig({ rows: next, children: updatedChildren });
+  };
+
+  // ── Children ──
+  const deleteChild = (id: string) => {
+    patchConfig({ children: children.filter(c => c.id !== id) });
+  };
+  const updateChild = (id: string, patch: Partial<ContainerChild>) => {
+    patchConfig({
+      children: children.map(c => c.id === id ? { ...c, ...patch } : c),
+    });
+  };
+  const updateChildConfig = (id: string, fieldName: string, value: any) => {
+    patchConfig({
+      children: children.map(c =>
+        c.id === id ? { ...c, config: { ...c.config, [fieldName]: value } } : c
+      ),
+    });
+  };
+
+  const addChild = () => {
+    const id = `child-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const meta = WIDGET_REGISTRY[newWidgetType];
+    const defaultConfig: Record<string, any> = {};
+    meta?.fields.forEach(f => {
+      if (!['x','y','width','height'].includes(f.name)) {
+        defaultConfig[f.name] = f.default;
+      }
+    });
+    const child: ContainerChild = {
+      id,
+      widgetType: newWidgetType,
+      row:     Math.max(0, Math.min(newRow,     rows.length - 1)),
+      col:     Math.max(0, Math.min(newCol,     columns.length - 1)),
+      colspan: Math.max(1, newColspan),
+      rowspan: Math.max(1, newRowspan),
+      config:  defaultConfig,
+    };
+    patchConfig({ children: [...children, child] });
+    setShowAddForm(false);
+    setExpandedChild(id);
+  };
+
+  // ── Render a single field for a child widget ──
+  const renderChildField = (child: ContainerChild, fieldName: string, label: string, type: string, opts?: {
+    options?: { value: any; label: string }[];
+    min?: number; max?: number; step?: number;
+    description?: string;
+    domains?: string[];
+  }) => {
+    const value = child.config[fieldName] ?? '';
+
+    switch (type) {
+      case 'text':
+      case 'textarea':
+        return (
+          <TextField
+            key={fieldName}
+            fullWidth
+            label={label}
+            value={value}
+            onChange={e => updateChildConfig(child.id, fieldName, e.target.value)}
+            helperText={opts?.description}
+            multiline={type === 'textarea'}
+            rows={type === 'textarea' ? 2 : 1}
+            size="small"
+            sx={{ mb: 1.5 }}
+          />
+        );
+      case 'number':
+      case 'slider':
+        return (
+          <TextField
+            key={fieldName}
+            fullWidth
+            type="number"
+            label={label}
+            value={value === '' ? '' : Number(value)}
+            onChange={e => updateChildConfig(child.id, fieldName, parseFloat(e.target.value))}
+            helperText={opts?.description}
+            inputProps={{ min: opts?.min, max: opts?.max, step: opts?.step ?? 1 }}
+            size="small"
+            sx={{ mb: 1.5 }}
+          />
+        );
+      case 'color':
+        return (
+          <Box key={fieldName} sx={{ mb: 1.5 }}>
+            <ColorPicker
+              label={label}
+              value={value || '#ffffff'}
+              onChange={v => updateChildConfig(child.id, fieldName, v)}
+            />
+          </Box>
+        );
+      case 'select':
+        return (
+          <FormControl key={fieldName} fullWidth size="small" sx={{ mb: 1.5 }}>
+            <InputLabel>{label}</InputLabel>
+            <Select
+              value={value}
+              label={label}
+              onChange={e => updateChildConfig(child.id, fieldName, e.target.value)}
+            >
+              {opts?.options?.map(o => (
+                <MenuItem key={String(o.value)} value={o.value}>{o.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
+      case 'checkbox':
+        return (
+          <FormControlLabel
+            key={fieldName}
+            control={
+              <Checkbox
+                checked={!!value}
+                onChange={e => updateChildConfig(child.id, fieldName, e.target.checked)}
+                size="small"
+              />
+            }
+            label={<Typography variant="caption">{label}</Typography>}
+            sx={{ mb: 1, display: 'block' }}
+          />
+        );
+      case 'entity':
+        return (
+          <Box key={fieldName} sx={{ mb: 1.5 }}>
+            <EntityBrowser
+              label={label}
+              value={value || ''}
+              onChange={v => updateChildConfig(child.id, fieldName, v)}
+            />
+          </Box>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // ── Shared Accordion sx ──
+  const accordionSx = {
+    mb: 1,
+    '&:before': { display: 'none' },
+    boxShadow: 'none',
+    border: '1px solid',
+    borderColor: 'primary.main',
+    bgcolor: 'background.paper',
+  };
+  const summarySx = {
+    minHeight: 36,
+    '&.Mui-expanded': { minHeight: 36 },
+    '& .MuiAccordionSummary-content': { margin: '6px 0' },
+    bgcolor: 'background.default',
+  };
+
+  // Widget types that can be placed as children (excludes recursive container + layout-only)
+  const childWidgetTypes = Object.keys(WIDGET_REGISTRY).filter(
+    t => !['scrollablecontainer', 'resolution', 'screensaver'].includes(t)
+  ).sort();
+
+  return (
+    <Box sx={{ px: 1 }}>
+
+      {/* ── Columns ── */}
+      <Accordion defaultExpanded disableGutters sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+            <Typography variant="caption" fontWeight={600} textTransform="uppercase" color="primary">
+              Columns ({columns.length})
+            </Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails sx={{ p: 1.5 }}>
+          {columns.map((w, idx) => (
+            <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+              <Typography variant="caption" sx={{ minWidth: 18, color: 'text.secondary' }}>
+                {idx + 1}
+              </Typography>
+              <TextField
+                type="number"
+                size="small"
+                label="Width (px)"
+                value={w}
+                onChange={e => updateColumn(idx, parseInt(e.target.value) || 10)}
+                inputProps={{ min: 10, step: 10 }}
+                sx={{ flex: 1 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => removeColumn(idx)}
+                disabled={columns.length <= 1}
+                title="Remove column"
+              >
+                <MuiIcons.DeleteOutlined fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
+          <Button
+            size="small"
+            startIcon={<MuiIcons.AddOutlined />}
+            onClick={addColumn}
+            fullWidth
+            variant="outlined"
+            sx={{ mt: 0.5, borderStyle: 'dashed' }}
+          >
+            Add Column
+          </Button>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* ── Rows ── */}
+      <Accordion defaultExpanded disableGutters sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+            <Typography variant="caption" fontWeight={600} textTransform="uppercase" color="primary">
+              Rows ({rows.length})
+            </Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails sx={{ p: 1.5 }}>
+          {rows.map((h, idx) => (
+            <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+              <Typography variant="caption" sx={{ minWidth: 18, color: 'text.secondary' }}>
+                {idx + 1}
+              </Typography>
+              <TextField
+                type="number"
+                size="small"
+                label="Height (px)"
+                value={h}
+                onChange={e => updateRow(idx, parseInt(e.target.value) || 10)}
+                inputProps={{ min: 10, step: 10 }}
+                sx={{ flex: 1 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => removeRow(idx)}
+                disabled={rows.length <= 1}
+                title="Remove row"
+              >
+                <MuiIcons.DeleteOutlined fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
+          <Button
+            size="small"
+            startIcon={<MuiIcons.AddOutlined />}
+            onClick={addRow}
+            fullWidth
+            variant="outlined"
+            sx={{ mt: 0.5, borderStyle: 'dashed' }}
+          >
+            Add Row
+          </Button>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* ── Children ── */}
+      <Accordion defaultExpanded disableGutters sx={accordionSx}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+            <Typography variant="caption" fontWeight={600} textTransform="uppercase" color="primary">
+              Widgets ({children.length})
+            </Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails sx={{ p: 1 }}>
+
+          {children.length === 0 && !showAddForm && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, textAlign: 'center' }}>
+              No widgets yet — click Add Widget below
+            </Typography>
+          )}
+
+          {/* Child list */}
+          {children.map(child => {
+            const childMeta = WIDGET_REGISTRY[child.widgetType];
+            const isOpen = expandedChild === child.id;
+            return (
+              <Accordion
+                key={child.id}
+                expanded={isOpen}
+                onChange={(_, exp) => setExpandedChild(exp ? child.id : null)}
+                disableGutters
+                sx={{
+                  mb: 0.5,
+                  '&:before': { display: 'none' },
+                  boxShadow: 'none',
+                  border: '1px solid rgba(100,150,255,0.3)',
+                  bgcolor: 'rgba(100,150,255,0.04)',
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  sx={{ minHeight: 32, '&.Mui-expanded': { minHeight: 32 }, '& .MuiAccordionSummary-content': { margin: '4px 0' } }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, mr: 1 }}>
+                    <Typography variant="caption" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                      {childMeta?.name ?? child.widgetType}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      [{child.row},{child.col}]
+                      {((child.colspan ?? 1) > 1 || (child.rowspan ?? 1) > 1)
+                        ? ` ${child.colspan ?? 1}×${child.rowspan ?? 1}`
+                        : ''}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={e => { e.stopPropagation(); deleteChild(child.id); }}
+                      sx={{ ml: 'auto', color: 'error.main', p: 0.3 }}
+                      title="Remove widget from container"
+                    >
+                      <MuiIcons.DeleteOutlined fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 1.5 }}>
+                  {/* Grid position */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 1.5 }}>
+                    <TextField type="number" size="small" label="Row" value={child.row}
+                      onChange={e => updateChild(child.id, { row: Math.max(0, parseInt(e.target.value) || 0) })}
+                      inputProps={{ min: 0, max: rows.length - 1 }} />
+                    <TextField type="number" size="small" label="Column" value={child.col}
+                      onChange={e => updateChild(child.id, { col: Math.max(0, parseInt(e.target.value) || 0) })}
+                      inputProps={{ min: 0, max: columns.length - 1 }} />
+                    <TextField type="number" size="small" label="Col Span" value={child.colspan ?? 1}
+                      onChange={e => updateChild(child.id, { colspan: Math.max(1, parseInt(e.target.value) || 1) })}
+                      inputProps={{ min: 1, max: columns.length }} />
+                    <TextField type="number" size="small" label="Row Span" value={child.rowspan ?? 1}
+                      onChange={e => updateChild(child.id, { rowspan: Math.max(1, parseInt(e.target.value) || 1) })}
+                      inputProps={{ min: 1, max: rows.length }} />
+                  </Box>
+
+                  {/* Widget-specific fields */}
+                  {childMeta?.fields
+                    .filter(f => !['x','y','width','height'].includes(f.name))
+                    .map(f => renderChildField(child, f.name, f.label, f.type, {
+                      options:    f.options as { value: any; label: string }[] | undefined,
+                      min:        f.min,
+                      max:        f.max,
+                      step:       f.step,
+                      description: f.description,
+                      domains:    f.domains,
+                    }))
+                  }
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
+
+          {/* Add Widget form */}
+          {showAddForm ? (
+            <Box sx={{ mt: 1, p: 1.5, border: '1px solid rgba(100,255,150,0.3)', borderRadius: 1, bgcolor: 'rgba(100,255,150,0.03)' }}>
+              <Typography variant="caption" fontWeight={600} color="success.main" sx={{ display: 'block', mb: 1 }}>
+                Add Widget to Container
+              </Typography>
+              <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+                <InputLabel>Widget Type</InputLabel>
+                <Select
+                  value={newWidgetType}
+                  label="Widget Type"
+                  onChange={e => setNewWidgetType(e.target.value)}
+                >
+                  {childWidgetTypes.map(t => (
+                    <MenuItem key={t} value={t}>
+                      {WIDGET_REGISTRY[t]?.name ?? t}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 1 }}>
+                <TextField type="number" size="small" label="Row"     value={newRow}     onChange={e => setNewRow(Math.max(0, parseInt(e.target.value)||0))}     inputProps={{ min:0, max: rows.length-1 }} />
+                <TextField type="number" size="small" label="Column"  value={newCol}     onChange={e => setNewCol(Math.max(0, parseInt(e.target.value)||0))}     inputProps={{ min:0, max: columns.length-1 }} />
+                <TextField type="number" size="small" label="Col Span" value={newColspan} onChange={e => setNewColspan(Math.max(1, parseInt(e.target.value)||1))} inputProps={{ min:1, max: columns.length }} />
+                <TextField type="number" size="small" label="Row Span" value={newRowspan} onChange={e => setNewRowspan(Math.max(1, parseInt(e.target.value)||1))} inputProps={{ min:1, max: rows.length }} />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button size="small" variant="contained" color="success" onClick={addChild} fullWidth>
+                  Add
+                </Button>
+                <Button size="small" variant="outlined" onClick={() => setShowAddForm(false)} fullWidth>
+                  Cancel
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <Button
+              size="small"
+              startIcon={<MuiIcons.AddOutlined />}
+              onClick={() => setShowAddForm(true)}
+              fullWidth
+              variant="outlined"
+              color="success"
+              sx={{ mt: 1, borderStyle: 'dashed' }}
+            >
+              Add Widget
+            </Button>
+          )}
+        </AccordionDetails>
+      </Accordion>
+    </Box>
+  );
+};
+// ─── End ContainerGridEditor ───────────────────────────────────────────────────
 
 interface InspectorProps {
   widget: WidgetConfig | null;
@@ -869,6 +1353,11 @@ export const Inspector: React.FC<InspectorProps> = ({
                     </Accordion>
                   );
                   })}
+
+                  {/* Scrollable Container grid editor */}
+                  {widget?.type === 'scrollablecontainer' && (
+                    <ContainerGridEditor widget={widget} onUpdate={onUpdate} />
+                  )}
                 </Box>
               </>
             )}
