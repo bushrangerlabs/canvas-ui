@@ -260,10 +260,19 @@ const ScrollableContainerWidget: React.FC<WidgetProps> = ({ config, isEditMode }
           return (
             <div
               key={child.id}
-              style={cellStyle}
-              onClick={isEditMode ? (e) => { e.stopPropagation(); setSelectedChild({ containerId: config.id, childId: child.id }); } : undefined}
+              style={{ ...cellStyle, position: 'relative' }}
               title={isEditMode ? `Click to edit ${childMeta?.name ?? child.widgetType}` : undefined}
             >
+              {/* Edit-mode click overlay: sits above child content to capture all clicks.
+                  Child widgets rendered in view-mode (isEditMode=false) may call
+                  stopPropagation on their own click handlers, which would prevent
+                  bubbling to a parent onClick. The overlay intercepts first. */}
+              {isEditMode && (
+                <div
+                  style={{ position: 'absolute', inset: 0, zIndex: 10, cursor: 'pointer' }}
+                  onClick={(e) => { e.stopPropagation(); setSelectedChild({ containerId: config.id, childId: child.id }); }}
+                />
+              )}
               <Suspense
                 fallback={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
