@@ -2,13 +2,14 @@
 
 Transform your Home Assistant into a professional automation hub with Canvas UI's drag-and-drop dashboard builder.
 
-## What's New in v2.0
+## Key Highlights
 
 - ✨ **AI View Generator** - Create complete dashboards from text prompts
-- 🎨 **20+ Widgets** - Expanded widget library with weather, calendar, and keyboard widgets
-- 🎯 **Enhanced Editor** - Professional alignment tools, grid snapping, and visual guides
+- 🎨 **29 Widgets** - Buttons, gauges, sliders, clocks, weather, cameras, Lovelace cards, scrollable containers, and more
+- 🎯 **Professional Editor** - Alignment tools, grid snapping, visual guides, multi-select
 - 📱 **Kiosk Mode** - Full-screen display mode for tablets and wall panels
-- 🔧 **React Architecture** - Modern TypeScript/React foundation for better performance
+- ⚡ **Flow System** - Frontend automation and inter-widget connections
+- 📦 **Variable System** - Canvas-scoped variables shared across widgets and flows
 
 ## Key Features
 

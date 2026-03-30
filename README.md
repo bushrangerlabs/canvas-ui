@@ -1,14 +1,14 @@
 > [!WARNING]
-> **Canvas UI is a public beta (v1.0.0).** It is designed to be non-destructive and will not modify your existing Home Assistant configuration or dashboards. Install on a test instance first if possible, and please report any issues on [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues).
+> **Canvas UI is currently in active beta.** It is designed to be non-destructive and will not modify your existing Home Assistant configuration or dashboards. Install on a test instance first if possible, and please report any issues on [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues).
 
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
-Canvas UI brings Drag-and-Drop visual editing to Home Assistant with a powerful React-based interface featuring 28 widgets, AI-assisted view generation, and professional dashboard creation tools.
+Canvas UI brings Drag-and-Drop visual editing to Home Assistant with a powerful React-based interface featuring 29 widgets, AI-assisted view generation, and professional dashboard creation tools.
 
 ## ✨ Features
 
 - 🎨 **Visual Drag-and-Drop Editor** - Intuitive canvas-based layout system
-- 🧩 **28 Professional Widgets** - Buttons, gauges, sliders, charts, weather, screensaver, and more
+- 🧩 **29 Professional Widgets** - Buttons, gauges, sliders, charts, weather, screensaver, scrollable container, and more
 - 🃏 **Lovelace Card Widget** - Embed any Lovelace card and freely drag and place it anywhere on the canvas
 - 🤖 **AI View Generator** - Create entire dashboards from natural language prompts
 - 📱 **Kiosk Mode** - Full-screen display mode for wall panels and tablets
@@ -155,6 +155,7 @@ That's it! The integration will automatically:
 - **IFrame Widget** - Embed external content
 - **HTML Widget** - Custom HTML content
 - **Lovelace Card** - Embed any Lovelace card
+- **Scrollable Container** - CSS grid container that hosts other widgets; configurable columns, rows, and scroll direction
 
 ### Advanced Widgets
 

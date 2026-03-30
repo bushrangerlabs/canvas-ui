@@ -1298,6 +1298,92 @@ A decorative shape widget defined by a polygon with per-vertex corner modes. Use
 
 **Bindings:** No entity bindings — pure decoration widget.
 
+---
+
+#### 29. scrollablecontainer - Scrollable Grid Container
+
+A layout container that hosts other widgets in a configurable CSS grid with optional scrolling. Useful for dashboards with many widgets in a confined area, scrollable lists of cards, or any grouped layout.
+
+```json
+{
+  "id": "container_1",
+  "type": "scrollablecontainer",
+  "position": {
+    "x": 100,
+    "y": 100,
+    "width": 600,
+    "height": 400,
+    "zIndex": 1
+  },
+  "config": {
+    "scrollDirection": "vertical",
+    "columns": [280, 280],
+    "rows": [180, 180, 180],
+    "gap": 8,
+    "padding": 8,
+    "cellBackground": "rgba(255,255,255,0.04)",
+    "children": [
+      {
+        "id": "child-abc123",
+        "widgetType": "button",
+        "row": 0,
+        "col": 0,
+        "colspan": 1,
+        "rowspan": 1,
+        "config": {
+          "label": "Living Room Light",
+          "entity_id": "light.living_room",
+          "actionType": "toggle"
+        }
+      },
+      {
+        "id": "child-def456",
+        "widgetType": "gauge",
+        "row": 0,
+        "col": 1,
+        "colspan": 1,
+        "rowspan": 1,
+        "config": {
+          "entity_id": "sensor.temperature",
+          "min": 0,
+          "max": 40
+        }
+      }
+    ]
+  },
+  "bindings": {}
+}
+```
+
+**Container Properties:**
+
+- `scrollDirection` - `vertical`, `horizontal`, `both`, `none`
+- `columns` (number[]) — array of pixel widths, one per column. e.g. `[200, 200, 200]` = 3 equal columns
+- `rows` (number[]) — array of pixel heights, one per row. e.g. `[150, 150]` = 2 equal rows
+- `gap` (number, default 4) — pixel gap between grid cells
+- `padding` (number, default 8) — inner padding around the grid
+- `cellBackground` (color, default `rgba(255,255,255,0.04)`) — background color for empty cells
+
+**Child Widget Properties** (each entry in `children`):
+
+- `id` (string) — unique ID for the child (auto-generated; do not duplicate)
+- `widgetType` (string) — any supported widget type key (e.g. `button`, `gauge`, `lovelacecard`)
+- `row` (number, 0-based) — which row the child occupies
+- `col` (number, 0-based) — which column the child occupies
+- `colspan` (number, default 1) — how many columns the child spans
+- `rowspan` (number, default 1) — how many rows the child spans
+- `config` (object) — the child widget's own configuration, identical to what you'd put in `config` for a standalone widget of that type
+
+**Supported child widget types:**
+`button`, `text`, `gauge`, `camera`, `slider`, `switch`, `image`, `icon`, `progressbar`, `progresscircle`, `inputtext`, `flipclock`, `digitalclock`, `knob`, `border`, `value`, `radiobutton`, `colorpicker`, `weather`, `html`, `graph`, `calendar`, `scrollingtext`, `iframe`, `lovelacecard`, `keyboard`, `shape`
+
+> ⚠️ Nesting a `scrollablecontainer` inside another `scrollablecontainer` is not supported.
+
+**Edit Mode Behaviour:**
+In the editor, clicking a cell selects that child widget and opens its own settings in the Inspector panel — identical to selecting a standalone widget on the canvas. The container's own settings (columns, rows, gap, etc.) are managed via the **Container Grid Editor** accordion in the Inspector while the container itself is selected.
+
+**Bindings:** The container itself has no entity bindings. Individual child widgets support all the same bindings as standalone widgets of their respective types. Universal style bindings on the container apply to the container's outer frame: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
+
 ## Complete Example
 
 ```json
