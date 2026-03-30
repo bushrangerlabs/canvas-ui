@@ -330,6 +330,9 @@ const SecondHandSwiss     = () => <g>
   <circle cx="100" cy="34" r="10" style={{ stroke: 'none' }} />
 </g>;
 
+// Blank dial — renders nothing so hands can overlay a background image
+const DialNone = React.memo(() => <g />);
+
 // ─── Hand/Dial selector maps ──────────────────────────────────────────────────
 
 const HOUR_HANDS: Record<string, React.FC> = {
@@ -356,6 +359,7 @@ const DIALS: Record<string, React.FC> = {
   din41091_1: DialDin41091_1, din41091_3: DialDin41091_3, din41091_4: DialDin41091_4,
   romannumerals: DialRomanNumerals, palmerstone: DialPalmerstone,
   aubigny: DialAubigny, wandelhalle: DialWandelhalle,
+  none: DialNone,
 };
 
 function makePolygonPoints(sides: number, radius: number): string {
@@ -406,6 +410,7 @@ export const analogClockMetadata: WidgetMetadata = {
         { value: 'palmerstone',  label: 'Palmerstone'   },
         { value: 'aubigny',      label: 'Aubigny'       },
         { value: 'wandelhalle',  label: 'Wandelhalle'   },
+        { value: 'none',         label: 'None (image overlay)' },
       ]},
 
     // Hand styles
