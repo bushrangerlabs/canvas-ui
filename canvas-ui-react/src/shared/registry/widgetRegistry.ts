@@ -10,6 +10,7 @@ import { CalendarWidgetMetadata } from '../widgets/CalendarWidget';
 import { cameraWidgetMetadata } from '../widgets/CameraWidget';
 import { ColorPickerWidgetMetadata } from '../widgets/ColorPickerWidget';
 import { DigitalClockWidgetMetadata } from '../widgets/DigitalClockWidget';
+import { analogClockMetadata } from '../widgets/AnalogClockWidget';
 import { FlipClockWidgetMetadata } from '../widgets/FlipClockWidget';
 import { GaugeWidgetMetadata } from '../widgets/GaugeWidget';
 import { GraphWidgetMetadata } from '../widgets/GraphWidget';
@@ -54,6 +55,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetMetadata> = {
   progresscircle: ProgressCircleWidgetMetadata,
   inputtext: InputTextWidgetMetadata,
   keyboard: KeyboardWidgetMetadata,
+  analogclock: analogClockMetadata,
   flipclock: FlipClockWidgetMetadata,
   digitalclock: DigitalClockWidgetMetadata,
   knob: KnobWidgetMetadata,

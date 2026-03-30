@@ -49,6 +49,7 @@ const widgetComponents: Record<string, React.LazyExoticComponent<React.FC<Widget
   progresscircle: lazy(() => import('../widgets/ProgressCircleWidget')),
   inputtext: lazy(() => import('../widgets/InputTextWidget')),
   keyboard: lazy(() => import('../widgets/KeyboardWidget')),
+  analogclock: lazy(() => import('../widgets/AnalogClockWidget')),
   flipclock: lazy(() => import('../widgets/FlipClockWidget')),
   digitalclock: lazy(() => import('../widgets/DigitalClockWidget')),
   knob: lazy(() => import('../widgets/KnobWidget')),

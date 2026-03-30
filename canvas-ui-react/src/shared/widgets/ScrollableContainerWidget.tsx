@@ -38,6 +38,7 @@ const childComponents: Record<string, React.LazyExoticComponent<React.FC<WidgetP
   progressbar:    lazy(() => import('./ProgressBarWidget')),
   progresscircle: lazy(() => import('./ProgressCircleWidget')),
   inputtext:      lazy(() => import('./InputTextWidget')),
+  analogclock:    lazy(() => import('./AnalogClockWidget')),
   flipclock:      lazy(() => import('./FlipClockWidget')),
   digitalclock:   lazy(() => import('./DigitalClockWidget')),
   knob:           lazy(() => import('./KnobWidget')),

@@ -3,12 +3,12 @@
 
 > **Modern, drag-and-drop visual editor for creating custom Home Assistant dashboards**
 
-Canvas UI brings Drag-and-Drop visual editing to Home Assistant with a powerful React-based interface featuring 29 widgets, AI-assisted view generation, and professional dashboard creation tools.
+Canvas UI brings Drag-and-Drop visual editing to Home Assistant with a powerful React-based interface featuring 30 widgets, AI-assisted view generation, and professional dashboard creation tools.
 
 ## ✨ Features
 
 - 🎨 **Visual Drag-and-Drop Editor** - Intuitive canvas-based layout system
-- 🧩 **29 Professional Widgets** - Buttons, gauges, sliders, charts, weather, screensaver, scrollable container, and more
+- 🧩 **30 Professional Widgets** - Buttons, gauges, sliders, clocks, charts, weather, screensaver, scrollable container, and more
 - 🃏 **Lovelace Card Widget** - Embed any Lovelace card and freely drag and place it anywhere on the canvas
 - 🤖 **AI View Generator** - Create entire dashboards from natural language prompts
 - 📱 **Kiosk Mode** - Full-screen display mode for wall panels and tablets
@@ -155,6 +155,7 @@ That's it! The integration will automatically:
 - **IFrame Widget** - Embed external content
 - **HTML Widget** - Custom HTML content
 - **Lovelace Card** - Embed any Lovelace card
+- **Analog Clock** - Station-style analog clock with swinging second hand, 11 dial styles, 15 hand styles (inspired by classic railway station clocks)
 - **Scrollable Container** - CSS grid container that hosts other widgets; configurable columns, rows, and scroll direction
 
 ### Advanced Widgets

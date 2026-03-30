@@ -1384,6 +1384,57 @@ In the editor, clicking a cell selects that child widget and opens its own setti
 
 **Bindings:** The container itself has no entity bindings. Individual child widgets support all the same bindings as standalone widgets of their respective types. Universal style bindings on the container apply to the container's outer frame: `backgroundColor`, `backgroundImage`, `borderColor`, `borderStyle`, `backgroundSize`, `backgroundPosition`, `backgroundRepeat`.
 
+---
+
+#### 30. analogclock - Analog Clock
+
+Station-style analog clock with an authentic swinging second hand (like a real railway station clock), multiple dial and hand style variants, and full color customization. All SVG, no images required.
+
+**Key Fields:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `dial` | select | `bauhaus` | Dial style: `bauhaus`, `austria`, `vienna`, `points`, `din41091_1`, `din41091_3`, `din41091_4`, `romannumerals`, `palmerstone`, `aubigny`, `wandelhalle` |
+| `hourHand` | select | `din41092_3` | Hour hand style |
+| `minuteHand` | select | `din41092_3` | Minute hand style |
+| `secondHand` | select | `swiss` | Second hand style: `bar`, `bauhaus`, `german`, `din41071_1`, `din41071_2`, `bigbang`, `wandelhalle`, `samurai`, `swiss` |
+| `axisCover` | select | `circle` | Center cover: `circle`, `hexagon`, `octagon`, `none` |
+| `secondHandBehavior` | select | `swinging` | `swinging` (station clock pause), `stepping`, `sweeping` |
+| `minuteHandBehavior` | select | `stepping` | `stepping` or `sweeping` |
+| `secondHandStopTime` | slider | `1.5` | How long (seconds) second hand pauses at 12 (swinging mode) |
+| `backgroundColor` | color | `transparent` | Background fill |
+| `dialColor` | color | `#505050` | Tick mark color |
+| `hourHandColor` | color | `#212121` | Hour hand color |
+| `minuteHandColor` | color | `#212121` | Minute hand color |
+| `secondHandColor` | color | `#d11e00` | Second hand color |
+| `axisCoverColor` | color | `#d11e00` | Center cover color |
+| `shadowOpacity` | slider | `0.5` | Drop shadow opacity (0=off) |
+| `axisCoverRadius` | slider | `9` | Center cover size in SVG units |
+
+**Example:**
+```json
+{
+  "id": "clock_1",
+  "type": "analogclock",
+  "position": { "x": 50, "y": 50, "width": 300, "height": 300 },
+  "config": {
+    "dial": "bauhaus",
+    "hourHand": "din41092_3",
+    "minuteHand": "din41092_3",
+    "secondHand": "swiss",
+    "axisCover": "circle",
+    "secondHandBehavior": "swinging",
+    "secondHandStopTime": 1.5,
+    "dialColor": "#505050",
+    "hourHandColor": "#212121",
+    "minuteHandColor": "#212121",
+    "secondHandColor": "#d11e00",
+    "axisCoverColor": "#d11e00",
+    "backgroundColor": "transparent"
+  }
+}
+```
+
 ## Complete Example
 
 ```json
