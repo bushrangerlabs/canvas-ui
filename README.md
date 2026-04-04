@@ -254,7 +254,7 @@ cd canvas-ui-react
 npm install
 cd ..
 ./build.sh          # builds and copies to custom_components/canvas_ui/frontend/
-./deploy.sh         # build + SCP directly to HA server (requires .env with HA_HOST/HA_USER/HA_PASS)
+./deploy.sh         # build only (use HACS to update HA)
 ./release.sh 1.x.x  # build + tag + GitHub release (from main branch only)
 ```
 

@@ -25,10 +25,11 @@ cd /home/spetchal/Code/canvas-ui-hacs
    ./build.sh
    ```
 
-3. **Deploy to HA server for testing:**
+3. **Release beta for testing via HACS:**
 
    ```bash
-   ./deploy.sh
+   ./release-beta.sh 1.x.x-beta.y "Description"
+   # Then: HACS → Canvas UI → enable beta → Update
    ```
 
 4. **Commit to GitHub:**
@@ -48,7 +49,9 @@ canvas-ui-hacs/
 ├── 🔧 Helper Scripts
 │   ├── dev-setup.sh       - First-time setup (npm install)
 │   ├── build.sh           - Build HACS version
-│   └── deploy.sh          - Build + deploy to HA server
+│   ├── deploy.sh          - Build only (no SSH deploy)
+│   ├── release-beta.sh    - Build + tag + GitHub pre-release
+│   └── release.sh         - Build + tag + GitHub stable release
 │
 ├── 💻 Source Code
 │   └── canvas-ui-react/
@@ -100,30 +103,31 @@ npm run build:hacs
 ```bash
 # From project root (/home/spetchal/Code/canvas-ui-hacs)
 
-./dev-setup.sh      # Install dependencies
-./build.sh          # Build HACS version
-./deploy.sh         # Build + deploy to HA
+./dev-setup.sh              # Install dependencies
+./build.sh                  # Build HACS version
+./deploy.sh                 # Build only
+./release-beta.sh 1.x.x-beta.y "Notes"  # Beta release (from dev)
+./release.sh 1.x.x "Notes"              # Stable release (from main)
 ```
 
 ---
 
 ## 📤 Deployment Targets
 
-### Local HA Server (your HA IP)
+### Beta testing (pre-release via HACS)
 
 ```bash
-./deploy.sh
+git checkout dev
+./release-beta.sh 1.x.x-beta.y "Testing new feature"
+# Users: HACS → Canvas UI → enable beta → Update
 ```
 
-### GitHub / HACS
+### Stable release
 
 ```bash
-./build.sh          # Build first
-git add .
-git commit -m "..."
-git push
-git tag v2.0.1      # For releases
-git push origin v2.0.1
+git checkout main
+git merge dev
+./release.sh 1.x.x "Release notes"
 ```
 
 ---
@@ -142,18 +146,10 @@ canvas-ui-react/src/  →  [vite build]  →  canvas-ui-react/dist-hacs/
 canvas-ui-react/dist-hacs/  →  [copy]  →  www/canvas-ui/
 ```
 
-### 3. Distribution → HA Server
+### 3. Distribution → GitHub → HACS
 
 ```
-www/canvas-ui/          →  [scp]  →  /config/www/canvas-ui/
-custom_components/      →  [scp]  →  /config/custom_components/
-```
-
-### 4. Distribution → GitHub → HACS
-
-```
-www/canvas-ui/          →  [git push]  →  GitHub  →  HACS install
-custom_components/      →  [git push]  →  GitHub  →  HACS install
+custom_components/canvas_ui/  →  [zip + gh release]  →  GitHub  →  HACS install
 ```
 
 ---
@@ -166,13 +162,13 @@ custom_components/      →  [git push]  →  GitHub  →  HACS install
 2. Add metadata export with `WidgetMetadata` type
 3. Register in `src/shared/registry/widgetRegistry.ts`
 4. Add lazy loading in `src/shared/components/WidgetRenderer.tsx`
-5. Build and test: `./deploy.sh`
+5. Build and release beta: `./release-beta.sh 1.x.x-beta.y "desc"`, then update via HACS
 
 ### Update Integration Code
 
 1. Edit files in `custom_components/canvas_ui/`
-2. Deploy: `./deploy.sh`
-3. Restart Home Assistant
+2. Release beta: `./release-beta.sh 1.x.x-beta.y "desc"`
+3. Update via HACS, then restart Home Assistant
 
 ### Update Documentation
 
@@ -193,17 +189,14 @@ npm run build:hacs 2>&1 | tee build.log
 
 ### Verify Deployment
 
-```bash
-# Check files on HA server
-sshpass -p '<YOUR_HA_PASSWORD>' ssh root@<YOUR_HA_IP> "ls -lh /config/www/canvas-ui/*.js"
-```
+After a HACS update + HA restart, open browser DevTools → Network and confirm the new asset hash is loading (e.g. `widget-analogclock-XxXxXx.js`).
 
 ### Clear Browser Cache
 
-```bash
-# On HA server
-sshpass -p '<YOUR_HA_PASSWORD>' ssh root@<YOUR_HA_IP> "rm /config/www/canvas-ui/assets/*.gz"
-```
+If assets seem stale after a HACS update:
+1. DevTools → Application → Service Workers → Unregister
+2. Clear site data
+3. Hard refresh (Ctrl+Shift+R)
 
 ---
 
@@ -227,14 +220,14 @@ sshpass -p '<YOUR_HA_PASSWORD>' ssh root@<YOUR_HA_IP> "rm /config/www/canvas-ui/
 
 - Any files with passwords/credentials
 - Personal HA configurations
-- The deploy.sh script contains server credentials (edit before making repo public)
+- `.env` files (gitignored)
 
 ---
 
 ## ✅ Checklist Before Committing
 
-- [ ] Ran `./build.sh` successfully
-- [ ] Tested on HA server with `./deploy.sh`
+- [ ] Ran `./build.sh` successfully (or `./release-beta.sh` for testing)
+- [ ] Tested via HACS beta update + HA restart
 - [ ] No console errors in browser
 - [ ] Updated version in `manifest.json` (for releases)
 - [ ] Updated `README.md` if user-facing changes
@@ -242,5 +235,4 @@ sshpass -p '<YOUR_HA_PASSWORD>' ssh root@<YOUR_HA_IP> "rm /config/www/canvas-ui/
 
 ---
 
-**Current Workspace:** `/home/spetchal/Code/canvas-ui-hacs/`  
-**HA Server:** `<your-ha-ip>`
+**Current Workspace:** `/home/spetchal/Code/canvas-ui-hacs/`
