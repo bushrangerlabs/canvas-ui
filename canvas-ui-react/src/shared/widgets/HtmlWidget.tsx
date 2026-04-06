@@ -16,6 +16,7 @@ const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
     html: htmlContent = '<div>Enter HTML here</div>',
     htmlEntity = '',
     useEntityHtml = false,
+    htmlAttribute = '',
     backgroundColor = 'transparent',
     padding = 8,
     overflow = 'auto',
@@ -25,11 +26,15 @@ const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
   const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Get HTML from entity or static config
+  // Get HTML from entity attribute, entity state, or static config
   const getHtml = (): string => {
     if (useEntityHtml && htmlEntity) {
       const entity = entities?.[htmlEntity];
       if (entity) {
+        // Prefer named attribute (no 255-char state limit) when htmlAttribute is set
+        if (htmlAttribute && entity.attributes?.[htmlAttribute] != null) {
+          return String(entity.attributes[htmlAttribute]);
+        }
         return String(entity.state || '');
       }
     }
@@ -42,7 +47,7 @@ const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
       const html = getHtml();
       containerRef.current.innerHTML = html;
     }
-  }, [htmlContent, htmlEntity, useEntityHtml, entities]);
+  }, [htmlContent, htmlEntity, useEntityHtml, htmlAttribute, entities]);
 
   const baseStyle: React.CSSProperties = {
     width: '100%',
@@ -88,7 +93,15 @@ export const htmlWidgetMetadata: WidgetMetadata = {
       label: 'HTML Entity', 
       default: '', 
       category: 'behavior',
-      description: 'Entity whose state contains the HTML'
+      description: 'Entity whose state or attribute contains the HTML'
+    },
+    { 
+      name: 'htmlAttribute', 
+      type: 'text', 
+      label: 'HTML Attribute', 
+      default: '', 
+      category: 'behavior',
+      description: 'Entity attribute name containing HTML (bypasses 255-char state limit). Leave blank to use state.'
     },
     { 
       name: 'html', 
