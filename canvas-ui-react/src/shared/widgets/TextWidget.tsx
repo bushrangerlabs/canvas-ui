@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useEntityBinding } from '../../hooks/useEntityBinding';
 import { useVisibility } from '../../hooks/useVisibility';
 import { useWidget } from '../hooks/useWidget';
 import type { WidgetProps } from '../types';
@@ -75,12 +76,17 @@ const TextWidget: React.FC<WidgetProps> = ({ config }) => {
   // Use useWidget hook for entity subscriptions
   const { getEntityState } = useWidget(config);
   
-  // Get text - prefer entity state, fall back to static text
+  // Evaluate binding expressions in static text/prefix/unit fields
+  const evaluatedStaticText = useEntityBinding(staticText, staticText);
+  const evaluatedPrefix = useEntityBinding(prefix, prefix);
+  const evaluatedUnit = useEntityBinding(unit, unit);
+
+  // Get text - prefer entity state, fall back to (evaluated) static text
   const entityState = getEntityState('entity_id');
-  const textValue = entityState || staticText;
+  const textValue = entityState || evaluatedStaticText;
   
   // Add prefix and unit if configured
-  const displayText = `${prefix}${textValue}${unit}`;
+  const displayText = `${evaluatedPrefix}${textValue}${evaluatedUnit}`;
 
   const textStyle: React.CSSProperties = {
     width: '100%',
