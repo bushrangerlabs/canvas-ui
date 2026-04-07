@@ -355,18 +355,22 @@ export class BindingEvaluator {
     const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-    return format
-      .replace('YYYY', String(d.getFullYear()))
-      .replace('MMMM', MONTHS_LONG[d.getMonth()])
-      .replace('MMM',  MONTHS_SHORT[d.getMonth()])
-      .replace('MM',   String(d.getMonth() + 1).padStart(2, '0'))
-      .replace('M',    String(d.getMonth() + 1))
-      .replace('DD',   String(d.getDate()).padStart(2, '0'))
-      .replace('D',    String(d.getDate()))
-      .replace('hh',   String(d.getHours()).padStart(2, '0'))
-      .replace('mm',   String(d.getMinutes()).padStart(2, '0'))
-      .replace('ss',   String(d.getSeconds()).padStart(2, '0'))
-      .replace('sss',  String(d.getMilliseconds()).padStart(3, '0'));
+    return format.replace(/MMMM|MMM|MM|M|YYYY|DD|D|hh|mm|ss|sss/g, (token) => {
+      switch (token) {
+        case 'YYYY': return String(d.getFullYear());
+        case 'MMMM': return MONTHS_LONG[d.getMonth()];
+        case 'MMM':  return MONTHS_SHORT[d.getMonth()];
+        case 'MM':   return String(d.getMonth() + 1).padStart(2, '0');
+        case 'M':    return String(d.getMonth() + 1);
+        case 'DD':   return String(d.getDate()).padStart(2, '0');
+        case 'D':    return String(d.getDate());
+        case 'hh':   return String(d.getHours()).padStart(2, '0');
+        case 'mm':   return String(d.getMinutes()).padStart(2, '0');
+        case 'ss':   return String(d.getSeconds()).padStart(2, '0');
+        case 'sss':  return String(d.getMilliseconds()).padStart(3, '0');
+        default:     return token;
+      }
+    });
   }
 
   // ─── Expression Evaluation ──────────────────────────────────────────────────
