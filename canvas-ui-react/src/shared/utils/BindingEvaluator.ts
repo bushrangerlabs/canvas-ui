@@ -352,10 +352,17 @@ export class BindingEvaluator {
     if (isNaN(d.getTime())) return String(value);
     if (!format)            return d.toLocaleString();
 
+    const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
     return format
       .replace('YYYY', String(d.getFullYear()))
+      .replace('MMMM', MONTHS_LONG[d.getMonth()])
+      .replace('MMM',  MONTHS_SHORT[d.getMonth()])
       .replace('MM',   String(d.getMonth() + 1).padStart(2, '0'))
+      .replace('M',    String(d.getMonth() + 1))
       .replace('DD',   String(d.getDate()).padStart(2, '0'))
+      .replace('D',    String(d.getDate()))
       .replace('hh',   String(d.getHours()).padStart(2, '0'))
       .replace('mm',   String(d.getMinutes()).padStart(2, '0'))
       .replace('ss',   String(d.getSeconds()).padStart(2, '0'))
