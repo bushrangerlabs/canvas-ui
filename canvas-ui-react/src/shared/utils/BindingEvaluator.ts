@@ -20,6 +20,11 @@
  *   {sensor.x;date(hh:mm)}            → format date
  *   {sensor.x;json(key.sub)}          → navigate JSON
  *   {sensor.x;formatValue(2)}         → locale-style decimal
+ *   {sensor.x;comma}                  → 1,234,567.5  (thousands separators)
+ *   {sensor.x;comma(2)}               → 1,234,567.50 (fixed decimals)
+ *   {sensor.x;currency}               → $1,234,567.50 (AUD default)
+ *   {sensor.x;currency(USD)}          → $1,234,567.50
+ *   {sensor.x;currency(EUR)}          → €1,234,567.50
  *
  * Multi-variable JS expression:
  *   {h:sensor.a.state;w:sensor.b.state;Math.sqrt(h*h+w*w)}
@@ -246,6 +251,7 @@ export class BindingEvaluator {
    *            min(N) max(N) floor ceil sqrt pow pow(N)
    *            date(fmt) momentDate(fmt) array(a,b,c)
    *            json(path) formatValue(N) random(R)
+   *            comma comma(N) currency currency(CODE)
    */
   private static applyOperation(value: any, op: string): any {
     const num = parseFloat(String(value));
@@ -332,6 +338,33 @@ export class BindingEvaluator {
     if (op === 'random') return Math.random();
     const rndN = op.match(/^random\(([^)]+)\)$/);
     if (rndN) return Math.random() * parseFloat(rndN[1]);
+
+    // ── comma / comma(N) — add thousands separators ──────────────────────────
+    // comma        → 1,234,567.5   (no fixed decimals)
+    // comma(2)     → 1,234,567.50  (fixed 2 decimal places)
+    if (op === 'comma') return num.toLocaleString();
+    const commaN = op.match(/^comma\((\d+)\)$/);
+    if (commaN) return num.toLocaleString(undefined, {
+      minimumFractionDigits: parseInt(commaN[1], 10),
+      maximumFractionDigits: parseInt(commaN[1], 10),
+    });
+
+    // ── currency / currency(CODE) — money formatting ─────────────────────────
+    // currency         → $1,234,567.50  (browser locale currency)
+    // currency(AUD)    → A$1,234,567.50
+    // currency(USD)    → $1,234,567.50
+    // currency(EUR)    → €1,234,567.50
+    if (op === 'currency') {
+      try {
+        return num.toLocaleString(undefined, { style: 'currency', currency: 'AUD' });
+      } catch { return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    }
+    const currencyCode = op.match(/^currency\(([A-Z]{3})\)$/);
+    if (currencyCode) {
+      try {
+        return num.toLocaleString(undefined, { style: 'currency', currency: currencyCode[1] });
+      } catch { return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    }
 
     // Unknown op — pass value through unchanged
     return value;
