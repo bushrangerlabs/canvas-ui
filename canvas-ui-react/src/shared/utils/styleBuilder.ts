@@ -148,12 +148,17 @@ export function applyUniversalStyles(
   // Check for background properties from BOTH sources (widgetStyles and universalStyle)
   const finalBackgroundColor = backgroundColor || (widgetStyles.backgroundColor as string);
   const finalBackgroundImage = backgroundImage || (widgetStyles.backgroundImage as string);
-  
-  // If BOTH color and image exist (from any source), layer them
-  if (finalBackgroundColor && finalBackgroundImage) {
+
+  // When a background image is present, only use an *explicit* universalStyle backgroundColor
+  // as the color overlay — never fall back to the widget's own default color (e.g. button's
+  // #2196f3). That default colour would be painted on top of the image, hiding transparency.
+  const overlayColor = finalBackgroundImage ? backgroundColor : finalBackgroundColor;
+
+  // If BOTH an explicit overlay color and image exist, layer them
+  if (overlayColor && finalBackgroundImage) {
     const colorWithOpacity = (backgroundOpacity !== undefined && backgroundOpacity !== 1) 
-      ? (applyColorOpacity(finalBackgroundColor, backgroundOpacity) || finalBackgroundColor)
-      : finalBackgroundColor;
+      ? (applyColorOpacity(overlayColor, backgroundOpacity) || overlayColor)
+      : overlayColor;
     
     // Create gradient layer (solid color) over the image
     universalCSS.backgroundImage = `linear-gradient(${colorWithOpacity}, ${colorWithOpacity}), ${finalBackgroundImage}`;
@@ -171,6 +176,9 @@ export function applyUniversalStyles(
       } else if (backgroundColor) {
         // Universal style explicitly sets a new color (no opacity change)
         universalCSS.backgroundColor = backgroundColor;
+      } else if (!finalBackgroundImage) {
+        // No universal style color and no image — keep widget default
+        universalCSS.backgroundColor = finalBackgroundColor;
       }
     }
     
@@ -183,7 +191,7 @@ export function applyUniversalStyles(
   // Ensure background stays inside border area (not under it)
   // padding-box = background stops at inner edge of border
   const hasBorder = borderWidth || borderStyle || widgetStyles.border;
-  const hasAnyBackground = finalBackgroundColor || finalBackgroundImage;
+  const hasAnyBackground = overlayColor || finalBackgroundColor || finalBackgroundImage;
   if (hasAnyBackground && hasBorder) {
     universalCSS.backgroundClip = 'padding-box';
     universalCSS.backgroundOrigin = 'padding-box';
@@ -203,7 +211,10 @@ export function applyUniversalStyles(
   // Merge: widget base styles first, universal styles override
   // If we layered backgrounds, remove conflicting properties from widgetStyles
   let cleanedWidgetStyles = widgetStyles;
-  if (finalBackgroundColor && finalBackgroundImage) {
+  if (finalBackgroundImage) {
+    // When an image is present, always strip the widget's own default backgroundColor
+    // so it doesn't bleed through transparent pixels of the image. An explicit
+    // universalStyle overlay color (if any) has already been written to universalCSS.
     cleanedWidgetStyles = { ...widgetStyles };
     delete cleanedWidgetStyles.backgroundColor;
     delete cleanedWidgetStyles.backgroundImage;
