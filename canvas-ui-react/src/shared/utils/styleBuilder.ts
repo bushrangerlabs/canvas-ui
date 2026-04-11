@@ -168,15 +168,18 @@ export function applyUniversalStyles(
     if (backgroundRepeat) universalCSS.backgroundRepeat = backgroundRepeat;
   } else {
     // Only color or only image (or neither)
-    if (finalBackgroundColor) {
+    // Never set backgroundColor when a background image is present — the image handles
+    // the background, and the widget's own default color (e.g. button #2196f3) must not
+    // bleed through transparent areas of the image.
+    if (finalBackgroundColor && !finalBackgroundImage) {
       if (backgroundOpacity !== undefined && backgroundOpacity !== 1) {
-        // Apply opacity to the resolved color (whether it came from universal style or widget's own field)
+        // Apply opacity to the resolved color
         const colorWithOpacity = applyColorOpacity(finalBackgroundColor, backgroundOpacity);
         universalCSS.backgroundColor = colorWithOpacity || finalBackgroundColor;
       } else if (backgroundColor) {
         // Universal style explicitly sets a new color (no opacity change)
         universalCSS.backgroundColor = backgroundColor;
-      } else if (!finalBackgroundImage) {
+      } else {
         // No universal style color and no image — keep widget default
         universalCSS.backgroundColor = finalBackgroundColor;
       }
