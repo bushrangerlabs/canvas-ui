@@ -189,6 +189,11 @@ export function applyUniversalStyles(
     if (backgroundSize) universalCSS.backgroundSize = backgroundSize;
     if (backgroundPosition) universalCSS.backgroundPosition = backgroundPosition;
     if (backgroundRepeat) universalCSS.backgroundRepeat = backgroundRepeat;
+    // When only an image is present (no overlay color), explicitly set transparent so the
+    // browser's default button background (buttonface) doesn't show through image transparency.
+    if (finalBackgroundImage && !overlayColor) {
+      universalCSS.backgroundColor = 'transparent';
+    }
   }
   
   // Ensure background stays inside border area (not under it)
