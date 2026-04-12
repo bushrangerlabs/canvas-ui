@@ -149,12 +149,23 @@ export function applyUniversalStyles(
   const finalBackgroundColor = backgroundColor || (widgetStyles.backgroundColor as string);
   const finalBackgroundImage = backgroundImage || (widgetStyles.backgroundImage as string);
 
-  // When a background image is present, only use an *explicit* universalStyle backgroundColor
-  // as the color overlay — never fall back to the widget's own default color (e.g. button's
-  // #2196f3). That default colour would be painted on top of the image, hiding transparency.
-  const overlayColor = finalBackgroundImage ? backgroundColor : finalBackgroundColor;
+  // When a background image is present, only use an *explicit* non-transparent universalStyle
+  // backgroundColor as the color overlay — never fall back to the widget's own default color
+  // (e.g. button's #2196f3), and treat 'transparent' as "no overlay color".
+  const isTransparentColor = (c: string | undefined) =>
+    !c || c === 'transparent' || c === 'rgba(0,0,0,0)' || c === 'rgba(0, 0, 0, 0)';
+  const overlayColor = finalBackgroundImage
+    ? (!isTransparentColor(backgroundColor) ? backgroundColor : undefined)
+    : finalBackgroundColor;
 
-  // If BOTH an explicit overlay color and image exist, layer them
+  // When any background image is present, always explicitly set backgroundColor to transparent.
+  // Without this, browser-default element backgrounds (e.g. <button> 'buttonface') bleed
+  // through transparent pixels of the image, causing a tint.
+  if (finalBackgroundImage) {
+    universalCSS.backgroundColor = 'transparent';
+  }
+
+  // If BOTH an explicit non-transparent overlay color and image exist, layer them
   if (overlayColor && finalBackgroundImage) {
     const colorWithOpacity = (backgroundOpacity !== undefined && backgroundOpacity !== 1) 
       ? (applyColorOpacity(overlayColor, backgroundOpacity) || overlayColor)
@@ -189,11 +200,6 @@ export function applyUniversalStyles(
     if (backgroundSize) universalCSS.backgroundSize = backgroundSize;
     if (backgroundPosition) universalCSS.backgroundPosition = backgroundPosition;
     if (backgroundRepeat) universalCSS.backgroundRepeat = backgroundRepeat;
-    // When only an image is present (no overlay color), explicitly set transparent so the
-    // browser's default button background (buttonface) doesn't show through image transparency.
-    if (finalBackgroundImage && !overlayColor) {
-      universalCSS.backgroundColor = 'transparent';
-    }
   }
   
   // Ensure background stays inside border area (not under it)

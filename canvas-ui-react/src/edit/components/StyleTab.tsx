@@ -190,6 +190,27 @@ export const StyleTab: React.FC<StyleTabProps> = ({ widget, onUpdate }) => {
             </FormControl>
           )}
 
+          {style.backgroundImage && (
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+              <InputLabel>Image Position</InputLabel>
+              <Select
+                value={style.backgroundPosition ?? 'center'}
+                onChange={(e) => handleStyleChange('backgroundPosition', e.target.value)}
+                label="Image Position"
+              >
+                <MenuItem value="center">Center</MenuItem>
+                <MenuItem value="top center">Top center</MenuItem>
+                <MenuItem value="bottom center">Bottom center</MenuItem>
+                <MenuItem value="center left">Center left</MenuItem>
+                <MenuItem value="center right">Center right</MenuItem>
+                <MenuItem value="top left">Top left</MenuItem>
+                <MenuItem value="top right">Top right</MenuItem>
+                <MenuItem value="bottom left">Bottom left</MenuItem>
+                <MenuItem value="bottom right">Bottom right</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+
           <TextField
             fullWidth
             type="number"

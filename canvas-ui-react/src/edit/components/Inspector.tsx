@@ -1350,6 +1350,26 @@ export const Inspector: React.FC<InspectorProps> = ({
                           </Select>
                         </FormControl>
                       )}
+                      {styleWidget?.config.style?.backgroundImage && (
+                        <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+                          <InputLabel>Image Position</InputLabel>
+                          <Select
+                            value={styleWidget?.config.style?.backgroundPosition ?? 'center'}
+                            onChange={(e) => applyStyleUpdate({ backgroundPosition: e.target.value })}
+                            label="Image Position"
+                          >
+                            <MenuItem value="center">Center</MenuItem>
+                            <MenuItem value="top center">Top center</MenuItem>
+                            <MenuItem value="bottom center">Bottom center</MenuItem>
+                            <MenuItem value="center left">Center left</MenuItem>
+                            <MenuItem value="center right">Center right</MenuItem>
+                            <MenuItem value="top left">Top left</MenuItem>
+                            <MenuItem value="top right">Top right</MenuItem>
+                            <MenuItem value="bottom left">Bottom left</MenuItem>
+                            <MenuItem value="bottom right">Bottom right</MenuItem>
+                          </Select>
+                        </FormControl>
+                      )}
                     </AccordionDetails>
                   </Accordion>
 
