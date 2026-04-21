@@ -1,5 +1,5 @@
 > [!IMPORTANT]
-> **This repository is in maintenance mode.** Active development has moved to [canvas-ui-platform](https://github.com/bushrangerlabs/canvas-ui-platform), a standalone platform that works without Home Assistant. Canvas UI (this repo) will continue to receive bug fixes but no new features. If you're evaluating which to use, wait for canvas-ui-platform.
+> **This repository is being retired.** Canvas UI Platform ([canvas-ui-platform](https://github.com/bushrangerlabs/canvas-ui-platform)) is the full replacement — it includes everything here (the editor, all widgets, HA integration) plus a standalone server, multi-device management, and a native Tauri app that removes the dependency on Home Assistant entirely. This HACS repo will receive critical bug fixes only. New installs should wait for canvas-ui-platform.
 
 > [!WARNING]
 > **Canvas UI is currently in active beta.** It is designed to be non-destructive and will not modify your existing Home Assistant configuration or dashboards. Install on a test instance first if possible, and please report any issues on [GitHub Issues](https://github.com/bushrangerlabs/canvas-ui/issues).
