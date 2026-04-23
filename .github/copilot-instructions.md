@@ -3,6 +3,15 @@
 **Architecture:** React + TypeScript + Vite + Material-UI  
 **Last Updated:** March 12, 2026
 
+> ⚠️ **Two separate projects exist — do not mix them up:**
+>
+> | Project | Path | Purpose |
+> |---|---|---|
+> | **canvas-ui-hacs** (this file) | `/home/spetchal/Code/canvas-ui-hacs/` | HACS integration — embeds a canvas viewer panel into HA frontend |
+> | **canvas-ui-platform** | `/home/spetchal/Code/canvas-ui-platform/` | Standalone HA add-on — full editor + server + multi-device display management |
+>
+> When working on **canvas-ui-platform**, open that folder in VS Code so its own `copilot-instructions.md` is used instead of this one.
+
 ---
 
 ## 📂 Key Paths
