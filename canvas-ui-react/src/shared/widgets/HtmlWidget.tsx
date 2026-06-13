@@ -10,6 +10,14 @@ import type { WidgetMetadata } from '../types/metadata';
 import { applyUniversalStyles } from '../utils/styleBuilder';
 import { useResolvedUniversalStyle } from '../../hooks/useResolvedUniversalStyle';
 
+const toKebabCase = (value: string): string => value.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`);
+
+const styleObjectToCss = (style: React.CSSProperties): string =>
+  Object.entries(style)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${toKebabCase(key)}: ${value};`)
+    .join(' ');
+
 const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
   const {
     html: htmlContent = '<div>Enter HTML here</div>',
@@ -25,6 +33,7 @@ const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
   const { entities } = useWebSocket();
   const universalStyle = useResolvedUniversalStyle(config.config.style || config.config as any);
   const containerRef = useRef<HTMLDivElement>(null);
+  const widgetClassName = `html-widget-${String(config.id).replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   const getHtml = (): string => {
     if (useEntityHtml && htmlEntity) {
@@ -55,20 +64,41 @@ const HtmlWidget: React.FC<WidgetProps> = ({ config }) => {
     boxSizing: 'border-box',
   };
   const finalStyle = applyUniversalStyles(universalStyle, baseStyle);
+  const shellCss = styleObjectToCss(finalStyle);
 
   if (htmlUrl) {
     return (
-      <div style={finalStyle}>
+      <div className={widgetClassName}>
+        <style>{`
+          .${widgetClassName} {
+            ${shellCss}
+          }
+
+          .${widgetClassName} .html-widget-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+          }
+        `}</style>
         <iframe
           src={htmlUrl}
           title="HTML Widget"
-          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          className="html-widget-frame"
         />
       </div>
     );
   }
 
-  return <div ref={containerRef} style={finalStyle} />;
+  return (
+    <div className={widgetClassName} ref={containerRef}>
+      <style>{`
+        .${widgetClassName} {
+          ${shellCss}
+        }
+      `}</style>
+    </div>
+  );
 };
 
 export const htmlWidgetMetadata: WidgetMetadata = {
@@ -95,7 +125,6 @@ export const htmlWidgetMetadata: WidgetMetadata = {
       default: false,
       category: 'behavior',
       description: 'Use entity state as HTML instead of static HTML',
-      visibleWhen: { field: 'htmlUrl', value: '' },
     },
     {
       name: 'htmlEntity',
@@ -104,7 +133,6 @@ export const htmlWidgetMetadata: WidgetMetadata = {
       default: '',
       category: 'behavior',
       description: 'Entity whose state or attribute contains the HTML',
-      visibleWhen: { field: 'htmlUrl', value: '' },
     },
     {
       name: 'htmlAttribute',
@@ -113,7 +141,6 @@ export const htmlWidgetMetadata: WidgetMetadata = {
       default: '',
       category: 'behavior',
       description: 'Entity attribute name containing HTML (bypasses 255-char state limit). Leave blank to use state.',
-      visibleWhen: { field: 'htmlUrl', value: '' },
     },
     {
       name: 'html',
@@ -122,7 +149,6 @@ export const htmlWidgetMetadata: WidgetMetadata = {
       default: '<div>Enter HTML here</div>',
       category: 'behavior',
       description: 'Custom HTML content',
-      visibleWhen: { field: 'htmlUrl', value: '' },
     },
     {
       name: 'overflow',
